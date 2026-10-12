@@ -111,8 +111,9 @@
 
   /* Contact */
   .contact { background: var(--broth); padding: 70px 0; }
-  .contact h2 { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.02em; margin: 0 0 10px; }
+  .contact h2 { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.02em; margin: 0; }
   .contact p { margin: 0 0 6px; max-width: 52ch; }
+  .mails { display: flex; flex-wrap: wrap; gap: 28px 64px; margin-top: 22px; }
   .contact a.mail { font-weight: 800; font-size: clamp(1.15rem, 3.4vw, 1.6rem); text-decoration-thickness: 3px; text-underline-offset: 5px; word-break: break-all; }
 
   footer { padding: 26px 0 40px; color: var(--muted); font-size: .95rem; }
@@ -211,8 +212,16 @@
   <section class="contact" id="contact">
     <div class="wrap">
       <h2>Get in touch</h2>
-      <p>Found a bug, have an idea, or want to talk about a game? Send an email.</p>
-      <a class="mail" href="mailto:soupenoodle54@gmail.com">soupenoodle54@gmail.com</a>
+      <div class="mails">
+        <div>
+          <p>Questions, ideas or business</p>
+          <a class="mail" href="mailto:contact@soupenoodles.com">contact@soupenoodles.com</a>
+        </div>
+        <div>
+          <p>Help with a game, bugs or purchases</p>
+          <a class="mail" href="mailto:support@soupenoodles.com">support@soupenoodles.com</a>
+        </div>
+      </div>
     </div>
   </section>
 </main>
