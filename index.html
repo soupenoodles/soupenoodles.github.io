@@ -140,6 +140,7 @@
   .status.ok { color: #1E7A34; }
   .status.err { color: #B3261E; }
   footer { padding: 26px 0 40px; color: var(--muted); font-size: .95rem; }
+  footer .legal { display: flex; gap: 20px; }
   footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
   @media (max-width: 820px) {
@@ -285,7 +286,7 @@
 <footer>
   <div class="wrap">
     <span>© 2026 Soupe Noodles</span>
-    <a href="privacy.html">Privacy policy</a>
+    <span class="legal"><a href="terms.html">Terms of use</a><a href="privacy.html">Privacy policy</a></span>
   </div>
 </footer>
 

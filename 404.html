@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found – Soupe Noodles</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root { --broth:#FFD23F; --ink:#1C1A17; --chili:#E4402F; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--broth); color: var(--ink);
+    font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 18px; line-height: 1.55;
+    display: flex; align-items: center; justify-content: center; text-align: center; padding: 32px 16px;
+  }
+  main { max-width: 560px; }
+  img { width: 190px; height: auto; transform: rotate(-14deg); filter: drop-shadow(0 16px 20px rgba(120,70,0,.25)); }
+  .code { font-weight: 800; font-size: clamp(5rem, 22vw, 9rem); line-height: .9; letter-spacing: -0.05em; margin: 16px 0 8px; }
+  h1 { font-size: clamp(1.4rem, 5vw, 2rem); line-height: 1.2; margin: 0 0 10px; }
+  p { margin: 0 0 28px; }
+  a.home {
+    display: inline-block; color: #fff; background: var(--chili); text-decoration: none;
+    font-weight: 800; font-size: 1.1rem; padding: 14px 28px; border-radius: 14px; box-shadow: 0 5px 0 #A9281B;
+  }
+  a.home:active { transform: translateY(3px); box-shadow: 0 2px 0 #A9281B; }
+  a.home:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+  @media (prefers-reduced-motion: no-preference) {
+    img { animation: wobble 3s ease-in-out infinite; }
+    @keyframes wobble { 50% { transform: rotate(-6deg) translateY(-6px); } }
+  }
+</style>
+</head>
+<body>
+<main>
+  <img src="/logo.png" alt="" width="540" height="564">
+  <div class="code" aria-hidden="true">404</div>
+  <h1>This page fell off the bridge</h1>
+  <p>The page you're looking for doesn't exist or has moved.</p>
+  <a class="home" href="/">Back to Soupe Noodles</a>
+</main>
+</body>
+</html>
