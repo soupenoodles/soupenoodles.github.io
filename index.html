@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Soupe Noodles – Mobile games</title>
 <meta name="description" content="Soupe Noodles is an independent mobile game studio. Play Real Zombie War: Squad Shooter on Android.">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="logo.png">
+<meta property="og:image" content="https://soupenoodles.com/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
@@ -38,7 +41,7 @@
   header { background: var(--broth); }
   .bar { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
   .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; font-size: 1.15rem; }
-  .brand svg { width: 34px; height: 34px; }
+  .brand img { width: 40px; height: auto; display: block; }
   nav { display: flex; gap: 22px; font-weight: 600; font-size: 1rem; }
   nav a { text-decoration: none; }
   nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
@@ -52,6 +55,12 @@
     letter-spacing: -0.04em;
     font-weight: 800;
     margin: 0 0 24px;
+  }
+  .hero-grid { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px; }
+  .hero-logo { width: clamp(220px, 32vw, 400px); height: auto; filter: drop-shadow(0 18px 24px rgba(120,70,0,.25)); }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-logo { animation: bob 4s ease-in-out infinite; }
+    @keyframes bob { 50% { transform: translateY(-10px) rotate(-2deg); } }
   }
   .hero p { font-size: clamp(1.1rem, 2.4vw, 1.4rem); max-width: 34ch; margin: 0; }
   .noodles { position: absolute; left: 0; right: 0; bottom: -6px; width: 100%; height: 170px; }
@@ -97,8 +106,8 @@
   .soon { display: block; margin-top: 12px; font-size: .95rem; color: #9AA593; }
 
   .game-art { background: var(--night-2); display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
-  .phone { width: min(260px, 70vw); aspect-ratio: 9 / 18; background: #0E120D; border-radius: 34px; padding: 10px; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
-  .phone svg { width: 100%; height: 100%; border-radius: 26px; display: block; }
+  .phone { width: min(260px, 70vw); aspect-ratio: 2 / 3; background: #0E120D; border-radius: 34px; padding: 10px; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+  .phone img { width: 100%; height: 100%; object-fit: cover; border-radius: 26px; display: block; }
 
   /* Contact */
   .contact { background: var(--broth); padding: 70px 0; }
@@ -111,6 +120,8 @@
 
   @media (max-width: 820px) {
     .game { grid-template-columns: 1fr; }
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-logo { order: -1; width: 170px; margin-bottom: -8px; }
     .game-text { padding: 36px 24px; }
     .hero .wrap { padding-bottom: 120px; }
     .noodles { height: 130px; }
@@ -118,7 +129,7 @@
   }
   @media (max-width: 420px) {
     .brand { font-size: 1rem; }
-    .brand svg { width: 28px; height: 28px; }
+    .brand img { width: 32px; }
     nav { gap: 12px; font-size: .95rem; }
   }
 </style>
@@ -128,11 +139,7 @@
 <header>
   <div class="wrap bar">
     <a class="brand" href="/" aria-label="Soupe Noodles home">
-      <svg viewBox="0 0 40 40" aria-hidden="true">
-        <path d="M14 4 L19 20 M22 3 L24 20" stroke="#1C1A17" stroke-width="2.5" stroke-linecap="round"/>
-        <path d="M4 19 H36 A16 15 0 0 1 4 19 Z" fill="#E4402F"/>
-        <path d="M9 23 q4 -3 8 0 t8 0 t8 0" stroke="#FFD23F" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      </svg>
+      <img src="logo.png" alt="" width="40" height="42">
       Soupe Noodles
     </a>
     <nav aria-label="Main">
@@ -144,8 +151,13 @@
 
 <section class="hero">
   <div class="wrap">
+    <div class="hero-grid">
+    <div>
     <h1>Soupe<br>Noodles</h1>
     <p>A one-person game studio from Morocco, making small mobile games that are quick to pick up and hard to put down.</p>
+    </div>
+    <img class="hero-logo" src="logo.png" alt="Soupe Noodles logo: a smiling bowl of noodles" width="540" height="564">
+    </div>
   </div>
   <svg class="noodles" viewBox="0 0 1440 170" preserveAspectRatio="none" aria-hidden="true">
     <path class="n1" d="M-20 120 C 120 40, 240 160, 380 90 S 640 20, 780 100 S 1060 170, 1200 80 S 1400 40, 1470 110"/>
@@ -187,47 +199,9 @@
           <span class="soon">Android release coming soon.</span>
         </div>
 
-        <div class="game-art" aria-hidden="true">
+        <div class="game-art" role="img" aria-label="Real Zombie War gameplay: a blue squad running across a bridge toward a red -100 gate and a green +500 gate, with a giant zombie behind">
           <div class="phone">
-            <svg viewBox="0 0 240 480">
-              <defs>
-                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#7FB8E6"/><stop offset="1" stop-color="#CFE6F5"/>
-                </linearGradient>
-              </defs>
-              <rect width="240" height="480" fill="url(#sky)"/>
-              <rect y="150" width="240" height="330" fill="#5E8FB5"/>
-              <!-- bridge -->
-              <polygon points="95,150 145,150 230,480 10,480" fill="#B9B4AA"/>
-              <polygon points="95,150 100,150 22,480 10,480" fill="#8E897F"/>
-              <polygon points="140,150 145,150 230,480 218,480" fill="#8E897F"/>
-              <!-- gates -->
-              <rect x="62" y="250" width="58" height="46" rx="4" fill="#3B82F6" opacity=".75"/>
-              <rect x="120" y="250" width="58" height="46" rx="4" fill="#E4402F" opacity=".75"/>
-              <text x="91" y="280" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="20" fill="#fff">+10</text>
-              <text x="149" y="280" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="20" fill="#fff">−5</text>
-              <!-- zombies -->
-              <g fill="#7A9A3A">
-                <circle cx="108" cy="185" r="5"/><circle cx="120" cy="182" r="5"/><circle cx="132" cy="186" r="5"/>
-                <circle cx="114" cy="196" r="5"/><circle cx="126" cy="195" r="5"/><circle cx="102" cy="198" r="5"/><circle cx="138" cy="199" r="5"/>
-              </g>
-              <!-- squad -->
-              <g fill="#2F6FE0">
-                <circle cx="104" cy="400" r="8"/><circle cx="120" cy="396" r="8"/><circle cx="136" cy="400" r="8"/>
-                <circle cx="96" cy="418" r="8"/><circle cx="112" cy="416" r="8"/><circle cx="128" cy="416" r="8"/><circle cx="144" cy="418" r="8"/>
-              </g>
-              <rect x="98" y="358" width="44" height="22" rx="11" fill="#1C1A17"/>
-              <text x="120" y="374" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="14" fill="#FFD23F">7</text>
-              <!-- bullets -->
-              <g stroke="#FFD23F" stroke-width="3" stroke-linecap="round">
-                <line x1="104" y1="380" x2="104" y2="368"/><line x1="120" y1="340" x2="120" y2="328"/><line x1="136" y1="372" x2="136" y2="360"/>
-              </g>
-              <!-- HUD -->
-              <circle cx="22" cy="24" r="9" fill="#FFD23F" stroke="#C99A00" stroke-width="2"/>
-              <text x="38" y="29" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="14" fill="#1C1A17">1,250</text>
-              <rect x="150" y="16" width="74" height="12" rx="6" fill="#ffffff" opacity=".7"/>
-              <rect x="150" y="16" width="44" height="12" rx="6" fill="#9BD14A"/>
-            </svg>
+            <img src="real-zombie-war.jpg" alt="" width="800" height="1200" loading="lazy">
           </div>
         </div>
       </article>
