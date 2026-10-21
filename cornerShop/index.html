@@ -37,16 +37,26 @@ canvas{height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rende
 <div id="col"><div id="top"><div id="coins">0</div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const DEBUG=window.DEBUG={shopImages:['assets/shop0.png','assets/shop1.png','assets/shop2.png','assets/shop3.png'],pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:3,pedSpeed:1,pedFps:8,pedFeetY:298};
+const VERSION='1.2';
+const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:['assets/shop0.png','assets/shop1.png','assets/shop2.png','assets/shop3.png'],pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:3,pedSpeed:1,pedFps:8,pedFeetY:298};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
-const T=[{n:'B/W SET',sp:1,c:1,body:'#7a5230',scr:'#1a1c1a'},{n:'COLOR SET',sp:1.25,c:3,body:'#2f5d8c',scr:'#0c1220'},{n:'PLASMA',sp:1.6,c:9,body:'#555b66',scr:'#0a0a14'},{n:'LCD',sp:2,c:27,body:'#2a2f3a',scr:'#061018'},{n:'4K OLED',sp:2.6,c:81,body:'#15151a',scr:'#000'}];
-const TVI=T.map((t,i)=>{const im=new Image();im.src='assets/tv'+i+'.png';return im}),TVC=[];/* tv5.png unused: T has 5 tiers */
-DEBUG.tvRect=T.map(()=>[44,38,382,251]);
+const T=[{n:'B/W SET',sp:1,c:1,body:'#7a5230',scr:'#1a1c1a'},{n:'COLOR SET',sp:1.25,c:3,body:'#2f5d8c',scr:'#0c1220'},{n:'PLASMA',sp:1.6,c:9,body:'#555b66',scr:'#0a0a14'},{n:'LCD',sp:2,c:27,body:'#2a2f3a',scr:'#061018'},{n:'4K OLED',sp:2.6,c:81,body:'#15151a',scr:'#000'},
+{n:'HOLO',sp:3.5,c:200,body:'#1a3a4a',scr:'#02181e'},/* placeholder: replace with real HOLO values */
+{n:'QUANTUM',sp:5,c:600,body:'#e0e0ff',scr:'#1a0030',cm:4,split:3},
+{n:'NEURAL',sp:7,c:1500,body:'#1a0a2a',scr:'#2a0030',cm:6,keep:1},
+{n:'SINGULARITY',sp:10,c:4000,body:'#0a0a0a',scr:'#000',cm:10,bp:1,nb:.5}];
+const TVI=T.map((t,i)=>{const im=new Image();im.src='assets/tv'+i+'.png';return im}),TVC=[];/* missing tvN.png falls back to the code-drawn TV */
+DEBUG.tvRect=T.map(()=>[44,38,382,251]);DEBUG.tvConfig=T.map(()=>({scale:1,x:0,y:0,color:null}));console.info('Corner Shop v'+VERSION);
 function tvSprite(i){
  if(TVC[i])return TVC[i];const im=TVI[i];if(!im.complete||!im.naturalWidth)return null;
  let src=im,w=im.naturalWidth,h=im.naturalHeight;
  while(w>528){const c=document.createElement('canvas');w=Math.ceil(w/2);h=Math.ceil(h/2);c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(src,0,0,w,h);src=c}
  const c=document.createElement('canvas');c.width=264;c.height=192;const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(src,0,0,264,192);return TVC[i]=c}
+const TVT={};
+function tvTint(i,sp,color){/* 'color' blend keeps the sprite's shading, destination-in restores its alpha */
+ if(!color)return sp;const k=i+'|'+color;if(TVT[k])return TVT[k];
+ const c=document.createElement('canvas');c.width=sp.width;c.height=sp.height;const g=c.getContext('2d');
+ g.drawImage(sp,0,0);g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(sp,0,0);return TVT[k]=c}
 const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,un:[true]};
 const SHOPS=[{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,sh:[67.7, 110.4, 153.5],sx:100.2,cx:99.2,cy:201.3},
 {n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:15,sh:[76.9, 108.4, 140.3],sx:97.0,cx:86.8,cy:198.3},
@@ -56,10 +66,24 @@ SHOPS.forEach(s=>{s.slots=[{x:s.cx-30.8,y:s.cy-44.8,s:.7}];[s.sh[2],s.sh[1],s.sh
 const IMG=[],shopImg=i=>{const p=DEBUG.shopImages[i];if(!IMG[i]||IMG[i].dataset.p!==p){const im=new Image();im.dataset.p=p;im.src=p;IMG[i]=im}return IMG[i]},IMOK=i=>{const im=shopImg(i);return im.complete&&im.naturalWidth>0};
 const imgCache={},ld=p=>imgCache[p]||(imgCache[p]=Object.assign(new Image(),{src:p})),imOK=im=>im.complete&&im.naturalWidth>0,pedRoll=()=>Math.floor(Math.random()*Math.min(DEBUG.pedPool.length,DEBUG.lookPool.length));
 SHOPS.forEach((s,i)=>shopImg(i));[...DEBUG.pedPool,...DEBUG.lookPool].forEach(ld);
-let dex=false,coins=0,sel=null,boost=0,shake=0,toast='',toastT=0,floats=[],t0=performance.now(),corners=0;
-const crowdN=()=>2+S.crowd,showB=()=>[0,0,.1,.25,.5,1][new Set(tvs.map(v=>v.t)).size]||0,AB=['No ability','Corners +25%','Neighbors get 50%','Bigger logo, -25%','Twin logos x3'],slots=()=>10, mult=()=>1+.25*S.floors;
+/* walk strip is horizontal: frame w = naturalWidth/4, frame h = naturalHeight. Look sprite is scaled so its figure matches the walk figure height (falls back to walk frame height if pixels can't be read) */
+const pedFit={};
+function pedBox(im,x0,w){const h=im.naturalHeight,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(im,x0,0,w,h,0,0,w,h);const d=g.getImageData(0,0,w,h).data;let t=h,b=-1,l=w,r=-1;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>16){if(y<t)t=y;if(y>b)b=y;if(x<l)l=x;if(x>r)r=x}return b<0?null:[t,b+1,l,r+1]}
+function pedFitOf(wi,li){
+ const key=wi.src+'|'+li.src;if(pedFit[key])return pedFit[key];
+ const fw=wi.naturalWidth/4,fh=wi.naturalHeight,lw=li.naturalWidth,lh=li.naturalHeight;
+ let f={k:fh/lh,wb:fh,wcx:fw/2,lb:lh,lcx:lw/2};
+ try{const bs=[0,1,2,3].map(i=>pedBox(wi,i*fw,fw)).filter(Boolean),lb=pedBox(li,0,lw);
+  if(bs.length&&lb)f={k:(Math.max(...bs.map(q=>q[1]))-Math.min(...bs.map(q=>q[0])))/(lb[1]-lb[0]),wb:Math.max(...bs.map(q=>q[1])),wcx:bs.reduce((a,q)=>a+(q[2]+q[3])/2,0)/bs.length,lb:lb[1],lcx:(lb[2]+lb[3])/2}}catch(e){}
+ if(Math.abs(f.k-1)<.02)f.k=1;return pedFit[key]=f}
+let dex=false,dexPage=0,coins=0,sel=null,boost=0,shake=0,toast='',toastT=0,floats=[],t0=performance.now(),corners=0;
+const SB=[0,0,.1,.25,.5,1];/* showroom bonus by distinct tiers; 5+ stays at the last value */
+const crowdN=()=>2+S.crowd,showB=()=>SB[Math.min(new Set(tvs.map(v=>v.t)).size,SB.length-1)],AB=['No ability','Corners +25%','Neighbors get 50%','Bigger logo, -25%','Twin logos x3','No ability','Logo splits into 3, x4 corner','Logos heal (never lose speed), x6 corner','Pulls neighbors in, x10 corner, all bounces pay corner rate'],slots=()=>10, mult=()=>1+.25*S.floors;
+const nbrs=i=>i===0?[1,2,3]:[(i-1)%3>0?i-1:-1,(i-1)%3<2?i+1:-1,i+3<=9?i+3:-1,i>3?i-3:0];
+const wrap=(s,n)=>{const o=[];let l='';s.split(' ').forEach(w=>{if((l+' '+w).trim().length>n){o.push(l);l=w}else l=(l+' '+w).trim()});if(l)o.push(l);return o};
 const mk1=t=>({t,w:t===3?21:14,h:t===3?12:8,x:Math.random()*(SW-(t===3?21:14)),y:Math.random()*(SH-(t===3?12:8)),dx:Math.random()<.5?-1:1,dy:Math.random()<.5?-1:1,a:.5+Math.random()*.5,hue:Math.random()*360,since:0,flash:0,near:0,ct:0});
-const mk=t=>{const o=mk1(t);if(t===4){o.twin=mk1(4);o.twin.partner=o;o.partner=o.twin;o.twin.isTwin=true}return o};
+const mk=t=>{const o=mk1(t);if(t===4){o.twin=mk1(4);o.twin.partner=o;o.partner=o.twin;o.twin.isTwin=true}
+ if(t===6){o.cl=[mk1(6),mk1(6)];o.cl.forEach((c,k)=>{c.isTwin=true;c.partner=o;c.x=Math.min(SW-c.w,o.x+4*(k+1));c.y=Math.min(SH-c.h,o.y+4*(k+1))})}return o};
 let tvs=[mk(0)];const shops=[{tvs,fit:0,bought:0}],badge=[false,false,false,false];let sc=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.reduce((a,s)=>a+s.tvs.length,0)<=1)return;if(sellArm<=0){sellArm=2;return}const v=sellVal(sel);coins+=v;tvs.splice(tvs.indexOf(sel),1);shops[sc].tvs=tvs;sel=null;sellArm=0;toast='SOLD +'+fmt(v);toastT=1.8}
 function goShop(k){if(k===sc)return;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false}
 const people=[...Array(12)].map((_,i)=>({x:i*17,d:i%2?1:-1,stop:0,v:10+Math.random()*8,c:pedRoll(),fr:Math.random()*4}));
@@ -73,7 +97,7 @@ const U=[
 {ic:'⇄',n:'Merge',s:'Fuse a pair',d:'Fuse two matching TVs into the next tier.',when:()=>sumBuys()>=2,hint:'Buy 2 TVs',lv:()=>0,cost:()=>c1(6*1.3**S.merges),can:()=>pair()?'':'Need 2 same TVs',buy(){const[a,b,t]=pair();tvs=tvs.filter((_,i)=>i!==a&&i!==b);tvs.splice(a,0,mk(t+1));sel=null;shops[sc].tvs=tvs;S.merges++;if(!S.un[t+1]){S.un[t+1]=true;toast='NEW TV: '+T[t+1].n+'!';toastT=3}},eff:()=>{const p=pair();return p?T[p[2]].n+' > '+T[p[2]+1].n:'-'}},
 {ic:'👥',n:'Crowd',s:'More people',d:'More people walk past the shop.',when:()=>S.merges>=1,hint:'Merge two TVs',max:10,lv:()=>S.crowd,cost:()=>c1(4*1.5**S.crowd),buy(){S.crowd++},eff:()=>`${crowdN()} > ${crowdN()+1} passersby`},
 {ic:'👀',n:'Attention',s:'More people stop',d:'More passersby stop to watch a corner.',when:()=>S.crowd>=1,hint:'Upgrade Crowd',max:10,lv:()=>S.stopC,cost:()=>c1(6*1.55**S.stopC),buy(){S.stopC++},eff:()=>`${12+3*S.stopC}% > ${15+3*S.stopC}%`},
-{ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier.',when:()=>S.un[2],hint:'Discover Plasma',max:3,lv:()=>S.start,cost:()=>c1(250*10**S.start),buy(){S.start++},eff:()=>`${T[S.start].n} > ${T[S.start+1].n}`},
+{ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier.',when:()=>S.un[2],hint:'Discover Plasma',max:7,lv:()=>S.start,cost:()=>c1(250*10**S.start),buy(){S.start++},eff:()=>`${T[S.start].n} > ${T[S.start+1].n}`},
 {ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',when:()=>shops.length>1||shops.some(s=>s.tvs.length>=5),hint:'Fill 5 TV slots',max:3,lv:()=>shops.length-1,cost:()=>c1(75*8**(shops.length-1)),buy(){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)},eff:()=>`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`}
 ];
 const col=document.getElementById('col');
@@ -105,26 +129,26 @@ const cn=document.getElementById('cn'),cd=document.getElementById('cd'),ce=docum
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,SC=.62,slotXY=i=>SHOPS[sc].slots[i];
 function bounce(tv,hx,hy,i){
  const LW=tv.w,LH=tv.h,own=tv.isTwin?tv.partner:tv;window.__b=(window.__b||0)+1;
- const m=mult()*(1+showB())*T[tv.t].c*SHOPS[shopI].k;tv.since++;tv.hue+=47;tv.a=.4+Math.random()*.75;
- const g=.1*m*(tv.t===3?.75:1);coins+=g;
+ const T0=T[tv.t],qs=1/(T0.split||1),m=mult()*(1+showB())*T0.c*SHOPS[shopI].k;tv.since++;tv.hue+=47;tv.a=.4+Math.random()*.75;
+ const g=(T0.bp||.1)*m*(tv.t===3?.75:1)*qs;coins+=g;
  let win=((.1+.15*S.corner)*(tv===sel?1-.12*boost:1)+tv.since*.003)*(tv.t===3?1.5:1),d=99;
  if(hx&&hy)d=0;else if(hx)d=Math.min(tv.y,SH-LH-tv.y);else d=Math.min(tv.x,SW-LW-tv.x);
  if(d<=win){
   const cx=tv.x<(SW-LW)/2,cy=tv.y<(SH-LH)/2;tv.x=cx?0:SW-LW;tv.y=cy?0:SH-LH;tv.dx=cx?1:-1;tv.dy=cy?1:-1;
   const w=i===0?people.filter((p,k)=>k<crowdN()&&!p.stop&&Math.random()<.12+.03*S.stopC):[];w.forEach(p=>p.stop=3);
-  let pay=1*m*(1+.2*w.length)*(tv.t===1?1.25:1),tag='';
+  let pay=1*m*(1+.2*w.length)*(tv.t===1?1.25:1)*(T0.cm||1)*qs,tag='';
   const now=performance.now()/1000;
   if(tv.t===4&&tv.partner.ct&&now-tv.partner.ct<5){pay*=3;tag='DOUBLE ';tv.partner.ct=0}else tv.ct=now;
   coins+=pay;corners++;tv.since=0;own.flash=1;
-  if(tv.t===2){const nb=i===0?[1,2,3]:[(i-1)%3>0?i-1:-1,(i-1)%3<2?i+1:-1,i+3<=9?i+3:-1,i>3?i-3:0],n=nb.filter(j=>j>=0&&j<tvs.length).length;if(n){coins+=.5*pay*n;tag='CHAIN x'+n+' '}}
+  if(tv.t===2){const n=nbrs(i).filter(j=>j>=0&&j<tvs.length).length;if(n){coins+=.5*pay*n;tag='CHAIN x'+n+' '}}
   toast=(shopI!==sc?SHOPS[shopI].n+': ':'')+tag+'CORNER! +'+fmt(pay);toastT=2.2;if(shopI!==sc)badge[shopI]=true;else{const s=slotXY(i);floats.push(sel===own?{x:100,y:84,t:2.2,g:1,s:'+'+fmt(pay)}:{x:s.x+44*s.s,y:s.y+8,t:2.2,g:1,s:'+'+fmt(pay)})}
  }else if(d<Math.max(win*2.5,2)){const q=i===0?people.find((p,k)=>k<crowdN()&&!p.stop):null;if(q&&Math.random()<.15)q.stop=1.5;if(tv===sel){toast='SO CLOSE...';toastT=1}}
  if(i>=0&&tv!==sel&&shopI===sc&&CFG.nums&&!(d<=win)&&floats.length<12){const s=slotXY(i);floats.push({x:s.x+Math.random()*60*s.s,y:s.y+8,t:.8,s:'+'+fmt(g)})}
 }
 function update(dt){
- boost=Math.max(0,boost-.8*dt);
- const cs=tvs;shops.forEach((sh,si)=>{tvs=sh.tvs;shopI=si;tvs.forEach((par,i)=>{[par,par.twin].forEach(tv=>{if(!tv)return;const LW=tv.w,LH=tv.h;
-  const sp=30*(1+.1*S.speed)*T[tv.t].sp*(par===sel?1+boost:1);
+ boost=Math.max(0,boost-(sel&&T[sel.t].keep?0:.8)*dt);
+ const cs=tvs;shops.forEach((sh,si)=>{tvs=sh.tvs;shopI=si;tvs.forEach((par,i)=>{const nbB=Math.max(0,...nbrs(i).filter(j=>j>=0&&j<tvs.length).map(j=>T[tvs[j].t].nb||0));[par,par.twin,...(par.cl||[])].forEach(tv=>{if(!tv)return;const LW=tv.w,LH=tv.h;
+  const sp=30*(1+.1*S.speed)*T[tv.t].sp*(1+nbB)*(par===sel?1+boost:1);
   tv.x+=tv.dx*Math.cos(tv.a)*sp*dt;tv.y+=tv.dy*Math.sin(tv.a)*sp*dt;
   let hx=0,hy=0;
   if(tv.x<0){tv.x=0;tv.dx=1;hx=1}else if(tv.x>SW-LW){tv.x=SW-LW;tv.dx=-1;hx=1}
@@ -139,17 +163,18 @@ function update(dt){
 function R(c,x,y,w,h){X.fillStyle=c;X.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
 function txt(s,x,y,c,sz,al){X.font=(sz||7)+'px "Press Start 2P",monospace';X.textAlign=al||'left';X.fillStyle=c;X.fillText(s,x,y)}
 function drawTV(tv,ox,oy,s,hl){
- X.save();X.translate(ox,oy);X.scale(s,s);const T0=T[tv.t],sp=tvSprite(tv.t),LW0=tv.w||14,LH0=tv.h||8;
+ const cf=DEBUG.tvConfig[tv.t]||{scale:1,x:0,y:0,color:null};
+ X.save();X.translate(ox+44*s+cf.x,oy+32*s+cf.y);X.scale(s*cf.scale,s*cf.scale);X.translate(-44,-32);const T0=T[tv.t],sp=tvSprite(tv.t),LW0=tv.w||14,LH0=tv.h||8;
  const col=tv.t===0?'hsl(0,0%,'+(60+30*Math.sin(tv.hue/20))+'%)':'hsl('+tv.hue+',90%,60%)';
- const lg=(dx,dy)=>[tv,tv.twin].forEach(o=>{if(!o)return;const c=tv.t===0?col:'hsl('+o.hue+',90%,60%)';R(c,dx+o.x,dy+o.y,LW0,LH0);R('rgba(0,0,0,.55)',dx+o.x+3,dy+o.y+2,2,LH0>10?6:4);R('rgba(0,0,0,.55)',dx+o.x+8,dy+o.y+2,2,LH0>10?6:4)});
+ const lg=(dx,dy)=>[tv,tv.twin,...(tv.cl||[])].forEach(o=>{if(!o)return;const c=tv.t===0?col:'hsl('+o.hue+',90%,60%)';R(c,dx+o.x,dy+o.y,LW0,LH0);R('rgba(0,0,0,.55)',dx+o.x+3,dy+o.y+2,2,LH0>10?6:4);R('rgba(0,0,0,.55)',dx+o.x+8,dy+o.y+2,2,LH0>10?6:4)});
  if(sp){
   const r=DEBUG.tvRect[tv.t],kx=88/480,ky=64/350;
-  X.drawImage(sp,0,0,88,64);
+  X.drawImage(tvTint(tv.t,sp,cf.color),0,0,88,64);
   X.save();X.beginPath();X.rect(r[0]*kx,r[1]*ky,r[2]*kx,r[3]*ky);X.clip();
   X.translate(r[0]*kx,r[1]*ky);X.scale(r[2]*kx/SW,r[3]*ky/SH);
   R(T0.scr,0,0,SW,SH);lg(0,0);X.restore();
  }else{
-  R('#000',0,0,88,64);R(T0.body,2,2,84,60);R('#000',7,6,72,50);R(T0.scr,8,7,70,46);
+  R('#000',0,0,88,64);R(cf.color||T0.body,2,2,84,60);R('#000',7,6,72,50);R(T0.scr,8,7,70,46);
   lg(8,7);R('#000',81,12,5,5);R('#000',81,22,5,5);R('#000',81,40,4,10);
  }
  if(hl)R('#ffd400',-1,-1,90,2),R('#ffd400',-1,63,90,2),R('#ffd400',-1,-1,2,66),R('#ffd400',87,-1,2,66);
@@ -157,14 +182,15 @@ function drawTV(tv,ox,oy,s,hl){
 }
 function drawTabs(){if(shops.length<2)return;const n=shops.length,w=W/n;shops.forEach((sh,i)=>{R(i===sc?'#ffd400':'#2c2c33',i*w+1,322,w-2,16);txt(SHOPS[i].n+(SHOPS[i].k>1&&n<4?' +'+Math.round((SHOPS[i].k-1)*100)+'%':''),i*w+w/2,333,i===sc?'#000':'#aaa',6,'center');if(badge[i])txt('!',i*w+w-8,333,'#ff5a3a',8,'center')})}
 function drawDex(){
+ const pages=Math.ceil(T.length/5);
  R('rgba(0,0,0,.93)',0,0,W,H);txt('TV INDEX',100,24,'#ffd400',9,'center');
  txt(S.un.filter(Boolean).length+' / '+T.length+' unlocked',100,40,'#888',6,'center');
- T.forEach((t,i)=>{const y=52+i*55,u=S.un[i];
+ T.forEach((t,i)=>{if(Math.floor(i/5)!==dexPage)return;const y=52+(i%5)*55,u=S.un[i];
   R(u?'#ffd400':'#333',6,y,188,50);R('#111',8,y+2,184,46);
   if(u){drawTV({t:i,x:20,y:14,hue:i*60,flash:0},12,y+7,.5);
-   txt(t.n+' ('+tvs.filter(v=>v.t===i).length+')',62,y+16,'#ffd400',7);txt('x'+t.sp+' speed  x'+t.c+' coin',62,y+30,'#ccc',6);txt(AB[i],62,y+43,'#7fd',6)}
+   txt(t.n+' ('+tvs.filter(v=>v.t===i).length+')',62,y+12,'#ffd400',7);txt('x'+t.sp+' speed  x'+t.c+' coin',62,y+22,'#ccc',6);wrap(AB[i]||'',24).forEach((l,k)=>txt(l,62,y+32+k*7,'#7fd',5))}
   else{R('#222',12,y+7,44,32);txt('?',34,y+30,'#555',12,'center');txt('???',62,y+16,'#555',7);txt('merge 2 '+T[i-1].n,62,y+32,'#777',6)}});
- txt('tap to close',100,H-8,'#888',6,'center')}
+ txt((dexPage+1)+'/'+pages+'  tap '+(dexPage<pages-1?'for next':'to close'),100,H-8,'#888',6,'center')}
 function render(){
  X.setTransform(3,0,0,3,0,0);X.save();if(shake>0)X.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
  const sc0=sc,tv0=tvs,p0=slideT>0?1-slideT/SLIDE:1,e0=p0*p0*(3-2*p0),passes=slideT>0?[[slideFrom,-slideDir*W*e0],[sc0,slideDir*W*(1-e0)]]:[[sc0,0]];
@@ -181,12 +207,14 @@ function render(){
  X.imageSmoothingEnabled=false;
  {const tvx=slotXY(0).x+44*.7,ps=DEBUG.pedScale/3,fy=DEBUG.pedFeetY;
  people.forEach((p,i)=>{if(i>=crowdN())return;
-  const w=p.stop>0,cx=p.x+4.5,im=ld(w?DEBUG.lookPool[p.c%DEBUG.lookPool.length]:DEBUG.pedPool[p.c%DEBUG.pedPool.length]);
-  if(!imOK(im))return;
-  const fw=w?im.naturalWidth:im.naturalWidth/4,fh=im.naturalHeight,dw=fw*ps,dh=fh*ps,face=w?(cx<=tvx?1:-1):p.d,dx=Math.round((cx-dw/2)*3)/3,dy=Math.round((fy-dh)*3)/3;
-  X.save();if(face<0){X.translate(dx+dw,dy);X.scale(-1,1)}else X.translate(dx,dy);
-  X.drawImage(im,w?0:(Math.floor(p.fr)&3)*fw,0,fw,fh,0,0,dw,dh);X.restore();
-  if(w){const m=dw*.35;txt('!',cx-m,dy+dh*.3,'#ffd400',7,'center');txt('!',cx,dy+dh*.18,'#ffd400',8,'center');txt('!',cx+m,dy+dh*.3,'#ffd400',7,'center')}})}
+  const wi=ld(DEBUG.pedPool[p.c%DEBUG.pedPool.length]),li=ld(DEBUG.lookPool[p.c%DEBUG.lookPool.length]);
+  if(!imOK(wi)||!imOK(li))return;
+  const w=p.stop>0,cx=p.x+4.5,fw=wi.naturalWidth/4,fh=wi.naturalHeight,dw=fw*ps,dh=fh*ps,face=w?(cx<=tvx?1:-1):p.d,ft=DEBUG.pedNormalize?pedFitOf(wi,li):{k:1,wb:fh,wcx:fw/2,lb:li.naturalHeight,lcx:li.naturalWidth/2};
+  X.save();X.translate(Math.round(cx*3)/3,fy);if(face<0)X.scale(-1,1);
+  if(w){const ls=ps*ft.k;X.drawImage(li,0,0,li.naturalWidth,li.naturalHeight,(ft.wcx-fw/2)*ps-ft.lcx*ls,-dh+ft.wb*ps-ft.lb*ls,li.naturalWidth*ls,li.naturalHeight*ls)}
+  else X.drawImage(wi,(Math.floor(p.fr)&3)*fw,0,fw,fh,-dw/2,-dh,dw,dh);
+  X.restore();
+  if(w){const m=dw*.35,t=fy-dh;txt('!',cx-m,t+dh*.3,'#ffd400',7,'center');txt('!',cx,t+dh*.18,'#ffd400',8,'center');txt('!',cx+m,t+dh*.3,'#ffd400',7,'center')}})}
  X.imageSmoothingEnabled=true;
  if(sel){
   R('rgba(0,0,0,.82)',0,0,W,GY);
@@ -204,7 +232,7 @@ function render(){
 }
 C.addEventListener('pointerdown',e=>{
  const r=C.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
- if(dex){dex=false;return}
+ if(dex){if(++dexPage>=Math.ceil(T.length/5)){dex=false;dexPage=0}return}
  if(sel){
   if(x>168&&y<28){sel=null}
   else if(x>10&&x<190&&y>88&&y<222){boost=Math.min(2,boost+.4);sel.flash=sel.flash||0}
@@ -216,7 +244,7 @@ C.addEventListener('pointerdown',e=>{
  for(let i=0;i<tvs.length;i++){const s=slotXY(i);if(x>=s.x&&x<=s.x+88*s.s&&y>=s.y&&y<=s.y+64*s.s){sel=tvs[i];boost=0;sellArm=0;return}}
  closeCard();
 });
-addEventListener('keydown',e=>{if(e.key==='Escape'){sel=null;dex=false}});document.getElementById('idx').onclick=()=>{dex=!dex;sel=null};
+addEventListener('keydown',e=>{if(e.key==='Escape'){sel=null;dex=false;dexPage=0}});document.getElementById('idx').onclick=()=>{dex=!dex;dexPage=0;sel=null};
 /* DEV MENU: toggle with the DEV button or the ` key */
 let simSkip=0;const skip=n=>{for(let k=0;k<n*10;k++)update(.1);simSkip+=n};
 const force=()=>{const o=sel||tvs[0];if(!o)return;o.x=SW-o.w-.01;o.y=SH-o.h-.01;o.dx=1;o.dy=1;o.a=.8};
@@ -226,7 +254,7 @@ const acts=[['+10',()=>coins+=10],['+1K',()=>coins+=1e3],['+100K',()=>coins+=1e5
 acts.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{f();refresh()};DV.appendChild(b)});DV.appendChild(dsel);document.body.appendChild(DV);
 const DB=document.createElement('button');DB.id='devb';DB.textContent='DEV';document.body.appendChild(DB);
 const togDev=()=>{DV.style.display=DV.style.display==='block'?'none':'block'};DB.onclick=togDev;addEventListener('keydown',e=>{if(e.key==='`')togDev()});
-const t00=performance.now();setInterval(()=>{if(DV.style.display!=='block')return;const el=(performance.now()-t00)/1000+simSkip;DS.textContent='bounces '+(window.__b||0)+' | corners '+corners+' | '+((window.__b||0)/el).toFixed(2)+' bounces/s | TVs '+tvs.length+' | shop '+(sc+1)+'/'+shops.length+' | coins '+fmt(coins)},300);
+const t00=performance.now();setInterval(()=>{if(DV.style.display!=='block')return;const el=(performance.now()-t00)/1000+simSkip;DS.textContent='v'+VERSION+' | bounces '+(window.__b||0)+' | corners '+corners+' | '+((window.__b||0)/el).toFixed(2)+' bounces/s | TVs '+tvs.length+' | shop '+(sc+1)+'/'+shops.length+' | coins '+fmt(coins)},300);
 /* SETTINGS */
 const CFG={slide:!RM,nums:true,labels:false,dev:true};
 try{Object.assign(CFG,JSON.parse(localStorage.getItem('tvcfg')||'{}'))}catch(e){}
