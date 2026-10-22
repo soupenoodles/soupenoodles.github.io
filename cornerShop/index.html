@@ -37,8 +37,8 @@ canvas{height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rende
 <div id="col"><div id="top"><div id="coins">0</div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.3';
-const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:['assets/shop0.png','assets/shop1.png','assets/shop2.png','assets/shop3.png'],pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:0.5,pedSpeed:1,pedFps:8,pedFeetY:298};
+const VERSION='1.4';
+const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:12},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:3,pedSpeed:1,pedFps:8,pedFeetY:298};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[{n:'B/W SET',sp:1,c:1,body:'#7a5230',scr:'#1a1c1a'},{n:'COLOR SET',sp:1.25,c:3,body:'#2f5d8c',scr:'#0c1220'},{n:'PLASMA',sp:1.6,c:9,body:'#555b66',scr:'#0a0a14'},{n:'LCD',sp:2,c:27,body:'#2a2f3a',scr:'#061018'},{n:'4K OLED',sp:2.6,c:81,body:'#15151a',scr:'#000'},
 {n:'HOLO',sp:3.5,c:200,body:'#1a3a4a',scr:'#02181e'},/* placeholder: replace with real HOLO values */
@@ -62,7 +62,7 @@ DEBUG.tvConfig=[
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv1 Color */
  {shelf:{y:-2,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv2 Plasma */
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv3 LCD */
- {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv4 4K OLED */
+ {shelf:{y:-1,x:0,scale:1},counter:{y:22,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv4 4K OLED */
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv5 HOLO */
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv6 QUANTUM */
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv7 NEURAL */
@@ -78,15 +78,24 @@ function tvTint(i,sp,color){/* 'color' blend keeps the sprite's shading, destina
  if(!color)return sp;const k=i+'|'+color;if(TVT[k])return TVT[k];
  const c=document.createElement('canvas');c.width=sp.width;c.height=sp.height;const g=c.getContext('2d');
  g.drawImage(sp,0,0);g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(sp,0,0);return TVT[k]=c}
-const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,un:[true]};
-const SHOPS=[{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,sh:[67.7, 110.4, 153.5],sx:100.2,cx:99.2,cy:201.3},
-{n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:15,sh:[76.9, 108.4, 140.3],sx:97.0,cx:86.8,cy:198.3},
-{n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.2,tv:120,sh:[74.2, 107.2, 141.9],sx:98.7,cx:92.4,cy:203.3},
-{n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:1000,sh:[70.2, 111.8, 150.9],sx:99.8,cx:96.0,cy:213.5}];
+const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,lucky:0,magnet:0,showroom:0,un:[true]};
+const SHOPS=[{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,sh:[76,110,145],sx:100.2,cx:99,cy:201},
+{n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:15,sh:[77,109,141],sx:97.0,cx:87,cy:198},
+{n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.2,tv:120,sh:[74,107,142],sx:98.7,cx:92,cy:203},
+{n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:1000,sh:[70,112,151],sx:99.8,cx:96,cy:214},
+/* SHOPS[4..11]: placeholders (slot positions as given; name/colors/k/tv/sx are stand-ins) */
+{n:'1990s',bg:'#15151a',shelf:'#8a5a2b',k:5,tv:3000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2000s',bg:'#15151a',shelf:'#8a5a2b',k:7,tv:9000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2010s',bg:'#15151a',shelf:'#8a5a2b',k:10,tv:27000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2020s',bg:'#15151a',shelf:'#8a5a2b',k:14,tv:81000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2030s',bg:'#15151a',shelf:'#8a5a2b',k:20,tv:243000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2040s',bg:'#15151a',shelf:'#8a5a2b',k:28,tv:729000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2050s',bg:'#15151a',shelf:'#8a5a2b',k:40,tv:2187000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2060s',bg:'#15151a',shelf:'#8a5a2b',k:56,tv:6561000,sh:[76,110,145],sx:100,cx:95,cy:205}];
 SHOPS.forEach(s=>{s.slots=[{x:s.cx-30.8,y:s.cy-44.8,s:.7}];[s.sh[2],s.sh[1],s.sh[0]].forEach(y=>[-38,0,38].forEach(d=>s.slots.push({x:s.sx+d-17.6,y:y-24.6,s:.4})))});
 const IMG=[],shopImg=i=>{const p=DEBUG.shopImages[i];if(!IMG[i]||IMG[i].dataset.p!==p){const im=new Image();im.dataset.p=p;im.src=p;IMG[i]=im}return IMG[i]},IMOK=i=>{const im=shopImg(i);return im.complete&&im.naturalWidth>0};
 const imgCache={},ld=p=>imgCache[p]||(imgCache[p]=Object.assign(new Image(),{src:p})),imOK=im=>im.complete&&im.naturalWidth>0,pedRoll=()=>Math.floor(Math.random()*Math.min(DEBUG.pedPool.length,DEBUG.lookPool.length));
-SHOPS.forEach((s,i)=>shopImg(i));[...DEBUG.pedPool,...DEBUG.lookPool].forEach(ld);
+[...DEBUG.pedPool,...DEBUG.lookPool].forEach(ld);
 /* walk strip is horizontal: frame w = naturalWidth/4, frame h = naturalHeight. Look sprite is scaled so its figure matches the walk figure height (falls back to walk frame height if pixels can't be read) */
 const pedFit={};
 function pedBox(im,x0,w){const h=im.naturalHeight,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(im,x0,0,w,h,0,0,w,h);const d=g.getImageData(0,0,w,h).data;let t=h,b=-1,l=w,r=-1;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>16){if(y<t)t=y;if(y>b)b=y;if(x<l)l=x;if(x>r)r=x}return b<0?null:[t,b+1,l,r+1]}
@@ -97,16 +106,16 @@ function pedFitOf(wi,li){
  try{const bs=[0,1,2,3].map(i=>pedBox(wi,i*fw,fw)).filter(Boolean),lb=pedBox(li,0,lw);
   if(bs.length&&lb)f={k:(Math.max(...bs.map(q=>q[1]))-Math.min(...bs.map(q=>q[0])))/(lb[1]-lb[0]),wb:Math.max(...bs.map(q=>q[1])),wcx:bs.reduce((a,q)=>a+(q[2]+q[3])/2,0)/bs.length,lb:lb[1],lcx:(lb[2]+lb[3])/2}}catch(e){}
  if(Math.abs(f.k-1)<.02)f.k=1;return pedFit[key]=f}
-let dex=false,dexPage=0,coins=0,sel=null,boost=0,shake=0,toast='',toastT=0,floats=[],t0=performance.now(),corners=0;
+let dex=false,dexPage=0,coins=0,displayCoins=0,savedT=0,resetting=false,sel=null,boost=0,shake=0,toast='',toastT=0,floats=[],t0=performance.now(),corners=0;
 const SB=[0,0,.1,.25,.5,1];/* showroom bonus by distinct tiers; 5+ stays at the last value */
-const crowdN=()=>2+S.crowd,showB=()=>SB[Math.min(new Set(tvs.map(v=>v.t)).size,SB.length-1)],AB=['No ability','Corners +25%','Neighbors get 50%','Bigger logo, -25%','Twin logos x3','No ability','Logo splits into 3, x4 corner','Logos heal (never lose speed), x6 corner','Pulls neighbors in, x10 corner, all bounces pay corner rate'],slots=()=>10, mult=()=>1+.25*S.floors;
+const crowdN=()=>2+S.crowd,showB=()=>SB[Math.min(new Set(tvs.map(v=>v.t)).size,SB.length-1)]+(S.showroom||0)*.05,AB=['No ability','Corners +25%','Neighbors get 50%','Bigger logo, -25%','Twin logos x3','No ability','Logo splits into 3, x4 corner','Logos heal (never lose speed), x6 corner','Pulls neighbors in, x10 corner, all bounces pay corner rate'],slots=()=>10, mult=()=>1+.25*S.floors;
 const nbrs=i=>i===0?[1,2,3]:[(i-1)%3>0?i-1:-1,(i-1)%3<2?i+1:-1,i+3<=9?i+3:-1,i>3?i-3:0];
 const wrap=(s,n)=>{const o=[];let l='';s.split(' ').forEach(w=>{if((l+' '+w).trim().length>n){o.push(l);l=w}else l=(l+' '+w).trim()});if(l)o.push(l);return o};
-const mk1=t=>({t,w:t===3?21:14,h:t===3?12:8,x:Math.random()*(SW-(t===3?21:14)),y:Math.random()*(SH-(t===3?12:8)),dx:Math.random()<.5?-1:1,dy:Math.random()<.5?-1:1,a:.5+Math.random()*.5,hue:Math.random()*360,since:0,flash:0,near:0,ct:0});
+const mk1=t=>{const hu=Math.random()*360;return{t,w:t===3?21:14,h:t===3?12:8,x:Math.random()*(SW-(t===3?21:14)),y:Math.random()*(SH-(t===3?12:8)),dx:Math.random()<.5?-1:1,dy:Math.random()<.5?-1:1,a:.5+Math.random()*.5,hue:hu,hueTarget:hu,since:0,flash:0,near:0,ct:0}};
 const mk=t=>{const o=mk1(t);if(t===4){o.twin=mk1(4);o.twin.partner=o;o.partner=o.twin;o.twin.isTwin=true}
  if(t===6){o.cl=[mk1(6),mk1(6)];o.cl.forEach((c,k)=>{c.isTwin=true;c.partner=o;c.x=Math.min(SW-c.w,o.x+4*(k+1));c.y=Math.min(SH-c.h,o.y+4*(k+1))})}return o};
-let tvs=[mk(0)];const shops=[{tvs,fit:0,bought:0}],badge=[false,false,false,false];let sc=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.reduce((a,s)=>a+s.tvs.length,0)<=1)return;if(sellArm<=0){sellArm=2;return}const v=sellVal(sel);coins+=v;tvs.splice(tvs.indexOf(sel),1);shops[sc].tvs=tvs;sel=null;sellArm=0;toast='SOLD +'+fmt(v);toastT=1.8}
-function goShop(k){if(k===sc)return;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false}
+let tvs=[mk(0)];const shops=[{tvs,fit:0,bought:0}],badge=SHOPS.map(()=>false);let sc=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.reduce((a,s)=>a+s.tvs.length,0)<=1)return;if(sellArm<=0){sellArm=2;return}const v=sellVal(sel);coins+=v;tvs.splice(tvs.indexOf(sel),1);shops[sc].tvs=tvs;sel=null;sellArm=0;toast='SOLD +'+fmt(v);toastT=1.8;shake=1}
+function goShop(k){if(k===sc)return;sfx('switch');slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false}
 const people=[...Array(12)].map((_,i)=>({x:i*17,d:i%2?1:-1,stop:0,v:10+Math.random()*8,c:pedRoll(),fr:Math.random()*4}));
 const fmt=n=>n<10?(Math.floor(n*10+1e-6)/10).toFixed(1):n<1e3?''+Math.floor(n):n<1e6?(n/1e3).toFixed(n<1e4?2:1)+'K':(n/1e6).toFixed(2)+'M';
 const pair=()=>{for(let t=0;t<T.length-1;t++){const ix=tvs.map((v,i)=>v.t===t?i:-1).filter(i=>i>=0);if(ix.length>1)return[ix[0],ix[1],t]}return null};
@@ -119,9 +128,13 @@ const U=[
 {ic:'👥',n:'Crowd',s:'More people',d:'More people walk past the shop.',when:()=>S.merges>=1,hint:'Merge two TVs',max:10,lv:()=>S.crowd,cost:()=>c1(4*1.5**S.crowd),buy(){S.crowd++},eff:()=>`${crowdN()} > ${crowdN()+1} passersby`},
 {ic:'👀',n:'Attention',s:'More people stop',d:'More passersby stop to watch a corner.',when:()=>S.crowd>=1,hint:'Upgrade Crowd',max:10,lv:()=>S.stopC,cost:()=>c1(6*1.55**S.stopC),buy(){S.stopC++},eff:()=>`${12+3*S.stopC}% > ${15+3*S.stopC}%`},
 {ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier.',when:()=>S.un[2],hint:'Discover Plasma',max:7,lv:()=>S.start,cost:()=>c1(250*10**S.start),buy(){S.start++},eff:()=>`${T[S.start].n} > ${T[S.start+1].n}`},
-{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',when:()=>shops.length>1||shops.some(s=>s.tvs.length>=5),hint:'Fill 5 TV slots',max:3,lv:()=>shops.length-1,cost:()=>c1(75*8**(shops.length-1)),buy(){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)},eff:()=>`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`}
+{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',when:()=>shops.length>1||shops.some(s=>s.tvs.length>=5),hint:'Fill 5 TV slots',max:3,lv:()=>shops.length-1,cost:()=>c1(75*8**(shops.length-1)),buy(){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)},eff:()=>`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`},
+{ic:'🍀',n:'Lucky',s:'Better corner odds',d:'Widens the corner hit zone by an extra amount per level.',max:10,lv:()=>S.lucky||0,cost:()=>c1(50*1.6**(S.lucky||0)),buy(){S.lucky=(S.lucky||0)+1},eff:()=>`+${((S.lucky||0)*.03).toFixed(2)} > +${(((S.lucky||0)+1)*.03).toFixed(2)} zone`},
+{ic:'🧲',n:'Magnet',s:'Bounces pay more',d:'Each bounce gives extra coins per level.',max:15,lv:()=>S.magnet||0,cost:()=>c1(30*1.4**(S.magnet||0)),buy(){S.magnet=(S.magnet||0)+1},eff:()=>`+${(S.magnet||0)*10}% > +${((S.magnet||0)+1)*10}% bounce`},
+{ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Showroom bonus gets an extra % per level, stacks with tier variety.',max:20,lv:()=>S.showroom||0,cost:()=>c1(100*1.5**(S.showroom||0)),buy(){S.showroom=(S.showroom||0)+1},eff:()=>`+${(S.showroom||0)*5}% > +${((S.showroom||0)+1)*5}% showroom`}
 ];
-const col=document.getElementById('col');
+const col=document.getElementById('col'),coinsEl=document.getElementById('coins');let coinsStr='';
+function coinsHud(){const s=fmt(displayCoins);if(s!==coinsStr){coinsStr=s;coinsEl.textContent=s}}
 const LOCK='<svg width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#777" d="M4 1h8v2H4zM4 1h2v6H4zM10 1h2v6h-2zM2 7h12v8H2z"/><path fill="#2a2a2a" d="M7 10h2v3H7z"/></svg>';
 U.forEach((u,i)=>{const b=document.createElement('button');b.className='u';b.innerHTML='<div class="ic">'+u.ic+'</div><div class="pips"></div><div class="cost"></div><div class="nm">'+u.n+'</div>';b.onclick=()=>{if(lastPT==='mouse'||lastPT==='pen'){const u=U[i];if(status(u)==='aff'){coins-=u.cost();u.buy();refresh()}}else if(cur===i&&!hov)closeCard();else openCard(i)};b.onpointerenter=e=>{if(e.pointerType==='mouse')openCard(i,true)};b.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};u.el=b;col.appendChild(b)});
 let cur=-1,cardTimer=0,hov=false,lastPT='mouse',firstR=true;addEventListener('pointerdown',e=>{lastPT=e.pointerType},true);
@@ -132,7 +145,7 @@ function openCard(i,h){if(!U[i].seen)return;cur=i;hov=!!h;card.classList.add('op
 function closeCard(){cur=-1;card.classList.remove('open');refresh()}
 buyB.onclick=()=>{const u=U[cur];if(!u)return;const s=status(u);if(s!=='aff')return;coins-=u.cost();u.buy();cardTimer=5;refresh()};
 function refresh(){
- document.getElementById('coins').textContent=fmt(coins);
+ coinsHud();for(let i=0;i<=shops.length&&i<SHOPS.length;i++)shopImg(i);
  let tz=false;U.forEach(u=>{if(!u.seen&&(!u.when||u.when())){u.seen=true;if(!firstR){toast='NEW UPGRADE: '+u.n;toastT=3}}const show=u.seen||(!tz&&(tz=true));u.el.style.display=show?'':'none';u.el.children[0].innerHTML=u.seen?u.ic:LOCK;u.el.children[3].textContent=u.seen?u.n:''});firstR=false;
  let best=-1,bc=1e18;
  U.forEach((u,i)=>{if(status(u)==='aff'&&u.cost()<bc){bc=u.cost();best=i}});
@@ -150,23 +163,26 @@ const cn=document.getElementById('cn'),cd=document.getElementById('cd'),ce=docum
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,SC=.62,slotXY=i=>SHOPS[sc].slots[i];
 function bounce(tv,hx,hy,i){
  const LW=tv.w,LH=tv.h,own=tv.isTwin?tv.partner:tv;window.__b=(window.__b||0)+1;
- const T0=T[tv.t],qs=1/(T0.split||1),m=mult()*(1+showB())*T0.c*SHOPS[shopI].k;tv.since++;tv.hue+=47;tv.a=.4+Math.random()*.75;
- const g=(T0.bp||.1)*m*(tv.t===3?.75:1)*qs;coins+=g;
- let win=((.1+.15*S.corner)*(tv===sel?1-.12*boost:1)+tv.since*.003)*(tv.t===3?1.5:1),d=99;
+ const T0=T[tv.t],qs=1/(T0.split||1),m=mult()*(1+showB())*T0.c*SHOPS[shopI].k;tv.since++;tv.hueTarget+=47;tv.a=.4+Math.random()*.75;
+ const g=(T0.bp||.1)*m*(tv.t===3?.75:1)*qs*(1+(S.magnet||0)*.1);coins+=g;
+ let win=((.1+.15*S.corner+(S.lucky||0)*.03)*(tv===sel?1-.12*boost:1)+tv.since*.003)*(tv.t===3?1.5:1),d=99;
  if(hx&&hy)d=0;else if(hx)d=Math.min(tv.y,SH-LH-tv.y);else d=Math.min(tv.x,SW-LW-tv.x);
+ if(d<=win)sfx('corner');else if(shopI===sc)sfx('bounce');
  if(d<=win){
   const cx=tv.x<(SW-LW)/2,cy=tv.y<(SH-LH)/2;tv.x=cx?0:SW-LW;tv.y=cy?0:SH-LH;tv.dx=cx?1:-1;tv.dy=cy?1:-1;
   const w=i===0?people.filter((p,k)=>k<crowdN()&&!p.stop&&Math.random()<.12+.03*S.stopC):[];w.forEach(p=>p.stop=3);
   let pay=1*m*(1+.2*w.length)*(tv.t===1?1.25:1)*(T0.cm||1)*qs,tag='';
   const now=performance.now()/1000;
   if(tv.t===4&&tv.partner.ct&&now-tv.partner.ct<5){pay*=3;tag='DOUBLE ';tv.partner.ct=0}else tv.ct=now;
-  coins+=pay;corners++;tv.since=0;own.flash=1;
+  coins+=pay;corners++;tv.since=0;own.flash=1;if(shopI===sc)shake=3;
   if(tv.t===2){const n=nbrs(i).filter(j=>j>=0&&j<tvs.length).length;if(n){coins+=.5*pay*n;tag='CHAIN x'+n+' '}}
   toast=(shopI!==sc?SHOPS[shopI].n+': ':'')+tag+'CORNER! +'+fmt(pay);toastT=2.2;if(shopI!==sc)badge[shopI]=true;else{const s=slotXY(i);floats.push(sel===own?{x:100,y:84,t:2.2,g:1,s:'+'+fmt(pay)}:{x:s.x+44*s.s,y:s.y+8,t:2.2,g:1,s:'+'+fmt(pay)})}
  }else if(d<Math.max(win*2.5,2)){const q=i===0?people.find((p,k)=>k<crowdN()&&!p.stop):null;if(q&&Math.random()<.15)q.stop=1.5;if(tv===sel){toast='SO CLOSE...';toastT=1}}
  if(i>=0&&tv!==sel&&shopI===sc&&CFG.nums&&!(d<=win)&&floats.length<12){const s=slotXY(i);floats.push({x:s.x+Math.random()*60*s.s,y:s.y+8,t:.8,s:'+'+fmt(g)})}
 }
 function update(dt){
+ const hk=1-Math.pow(.85,dt*60);
+ displayCoins+=(coins-displayCoins)*(1-Math.pow(.9,dt*60));if(Math.abs(coins-displayCoins)<.005)displayCoins=coins;coinsHud();savedT=Math.max(0,savedT-dt);
  boost=Math.max(0,boost-(sel&&T[sel.t].keep?0:.8)*dt);
  const cs=tvs;shops.forEach((sh,si)=>{tvs=sh.tvs;shopI=si;tvs.forEach((par,i)=>{const nbB=Math.max(0,...nbrs(i).filter(j=>j>=0&&j<tvs.length).map(j=>T[tvs[j].t].nb||0));[par,par.twin,...(par.cl||[])].forEach(tv=>{if(!tv)return;const LW=tv.w,LH=tv.h;
   const sp=30*(1+.1*S.speed)*T[tv.t].sp*(1+nbB)*(par===sel?1+boost:1);
@@ -175,7 +191,7 @@ function update(dt){
   if(tv.x<0){tv.x=0;tv.dx=1;hx=1}else if(tv.x>SW-LW){tv.x=SW-LW;tv.dx=-1;hx=1}
   if(tv.y<0){tv.y=0;tv.dy=1;hy=1}else if(tv.y>SH-LH){tv.y=SH-LH;tv.dy=-1;hy=1}
   if(hx||hy)bounce(tv,hx,hy,i);
-  tv.flash=Math.max(0,tv.flash-dt*.4);
+  tv.flash=Math.max(0,tv.flash-dt*.4);tv.hue+=(tv.hueTarget-tv.hue)*hk;
  });});});tvs=cs;
  people.forEach(p=>{if(p.stop>0){p.stop-=dt;if(p.stop<=0)p.stop=0}else{p.x+=p.d*p.v*DEBUG.pedSpeed*dt;p.fr=(p.fr+dt*DEBUG.pedFps)%4;if(p.x>W+10){p.x=-10;p.c=pedRoll()}if(p.x<-10){p.x=W+10;p.c=pedRoll()}}});
  floats.forEach(f=>{f.t-=dt;f.y-=12*dt});floats=floats.filter(f=>f.t>0);
@@ -251,6 +267,7 @@ function render(){
  {const st2='Shop +'+Math.round((SHOPS[sc].k-1)*100)+'%  Showroom +'+Math.round(showB()*100)+'%  Corners: '+corners;txt(st2,5,259,'#000',5);txt(st2,4,258,'#fff',5)}
  floats.forEach(f=>{if(f.g){const a=Math.min(1,f.t);txt(f.s,f.x+1,f.y+1,'rgba(0,0,0,'+a+')',9,'center');txt(f.s,f.x,f.y,'rgba(80,230,110,'+a+')',9,'center')}});
  if(toastT>0){R('rgba(0,0,0,.75)',0,30,W,14);txt(toast,100,41,'#ffd400',7,'center')}
+ if(savedT>0)txt('SAVED',5,12,'rgba(90,230,110,'+Math.min(1,savedT*2)+')',6);
  X.restore();
 }
 C.addEventListener('pointerdown',e=>{
@@ -273,20 +290,50 @@ let simSkip=0;const skip=n=>{for(let k=0;k<n*10;k++)update(.1);simSkip+=n};
 const force=()=>{const o=sel||tvs[0];if(!o)return;o.x=SW-o.w-.01;o.y=SH-o.h-.01;o.dx=1;o.dy=1;o.a=.8};
 const DV=document.createElement('div');DV.id='dev';const DS=document.createElement('div');DV.appendChild(DS);
 const dsel=document.createElement('select');T.forEach((t,i)=>{const o=document.createElement('option');o.value=i;o.textContent=t.n;dsel.appendChild(o)});
-const acts=[['+10',()=>coins+=10],['+1K',()=>coins+=1e3],['+100K',()=>coins+=1e5],['+10M',()=>coins+=1e7],['Skip 1m',()=>skip(60)],['Skip 10m',()=>skip(600)],['Skip 1h',()=>skip(3600)],['Force corner',force],['Unlock tiers',()=>{S.un=T.map(()=>true)}],['Add TV',()=>{const t=+dsel.value;if(tvs.length<slots()){tvs.push(mk(t));shops[sc].tvs=tvs;S.un[t]=true}}],['Free shop',()=>{if(shops.length<4){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)}}]];
+const acts=[['+10',()=>coins+=10],['+1K',()=>coins+=1e3],['+100K',()=>coins+=1e5],['+10M',()=>coins+=1e7],['Skip 1m',()=>skip(60)],['Skip 10m',()=>skip(600)],['Skip 1h',()=>skip(3600)],['Force corner',force],['Unlock tiers',()=>{S.un=T.map(()=>true)}],['Add TV',()=>{const t=+dsel.value;if(tvs.length<slots()){tvs.push(mk(t));shops[sc].tvs=tvs;S.un[t]=true}}],['Free shop',()=>{if(shops.length<4){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)}}],
+['Fill all tiers',()=>{shops.forEach(s=>{s.tvs=T.map((_,t)=>mk(t))});tvs=shops[sc].tvs;sel=null}],['Fill 1 each (current shop)',()=>{shops[sc].tvs=T.map((_,t)=>mk(t));tvs=shops[sc].tvs;sel=null}]];
 acts.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{f();refresh()};DV.appendChild(b)});DV.appendChild(dsel);document.body.appendChild(DV);
 const DB=document.createElement('button');DB.id='devb';DB.textContent='DEV';document.body.appendChild(DB);
 const togDev=()=>{DV.style.display=DV.style.display==='block'?'none':'block'};DB.onclick=togDev;addEventListener('keydown',e=>{if(e.key==='`')togDev()});
 const t00=performance.now();setInterval(()=>{if(DV.style.display!=='block')return;const el=(performance.now()-t00)/1000+simSkip;DS.textContent='v'+VERSION+' | bounces '+(window.__b||0)+' | corners '+corners+' | '+((window.__b||0)/el).toFixed(2)+' bounces/s | TVs '+tvs.length+' | shop '+(sc+1)+'/'+shops.length+' | coins '+fmt(coins)},300);
 /* SETTINGS */
-const CFG={slide:!RM,nums:true,labels:false,dev:true};
+const CFG={slide:!RM,nums:true,labels:false,dev:true,sound:true};
 try{Object.assign(CFG,JSON.parse(localStorage.getItem('tvcfg')||'{}'))}catch(e){}
 function applyCfg(){document.body.classList.toggle('lab',CFG.labels);DB.style.display=CFG.dev?'':'none';try{localStorage.setItem('tvcfg',JSON.stringify(CFG))}catch(e){}}
 const SP=document.createElement('div');SP.id='set';const box=document.createElement('div');box.id='setbox';SP.appendChild(box);
-[['slide','Shop slide effect'],['nums','Bounce numbers'],['labels','Upgrade labels'],['dev','Dev button']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg()};box.appendChild(b)});
-const rb=document.createElement('button');let ra=0;rb.textContent='Restart game';rb.onclick=()=>{if(ra){location.reload()}else{ra=1;rb.textContent='Tap again to restart';setTimeout(()=>{ra=0;rb.textContent='Restart game'},3000)}};box.appendChild(rb);
+[['slide','Shop slide effect'],['nums','Bounce numbers'],['labels','Upgrade labels'],['dev','Dev button'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg()};box.appendChild(b)});
+const rb=document.createElement('button');let ra=0;rb.textContent='Reset game';rb.onclick=()=>{if(ra){resetting=true;try{localStorage.removeItem('cornerShop')}catch(e){}location.reload()}else{ra=1;rb.textContent='Tap again to reset';setTimeout(()=>{ra=0;rb.textContent='Reset game'},3000)}};box.appendChild(rb);
+const DISCORD_URL='[PASTE YOUR DISCORD INVITE URL HERE]';
+const dcb=document.createElement('button');dcb.textContent='🎮 Join Discord';dcb.onclick=()=>{if(/^https?:\/\//.test(DISCORD_URL))window.open(DISCORD_URL,'_blank','noopener')};box.appendChild(dcb);
 const cb=document.createElement('button');cb.textContent='Close';cb.onclick=()=>{SP.style.display='none'};box.appendChild(cb);
 document.body.appendChild(SP);document.getElementById('setb').onclick=()=>{SP.style.display='flex'};applyCfg();
+/* AUDIO: context is created on the first pointerdown/keydown (mobile autoplay policy); missing files are skipped silently */
+const SFX={bounce:{src:'assets/sfx_bounce.wav',vol:.3,max:3},corner:{src:'assets/sfx_corner.wav',vol:.6},switch:{src:'assets/sfx_switch.wav',vol:.4}},AU={ctx:null,buf:{},n:{}};
+function audioInit(){
+ if(AU.ctx){if(AU.ctx.state==='suspended')AU.ctx.resume();return}
+ try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;AU.ctx=new AC();if(AU.ctx.state==='suspended')AU.ctx.resume();
+  Object.keys(SFX).forEach(k=>{fetch(SFX[k].src).then(r=>r.ok?r.arrayBuffer():null).then(b=>b?AU.ctx.decodeAudioData(b):null).then(d=>{if(d)AU.buf[k]=d}).catch(()=>{})})}catch(e){}}
+['pointerdown','keydown'].forEach(ev=>addEventListener(ev,audioInit,true));
+function sfx(k){
+ if(!CFG.sound||!AU.ctx||!AU.buf[k])return;const c=SFX[k];if(c.max&&(AU.n[k]||0)>=c.max)return;
+ try{const s=AU.ctx.createBufferSource(),g=AU.ctx.createGain();s.buffer=AU.buf[k];g.gain.value=c.vol;s.connect(g);g.connect(AU.ctx.destination);AU.n[k]=(AU.n[k]||0)+1;s.onended=()=>{AU.n[k]=Math.max(0,(AU.n[k]||1)-1)};s.start()}catch(e){}}
+/* SAVE / LOAD: localStorage key "cornerShop" */
+function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShop',JSON.stringify({v:VERSION,coins,corners,sc,S,badge,seen:U.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,fit:s.fit}))}))}catch(e){}}
+function loadGame(){
+ let d=null;try{d=JSON.parse(localStorage.getItem('cornerShop')||'null')}catch(e){}
+ if(!d||typeof d!=='object')return;
+ try{
+  const ns=Array.isArray(d.shops)?d.shops.slice(0,SHOPS.length).map(s=>({tvs:(Array.isArray(s.tvs)?s.tvs:[]).slice(0,slots()).map(t=>mk(Math.max(0,Math.min(T.length-1,t|0)))),bought:+s.bought||0,fit:+s.fit||0})):[];
+  if(ns.length){shops.length=0;ns.forEach(s=>shops.push(s))}
+  if(!shops.some(s=>s.tvs.length))shops[0].tvs.push(mk(0));
+  coins=+d.coins||0;corners=+d.corners||0;
+  if(d.S&&typeof d.S==='object'){Object.keys(S).forEach(k=>{if(k!=='un'&&typeof d.S[k]==='number')S[k]=d.S[k]});S.un=Array.isArray(d.S.un)?d.S.un.map(Boolean):[true];S.un[0]=true}
+  sc=Math.max(0,Math.min(shops.length-1,d.sc|0));tvs=shops[sc].tvs;
+  if(Array.isArray(d.badge))d.badge.forEach((b,i)=>{if(i<badge.length)badge[i]=!!b});
+  if(Array.isArray(d.seen))d.seen.forEach((v,i)=>{if(v&&U[i])U[i].seen=true});
+  displayCoins=coins}catch(e){}}
+loadGame();
+setInterval(()=>{saveGame();savedT=1},30000);addEventListener('beforeunload',saveGame);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame()});
 let acc=0;setInterval(refresh,200);
 (function loop(n){const dt=Math.min(.1,(n-t0)/1000);t0=n;update(dt);render();requestAnimationFrame(loop)})(performance.now());
 refresh();
