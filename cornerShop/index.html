@@ -347,6 +347,30 @@ const utBtn=document.createElement('button');utBtn.textContent='Upgrade total';u
   let total=0;grind.forEach(([i,base,mult,max])=>{for(let l=0;l<max;l++)total+=c1(base*mult**l)});
   console.log('Total grind upgrade cost: '+fmt(total));
   alert('Total grind upgrade cost: '+fmt(total)+'\n→ Set next shop tv to ~'+fmt(total*1.2));
+ const autoBtn=document.createElement('button');autoBtn.textContent='Auto Report (10s)';autoBtn.onclick=()=>{
+  autoBtn.textContent='Waiting...';
+  setTimeout(()=>{
+    autoBtn.textContent='Auto Report (10s)';
+    const next=SHOPS[sc+1],vis=U.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0;
+    const grind=[[0,1,1.55,20],[2,3,1.65,15],[3,6,1.5,15],[4,4,1.65,10],[5,6,1.7,10],[8,50,1.8,10],[9,30,1.6,15],[10,100,1.7,20]];
+    let ut=0;grind.forEach(([i,base,mult,max])=>{for(let l=0;l<max;l++)ut+=c1(base*mult**l)});
+    const L=[
+      'CPS: '+fmt(cps)+'/s',
+      next?('Next shop: '+fmt(next.tv)+' | '+(cps>0?(next.tv/cps/60).toFixed(1):'∞')+' min (target 10-15)'):'Next shop: N/A',
+      'Fill 1 slot: '+fmt(SHOPS[sc].tv)+' | '+(cps>0?(SHOPS[sc].tv/cps/60).toFixed(1):'∞')+' min',
+      cheapest?('Cheapest upgrade: '+fmt(cheapest)+' | '+(cps>0?(cheapest/cps/60).toFixed(1):'∞')+' min'):'No upgrades',
+      lastBounceVal?('Last bounce: '+fmt(lastBounceVal)):'Last bounce: —',
+      lastCornerVal?('Last corner: '+fmt(lastCornerVal)):'Last corner: —',
+      (lastBounceVal&&lastCornerVal)?('Ratio: '+(lastCornerVal/lastBounceVal).toFixed(1)+'x (target 5-10x)'):'',
+      'TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Showroom: +'+Math.round(showB()*100)+'%',
+      '',
+      'Upgrade total (grind): '+fmt(ut),
+      '→ Suggested next shop tv: '+fmt(ut*1.2),
+    ].filter(l=>l!==''||true);
+    console.log('\n=== AUTO BALANCE REPORT (10s) ===\n'+L.join('\n')+'\n========================================\n');
+    alert(L.join('\n'));
+  },10000);
+};DV.appendChild(autoBtn);   
 };DV.appendChild(utBtn);
 DV.appendChild(dsel);   DV.appendChild(dsel);
  
