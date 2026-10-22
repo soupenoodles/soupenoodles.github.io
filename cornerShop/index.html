@@ -387,7 +387,7 @@ setInterval(()=>{saveGame();savedT=1},30000);addEventListener('beforeunload',sav
 let acc=0;setInterval(refresh,200);
 let t0=performance.now(); 
 let savedT=0,resetting=false;
-let tabT=0,boost=0,sel=null,corners=0,shake=0,pulseT=0,pulseOn=false,floats=[],toast='',toastT=0,savedT=0,resetting=false;
+let tabT=0,boost=0,sel=null,corners=0,shake=0,pulseT=0,pulseOn=false,floats=[],toast='',toastT=0;
 (function loop(n){const dt=Math.min(.1,(n-t0)/1000);t0=n;update(dt);render();requestAnimationFrame(loop)})(performance.now());
 refresh();
 </script></body></html>
