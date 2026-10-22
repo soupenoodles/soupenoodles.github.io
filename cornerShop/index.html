@@ -385,7 +385,8 @@ function loadGame(){
 loadGame();U[0].seen=U[1].seen=true;
 setInterval(()=>{saveGame();savedT=1},30000);addEventListener('beforeunload',saveGame);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame()});
 let acc=0;setInterval(refresh,200);
-let t0=performance.now();
+let t0=performance.now(); 
+let savedT=0,resetting=false;
 (function loop(n){const dt=Math.min(.1,(n-t0)/1000);t0=n;update(dt);render();requestAnimationFrame(loop)})(performance.now());
 refresh();
 </script></body></html>
