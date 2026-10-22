@@ -213,8 +213,7 @@ const CF0={shelf:{x:0,y:0,scale:1},counter:{x:0,y:0,scale:1},color:null,alpha:1,
 /* slot: 0 = counter, 1-9 = shelf, -1 = no slot (focus view, TV Index): position/scale offsets skipped */
 function drawTV(tv,ox,oy,s,hl,slot=-1){
  const cf=DEBUG.tvConfig[tv.t]||CF0,o=slot<0?OFF0:slot===0?cf.counter:cf.shelf;
-X.save();X.globalAlpha=cf.alpha;const so=slot>=0?(DEBUG.shopOffsets[sc]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}):{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]};const sr=slot>=1&&slot<=9?Math.floor((slot-1)/3):-1;X.translate(ox+44*s+o.x+(sr>=0?so.shelfX[sr]:0),oy+32*s+o.y+(slot===0?so.counterY:sr>=0?so.shelfY[sr]:0));X.scale(s*o.scale,s*o.scale);X.translate(-44,-32);const col=tv.t===0?'hsl(0,0%,'+(60+30*Math.sin(tv.hue/20))+'%)':'hsl('+tv.hue+',90%,60%)';
- const lg=(dx,dy)=>[tv,tv.twin,...(tv.cl||[])].forEach(o=>{if(!o)return;const c=tv.t===0?col:'hsl('+o.hue+',90%,60%)';R(c,dx+o.x,dy+o.y,LW0,LH0);R('rgba(0,0,0,.55)',dx+o.x+3,dy+o.y+2,2,LH0>10?6:4);R('rgba(0,0,0,.55)',dx+o.x+8,dy+o.y+2,2,LH0>10?6:4)});
+X.save();X.globalAlpha=cf.alpha;const so=slot>=0?(DEBUG.shopOffsets[sc]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}):{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]};const sr=slot>=1&&slot<=9?Math.floor((slot-1)/3):-1;X.translate(ox+44*s+o.x+(sr>=0?so.shelfX[sr]:0),oy+32*s+o.y+(slot===0?so.counterY:sr>=0?so.shelfY[sr]:0));X.scale(s*o.scale,s*o.scale);X.translate(-44,-32);const T0=T[tv.t],sp=tvSprite(tv.t),LW0=tv.w||14,LH0=tv.h||8,scr=cf.screenColor||T0.scr;    const lg=(dx,dy)=>[tv,tv.twin,...(tv.cl||[])].forEach(o=>{if(!o)return;const c=tv.t===0?col:'hsl('+o.hue+',90%,60%)';R(c,dx+o.x,dy+o.y,LW0,LH0);R('rgba(0,0,0,.55)',dx+o.x+3,dy+o.y+2,2,LH0>10?6:4);R('rgba(0,0,0,.55)',dx+o.x+8,dy+o.y+2,2,LH0>10?6:4)});
  if(sp){
   const r=DEBUG.tvRect[tv.t]||[44,38,382,251],kx=88/480,ky=64/350;
   X.drawImage(tvTint(tv.t,sp,cf.color),0,0,88,64);
