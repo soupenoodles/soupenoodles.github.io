@@ -321,6 +321,9 @@ const soReset=document.createElement('button');soReset.textContent='Reset offset
 const soLoad=document.createElement('button');soLoad.textContent='Load from game';soLoad.onclick=()=>{const i=+soShop.value;const so=DEBUG.shopOffsets[i];soInputs[0].value=so.counterY;soInputs[1].value=so.shelfY[0];soInputs[2].value=so.shelfY[1];soInputs[3].value=so.shelfY[2];soInputs[4].value=so.shelfX[0];soInputs[5].value=so.shelfX[1];soInputs[6].value=so.shelfX[2]};
 DV.appendChild(soShop);DV.appendChild(soApply);DV.appendChild(soReset);DV.appendChild(soLoad);
 
+const soPrint=document.createElement('button');soPrint.textContent='Print offsets';soPrint.onclick=()=>{let out='DEBUG.shopOffsets=';out+=JSON.stringify(DEBUG.shopOffsets);console.log(out);console.log('--- COPY FROM HERE ---\n'+out+'\n--- TO HERE ---')};
+const soCopy=document.createElement('button');soCopy.textContent='Copy to clipboard';soCopy.onclick=()=>{const txt='DEBUG.shopOffsets='+JSON.stringify(DEBUG.shopOffsets);navigator.clipboard.writeText(txt).then(()=>{soCopy.textContent='Copied!';setTimeout(()=>soCopy.textContent='Copy to clipboard',1500)}).catch(()=>console.log(txt))};
+DV.appendChild(soPrint);DV.appendChild(soCopy);   
 const DB=document.createElement('button');DB.id='devb';DB.textContent='DEV';document.body.appendChild(DB);
 const togDev=()=>{DV.style.display=DV.style.display==='block'?'none':'block'};DB.onclick=togDev;addEventListener('keydown',e=>{if(e.key==='`')togDev()});
 const t00=performance.now();setInterval(()=>{if(DV.style.display!=='block')return;const el=(performance.now()-t00)/1000+simSkip;DS.textContent='v'+VERSION+' | bounces '+(window.__b||0)+' | corners '+corners+' | '+((window.__b||0)/el).toFixed(2)+' bounces/s | TVs '+tvs.length+' | shop '+(sc+1)+'/'+shops.length+' | coins '+fmt(coins)},300);
