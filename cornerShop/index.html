@@ -37,7 +37,7 @@ canvas{height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rende
 <div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.5.1';
+const VERSION='1.5.2';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:12},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],shopOffsets:[{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}]};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[{n:'B/W SET',sp:1,c:1,body:'#7a5230',scr:'#1a1c1a'},{n:'COLOR SET',sp:1.25,c:3,body:'#2f5d8c',scr:'#0c1220'},{n:'PLASMA',sp:1.6,c:9,body:'#555b66',scr:'#0a0a14'},{n:'LCD',sp:2,c:27,body:'#2a2f3a',scr:'#061018'},{n:'4K OLED',sp:2.6,c:81,body:'#15151a',scr:'#000'},
@@ -117,7 +117,7 @@ const mk=t=>{const o=mk1(t);if(t===4){o.twin=mk1(4);o.twin.partner=o;o.partner=o
 let tvs=[mk(0)];const shops=[{tvs,fit:0,bought:0}],badge=SHOPS.map(()=>false);let sc=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.reduce((a,s)=>a+s.tvs.length,0)<=1)return;if(sellArm<=0){sellArm=2;return}const v=sellVal(sel);coins+=v;tvs.splice(tvs.indexOf(sel),1);shops[sc].tvs=tvs;sel=null;sellArm=0;toast='SOLD +'+fmt(v);toastT=1.8;shake=1}
 function goShop(k){if(k===sc)return;sfx('switch');tabT=.2;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false}
 const people=[...Array(12)].map((_,i)=>({x:i*17,d:i%2?1:-1,stop:0,v:10+Math.random()*8,c:pedRoll(),fr:Math.random()*4}));
-const fmt=n=>n<10?(Math.floor(n*10+1e-6)/10).toFixed(1):n<1e3?''+Math.floor(n):n<1e6?(n/1e3).toFixed(n<1e4?2:1)+'K':(n/1e6).toFixed(2)+'M';
+const fmt=n=>n<10?(Math.floor(n*10+1e-6)/10).toFixed(1):n<1e3?''+Math.floor(n):n<1e6?(n/1e3).toFixed(n<1e4?2:1)+'K':n<1e9?(n/1e6).toFixed(2)+'M':n<1e12?(n/1e9).toFixed(2)+'B':(n/1e12).toFixed(2)+'T';   
 const pair=()=>{for(let t=0;t<T.length-1;t++){const ix=tvs.map((v,i)=>v.t===t?i:-1).filter(i=>i>=0);if(ix.length>1)return[ix[0],ix[1],t]}return null};
 const c1=x=>x<10?Math.round(x*10)/10:Math.round(x),sumBuys=()=>shops.reduce((a,s)=>a+s.bought,0);
 const U=[
