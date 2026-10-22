@@ -40,11 +40,18 @@ canvas{height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rende
 const VERSION='1.5.5 shop4';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:12},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:[{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}]};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
-const T=[{n:'B/W SET',sp:1,c:1,body:'#7a5230',scr:'#1a1c1a'},{n:'COLOR SET',sp:1.25,c:3,body:'#2f5d8c',scr:'#0c1220'},{n:'PLASMA',sp:1.6,c:9,body:'#555b66',scr:'#0a0a14'},{n:'LCD',sp:2,c:27,body:'#2a2f3a',scr:'#061018'},{n:'4K OLED',sp:2.6,c:81,body:'#15151a',scr:'#000'},
+const T=[
+{n:'B/W SET',sp:1,c:1,body:'#7a5230',scr:'#1a1c1a'},{n:'COLOR SET',sp:1.25,c:3,body:'#2f5d8c',scr:'#0c1220'},{n:'PLASMA',sp:1.6,c:9,body:'#555b66',scr:'#0a0a14'},{n:'LCD',sp:2,c:27,body:'#2a2f3a',scr:'#061018'},{n:'4K OLED',sp:2.6,c:81,body:'#15151a',scr:'#000'},
 {n:'HOLO',sp:3.5,c:200,body:'#1a3a4a',scr:'#02181e'},/* placeholder: replace with real HOLO values */
 {n:'QUANTUM',sp:5,c:600,body:'#e0e0ff',scr:'#1a0030',cm:4,split:3},
 {n:'NEURAL',sp:7,c:1500,body:'#1a0a2a',scr:'#2a0030',cm:6,keep:1},
-{n:'SINGULARITY',sp:10,c:4000,body:'#0a0a0a',scr:'#000',cm:10,bp:1,nb:.5}];
+{n:'SINGULARITY',sp:10,c:4000,body:'#0a0a0a',scr:'#000',cm:10,bp:1,nb:.5},
+{n:'MILITARY',sp:14,c:10000,body:'#2a3a2a',scr:'#0a1a0a'},
+{n:'BROKEN',sp:18,c:25000,body:'#3a3a3a',scr:'#1a0a0a'},
+{n:'ORGANIC',sp:24,c:60000,body:'#1a3a1a',scr:'#0a1a0a'},
+{n:'XENO',sp:32,c:150000,body:'#2a1a3a',scr:'#0a001a'},
+{n:'OMNI',sp:50,c:400000,body:'#ffffff',scr:'#000'}
+];
 const TVI=T.map((t,i)=>{const im=new Image();im.src='assets/tv'+i+'.png';return im}),TVC=[];/* missing tvN.png falls back to the code-drawn TV */
 DEBUG.tvRect=[
  [42,47,330,240],/* tv0 */
@@ -56,6 +63,11 @@ DEBUG.tvRect=[
  [85,55,310,230],/* tv6 */
  [55,45,370,255],/* tv7 */
  [55,45,370,255]/* tv8 */
+ [55,45,370,255]/* tv9 */
+ [55,45,370,255],/* tv10 BROKEN */
+ [55,45,370,255],/* tv11 ORGANIC */
+ [55,45,370,255],/* tv12 XENO */
+ [55,45,370,255]/* tv13 OMNI */
 ];
 DEBUG.tvConfig=[
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv0 B/W */
@@ -67,6 +79,11 @@ DEBUG.tvConfig=[
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv6 QUANTUM */
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv7 NEURAL */
  {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null}/* tv8 SINGULARITY */
+ {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null}/* tv9 MILITARY */   
+ {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv10 */
+{shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv11 */
+{shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv12 */
+{shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null}/* tv13 */
 ];console.info('Corner Shop v'+VERSION);
 function tvSprite(i){
  if(TVC[i])return TVC[i];const im=TVI[i];if(!im.complete||!im.naturalWidth)return null;
@@ -79,13 +96,14 @@ function tvTint(i,sp,color){/* 'color' blend keeps the sprite's shading, destina
  const c=document.createElement('canvas');c.width=sp.width;c.height=sp.height;const g=c.getContext('2d');
  g.drawImage(sp,0,0);g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(sp,0,0);return TVT[k]=c}
 const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,lucky:0,magnet:0,showroom:0,pricetag:0,restock:0,un:[true]};
-const SHOPS=[{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,sh:[76,110,145],sx:100.2,cx:99,cy:201},
+const SHOPS=[
+{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,sh:[76,110,145],sx:100.2,cx:99,cy:201},
 {n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:400000,sh:[77,109,141],sx:97.0,cx:87,cy:198},
 {n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.2,tv:40000000,sh:[74,107,142],sx:98.7,cx:92,cy:203},
 {n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:200000000,sh:[70,112,151],sx:99.8,cx:96,cy:214},
 /* SHOPS[4..11]: placeholders (slot positions as given; name/colors/k/sx are stand-ins) */
 {n:'1990s',bg:'#15151a',shelf:'#8a5a2b',k:5,tv:15000000000,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2000s',bg:'#15151a',shelf:'#8a5a2b',k:7,tv:750000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2000s',bg:'#15151a',shelf:'#8a5a2b',k:7,tv:25000000000,sh:[76,110,145],sx:100,cx:95,cy:205},
 {n:'2010s',bg:'#15151a',shelf:'#8a5a2b',k:10,tv:11000000,sh:[76,110,145],sx:100,cx:95,cy:205},
 {n:'2020s',bg:'#15151a',shelf:'#8a5a2b',k:14,tv:165000000,sh:[76,110,145],sx:100,cx:95,cy:205},
 {n:'2030s',bg:'#15151a',shelf:'#8a5a2b',k:20,tv:2500000000,sh:[76,110,145],sx:100,cx:95,cy:205},
