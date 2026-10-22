@@ -80,7 +80,7 @@ function tvTint(i,sp,color){/* 'color' blend keeps the sprite's shading, destina
  g.drawImage(sp,0,0);g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(sp,0,0);return TVT[k]=c}
 const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,lucky:0,magnet:0,showroom:0,pricetag:0,restock:0,un:[true]};
 const SHOPS=[{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,sh:[76,110,145],sx:100.2,cx:99,cy:201},
-{n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:20,sh:[77,109,141],sx:97.0,cx:87,cy:198},
+{n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:400000,sh:[77,109,141],sx:97.0,cx:87,cy:198},
 {n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.2,tv:250,sh:[74,107,142],sx:98.7,cx:92,cy:203},
 {n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:3500,sh:[70,112,151],sx:99.8,cx:96,cy:214},
 /* SHOPS[4..11]: placeholders (slot positions as given; name/colors/k/sx are stand-ins) */
