@@ -38,7 +38,7 @@ canvas{height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rende
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
 const VERSION='1.4';
-const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:12},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:3,pedSpeed:1,pedFps:8,pedFeetY:298};
+const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:12},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[{n:'B/W SET',sp:1,c:1,body:'#7a5230',scr:'#1a1c1a'},{n:'COLOR SET',sp:1.25,c:3,body:'#2f5d8c',scr:'#0c1220'},{n:'PLASMA',sp:1.6,c:9,body:'#555b66',scr:'#0a0a14'},{n:'LCD',sp:2,c:27,body:'#2a2f3a',scr:'#061018'},{n:'4K OLED',sp:2.6,c:81,body:'#15151a',scr:'#000'},
 {n:'HOLO',sp:3.5,c:200,body:'#1a3a4a',scr:'#02181e'},/* placeholder: replace with real HOLO values */
@@ -78,20 +78,20 @@ function tvTint(i,sp,color){/* 'color' blend keeps the sprite's shading, destina
  if(!color)return sp;const k=i+'|'+color;if(TVT[k])return TVT[k];
  const c=document.createElement('canvas');c.width=sp.width;c.height=sp.height;const g=c.getContext('2d');
  g.drawImage(sp,0,0);g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(sp,0,0);return TVT[k]=c}
-const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,lucky:0,magnet:0,showroom:0,un:[true]};
+const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,lucky:0,magnet:0,showroom:0,pricetag:0,restock:0,un:[true]};
 const SHOPS=[{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,sh:[76,110,145],sx:100.2,cx:99,cy:201},
-{n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:15,sh:[77,109,141],sx:97.0,cx:87,cy:198},
-{n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.2,tv:120,sh:[74,107,142],sx:98.7,cx:92,cy:203},
-{n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:1000,sh:[70,112,151],sx:99.8,cx:96,cy:214},
-/* SHOPS[4..11]: placeholders (slot positions as given; name/colors/k/tv/sx are stand-ins) */
-{n:'1990s',bg:'#15151a',shelf:'#8a5a2b',k:5,tv:3000,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2000s',bg:'#15151a',shelf:'#8a5a2b',k:7,tv:9000,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2010s',bg:'#15151a',shelf:'#8a5a2b',k:10,tv:27000,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2020s',bg:'#15151a',shelf:'#8a5a2b',k:14,tv:81000,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2030s',bg:'#15151a',shelf:'#8a5a2b',k:20,tv:243000,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2040s',bg:'#15151a',shelf:'#8a5a2b',k:28,tv:729000,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2050s',bg:'#15151a',shelf:'#8a5a2b',k:40,tv:2187000,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2060s',bg:'#15151a',shelf:'#8a5a2b',k:56,tv:6561000,sh:[76,110,145],sx:100,cx:95,cy:205}];
+{n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:20,sh:[77,109,141],sx:97.0,cx:87,cy:198},
+{n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.2,tv:250,sh:[74,107,142],sx:98.7,cx:92,cy:203},
+{n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:3500,sh:[70,112,151],sx:99.8,cx:96,cy:214},
+/* SHOPS[4..11]: placeholders (slot positions as given; name/colors/k/sx are stand-ins) */
+{n:'1990s',bg:'#15151a',shelf:'#8a5a2b',k:5,tv:50000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2000s',bg:'#15151a',shelf:'#8a5a2b',k:7,tv:750000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2010s',bg:'#15151a',shelf:'#8a5a2b',k:10,tv:11000000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2020s',bg:'#15151a',shelf:'#8a5a2b',k:14,tv:165000000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2030s',bg:'#15151a',shelf:'#8a5a2b',k:20,tv:2500000000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2040s',bg:'#15151a',shelf:'#8a5a2b',k:28,tv:37000000000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2050s',bg:'#15151a',shelf:'#8a5a2b',k:40,tv:550000000000,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2060s',bg:'#15151a',shelf:'#8a5a2b',k:56,tv:8000000000000,sh:[76,110,145],sx:100,cx:95,cy:205}];
 SHOPS.forEach(s=>{s.slots=[{x:s.cx-30.8,y:s.cy-44.8,s:.7}];[s.sh[2],s.sh[1],s.sh[0]].forEach(y=>[-38,0,38].forEach(d=>s.slots.push({x:s.sx+d-17.6,y:y-24.6,s:.4})))});
 const IMG=[],shopImg=i=>{const p=DEBUG.shopImages[i];if(!IMG[i]||IMG[i].dataset.p!==p){const im=new Image();im.dataset.p=p;im.src=p;IMG[i]=im}return IMG[i]},IMOK=i=>{const im=shopImg(i);return im.complete&&im.naturalWidth>0};
 const imgCache={},ld=p=>imgCache[p]||(imgCache[p]=Object.assign(new Image(),{src:p})),imOK=im=>im.complete&&im.naturalWidth>0,pedRoll=()=>Math.floor(Math.random()*Math.min(DEBUG.pedPool.length,DEBUG.lookPool.length));
@@ -121,17 +121,19 @@ const fmt=n=>n<10?(Math.floor(n*10+1e-6)/10).toFixed(1):n<1e3?''+Math.floor(n):n
 const pair=()=>{for(let t=0;t<T.length-1;t++){const ix=tvs.map((v,i)=>v.t===t?i:-1).filter(i=>i>=0);if(ix.length>1)return[ix[0],ix[1],t]}return null};
 const c1=x=>x<10?Math.round(x*10)/10:Math.round(x),sumBuys=()=>shops.reduce((a,s)=>a+s.bought,0);
 const U=[
-{ic:'⚡',n:'Speed',s:'Logos go faster',d:'Logos move faster: more bounces, more coins.',max:20,lv:()=>S.speed,cost:()=>c1(1*1.38**S.speed),buy(){S.speed++},eff:()=>`+${10*S.speed}% > +${10*S.speed+10}%`},
-{ic:'📺',n:'Buy TV',s:'Add a TV here',d:'Adds a TV to a free slot.',max:()=>slots(),lv:()=>tvs.length,cost:()=>c1(SHOPS[sc].tv*1.45**shops[sc].bought),can:()=>tvs.length<slots()?'':'No free slot',buy(){const t=S.start;tvs.push(mk(t));shops[sc].bought++;shops[sc].tvs=tvs;if(!S.un[t]){S.un[t]=true;toast='NEW TV: '+T[t].n+'!';toastT=3}},eff:()=>`${tvs.length} > ${tvs.length+1} TVs`},
-{ic:'◎',n:'Corner zone',s:'Easier corners',d:'Wider zone counts as a corner hit.',when:()=>corners>=1,hint:'Hit a corner',max:15,lv:()=>S.corner,cost:()=>c1(3*1.5**S.corner),buy(){S.corner++},eff:()=>`${(.1+.15*S.corner).toFixed(2)}px > ${(.25+.15*S.corner).toFixed(2)}px`},
-{ic:'⇄',n:'Merge',s:'Fuse a pair',d:'Fuse two matching TVs into the next tier.',when:()=>sumBuys()>=2,hint:'Buy 2 TVs',lv:()=>0,cost:()=>c1(6*1.3**S.merges),can:()=>pair()?'':'Need 2 same TVs',buy(){const[a,b,t]=pair();tvs=tvs.filter((_,i)=>i!==a&&i!==b);tvs.splice(a,0,mk(t+1));sel=null;shops[sc].tvs=tvs;S.merges++;if(!S.un[t+1]){S.un[t+1]=true;toast='NEW TV: '+T[t+1].n+'!';toastT=3}},eff:()=>{const p=pair();return p?T[p[2]].n+' > '+T[p[2]+1].n:'-'}},
-{ic:'👥',n:'Crowd',s:'More people',d:'More people walk past the shop.',when:()=>S.merges>=1,hint:'Merge two TVs',max:10,lv:()=>S.crowd,cost:()=>c1(4*1.5**S.crowd),buy(){S.crowd++},eff:()=>`${crowdN()} > ${crowdN()+1} passersby`},
-{ic:'👀',n:'Attention',s:'More people stop',d:'More passersby stop to watch a corner.',when:()=>S.crowd>=1,hint:'Upgrade Crowd',max:10,lv:()=>S.stopC,cost:()=>c1(6*1.55**S.stopC),buy(){S.stopC++},eff:()=>`${12+3*S.stopC}% > ${15+3*S.stopC}%`},
-{ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier.',when:()=>S.un[2],hint:'Discover Plasma',max:7,lv:()=>S.start,cost:()=>c1(250*10**S.start),buy(){S.start++},eff:()=>`${T[S.start].n} > ${T[S.start+1].n}`},
-{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',when:()=>shops.length>1||shops.some(s=>s.tvs.length>=5),hint:'Fill 5 TV slots',max:3,lv:()=>shops.length-1,cost:()=>c1(75*8**(shops.length-1)),buy(){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)},eff:()=>`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`},
-{ic:'🍀',n:'Lucky',s:'Better corner odds',d:'Widens the corner hit zone by an extra amount per level.',max:10,lv:()=>S.lucky||0,cost:()=>c1(50*1.6**(S.lucky||0)),buy(){S.lucky=(S.lucky||0)+1},eff:()=>`+${((S.lucky||0)*.03).toFixed(2)} > +${(((S.lucky||0)+1)*.03).toFixed(2)} zone`},
-{ic:'🧲',n:'Magnet',s:'Bounces pay more',d:'Each bounce gives extra coins per level.',max:15,lv:()=>S.magnet||0,cost:()=>c1(30*1.4**(S.magnet||0)),buy(){S.magnet=(S.magnet||0)+1},eff:()=>`+${(S.magnet||0)*10}% > +${((S.magnet||0)+1)*10}% bounce`},
-{ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Showroom bonus gets an extra % per level, stacks with tier variety.',max:20,lv:()=>S.showroom||0,cost:()=>c1(100*1.5**(S.showroom||0)),buy(){S.showroom=(S.showroom||0)+1},eff:()=>`+${(S.showroom||0)*5}% > +${((S.showroom||0)+1)*5}% showroom`}
+{ic:'⚡',n:'Speed',s:'Logos go faster',d:'Logos move faster: more bounces, more coins.',max:20,lv:()=>S.speed,cost:()=>c1(1*1.55**S.speed),buy(){S.speed++},eff:()=>`+${10*S.speed}% > +${10*S.speed+10}%`},
+{ic:'📺',n:'Buy TV',s:'Add a TV here',d:'Adds a TV to a free slot.',max:()=>slots(),lv:()=>tvs.length,cost:()=>c1(SHOPS[sc].tv*1.7**shops[sc].bought*(1+(S.restock||0)*.15)),can:()=>tvs.length<slots()?'':'No free slot',buy(){const t=S.start;tvs.push(mk(t));shops[sc].bought++;shops[sc].tvs=tvs;if(!S.un[t]){S.un[t]=true;toast='NEW TV: '+T[t].n+'!';toastT=3}},eff:()=>`${tvs.length} > ${tvs.length+1} TVs`},
+{ic:'◎',n:'Corner zone',s:'Easier corners',d:'Wider zone counts as a corner hit.',when:()=>corners>=1,hint:'Hit a corner',max:15,lv:()=>S.corner,cost:()=>c1(3*1.65**S.corner),buy(){S.corner++},eff:()=>`${(.1+.15*S.corner).toFixed(2)}px > ${(.25+.15*S.corner).toFixed(2)}px`},
+{ic:'⇄',n:'Merge',s:'Fuse a pair',d:'Fuse two matching TVs into the next tier.',when:()=>sumBuys()>=2,hint:'Buy 2 TVs',lv:()=>0,cost:()=>c1(6*1.5**S.merges),can:()=>pair()?'':'Need 2 same TVs',buy(){const[a,b,t]=pair();tvs=tvs.filter((_,i)=>i!==a&&i!==b);tvs.splice(a,0,mk(t+1));sel=null;shops[sc].tvs=tvs;S.merges++;if(!S.un[t+1]){S.un[t+1]=true;toast='NEW TV: '+T[t+1].n+'!';toastT=3}},eff:()=>{const p=pair();return p?T[p[2]].n+' > '+T[p[2]+1].n:'-'}},
+{ic:'👥',n:'Crowd',s:'More people',d:'More people walk past the shop.',when:()=>S.merges>=1,hint:'Merge two TVs',max:10,lv:()=>S.crowd,cost:()=>c1(4*1.65**S.crowd),buy(){S.crowd++},eff:()=>`${crowdN()} > ${crowdN()+1} passersby`},
+{ic:'👀',n:'Attention',s:'More people stop',d:'More passersby stop to watch a corner.',when:()=>S.crowd>=1,hint:'Upgrade Crowd',max:10,lv:()=>S.stopC,cost:()=>c1(6*1.7**S.stopC),buy(){S.stopC++},eff:()=>`${12+3*S.stopC}% > ${15+3*S.stopC}%`},
+{ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier.',when:()=>S.un[2],hint:'Discover Plasma',max:7,lv:()=>S.start,cost:()=>c1(250*15**S.start),buy(){S.start++},eff:()=>`${T[S.start].n} > ${T[S.start+1].n}`},
+{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',when:()=>shops.length>1||shops.some(s=>s.tvs.length>=5),hint:'Fill 5 TV slots',max:11,lv:()=>shops.length-1,cost:()=>c1(75*12**(shops.length-1)*(1+(S.pricetag||0)*.2)),buy(){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)},eff:()=>`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`},
+{ic:'🍀',n:'Lucky',s:'Better corner odds',d:'Widens the corner hit zone per level.',when:()=>S.merges>=3,hint:'Merge 3 TVs',max:10,lv:()=>S.lucky||0,cost:()=>c1(50*1.8**(S.lucky||0)),buy(){S.lucky=(S.lucky||0)+1},eff:()=>`+${(S.lucky||0)*3}% > +${((S.lucky||0)+1)*3}% zone`},
+{ic:'🧲',n:'Magnet',s:'Bounces pay more',d:'Each bounce gives extra coins per level.',when:()=>corners>=1,hint:'Hit a corner',max:15,lv:()=>S.magnet||0,cost:()=>c1(30*1.6**(S.magnet||0)),buy(){S.magnet=(S.magnet||0)+1},eff:()=>`+${(S.magnet||0)*10}% > +${((S.magnet||0)+1)*10}% bounce`},
+{ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Extra showroom % per level, stacks with tier variety.',when:()=>S.crowd>=2,hint:'Upgrade Crowd to 2',max:20,lv:()=>S.showroom||0,cost:()=>c1(100*1.7**(S.showroom||0)),buy(){S.showroom=(S.showroom||0)+1},eff:()=>`+${(S.showroom||0)*5}% > +${((S.showroom||0)+1)*5}% showroom`},
+{ic:'🏷️',n:'Price tag',s:'Shops cost more to open',d:'Each level increases next shop cost by 20%.',when:()=>shops.length>=2,hint:'Open a 2nd shop',max:10,lv:()=>S.pricetag||0,cost:()=>c1(500*2**(S.pricetag||0)),buy(){S.pricetag=(S.pricetag||0)+1},eff:()=>`+${(S.pricetag||0)*20}% > +${((S.pricetag||0)+1)*20}% shop cost`},
+{ic:'📦',n:'Restock',s:'TVs cost more to buy',d:'Each level increases Buy TV cost by 15%.',when:()=>S.merges>=5,hint:'Merge 5 TVs',max:15,lv:()=>S.restock||0,cost:()=>c1(200*1.8**(S.restock||0)),buy(){S.restock=(S.restock||0)+1},eff:()=>`+${(S.restock||0)*15}% > +${((S.restock||0)+1)*15}% TV cost`}
 ];
 const col=document.getElementById('col'),coinsEl=document.getElementById('coins');let coinsStr='';
 function coinsHud(){const s=fmt(displayCoins);if(s!==coinsStr){coinsStr=s;coinsEl.textContent=s}}
@@ -164,7 +166,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,SC=.62,slotXY=i=
 function bounce(tv,hx,hy,i){
  const LW=tv.w,LH=tv.h,own=tv.isTwin?tv.partner:tv;window.__b=(window.__b||0)+1;
  const T0=T[tv.t],qs=1/(T0.split||1),m=mult()*(1+showB())*T0.c*SHOPS[shopI].k;tv.since++;tv.hueTarget+=47;tv.a=.4+Math.random()*.75;
- const g=(T0.bp||.1)*m*(tv.t===3?.75:1)*qs*(1+(S.magnet||0)*.1);coins+=g;
+ const g=Math.min((T0.bp||.1)*m*(tv.t===3?.75:1)*qs*(1+(S.magnet||0)*.1),SHOPS[shopI].tv*.5);coins+=g;
  let win=((.1+.15*S.corner+(S.lucky||0)*.03)*(tv===sel?1-.12*boost:1)+tv.since*.003)*(tv.t===3?1.5:1),d=99;
  if(hx&&hy)d=0;else if(hx)d=Math.min(tv.y,SH-LH-tv.y);else d=Math.min(tv.x,SW-LW-tv.x);
  if(d<=win)sfx('corner');else if(shopI===sc)sfx('bounce');
@@ -174,15 +176,15 @@ function bounce(tv,hx,hy,i){
   let pay=1*m*(1+.2*w.length)*(tv.t===1?1.25:1)*(T0.cm||1)*qs,tag='';
   const now=performance.now()/1000;
   if(tv.t===4&&tv.partner.ct&&now-tv.partner.ct<5){pay*=3;tag='DOUBLE ';tv.partner.ct=0}else tv.ct=now;
-  coins+=pay;corners++;tv.since=0;own.flash=1;if(shopI===sc)shake=3;
+  pay=Math.min(pay,SHOPS[shopI].tv*2);coins+=pay;corners++;tv.since=0;own.flash=1;if(shopI===sc)shake=3;
   if(tv.t===2){const n=nbrs(i).filter(j=>j>=0&&j<tvs.length).length;if(n){coins+=.5*pay*n;tag='CHAIN x'+n+' '}}
   toast=(shopI!==sc?SHOPS[shopI].n+': ':'')+tag+'CORNER! +'+fmt(pay);toastT=2.2;if(shopI!==sc)badge[shopI]=true;else{const s=slotXY(i);floats.push(sel===own?{x:100,y:84,t:2.2,g:1,s:'+'+fmt(pay)}:{x:s.x+44*s.s,y:s.y+8,t:2.2,g:1,s:'+'+fmt(pay)})}
  }else if(d<Math.max(win*2.5,2)){const q=i===0?people.find((p,k)=>k<crowdN()&&!p.stop):null;if(q&&Math.random()<.15)q.stop=1.5;if(tv===sel){toast='SO CLOSE...';toastT=1}}
  if(i>=0&&tv!==sel&&shopI===sc&&CFG.nums&&!(d<=win)&&floats.length<12){const s=slotXY(i);floats.push({x:s.x+Math.random()*60*s.s,y:s.y+8,t:.8,s:'+'+fmt(g)})}
 }
 function update(dt){
- const hk=1-Math.pow(.85,dt*60);
- displayCoins+=(coins-displayCoins)*(1-Math.pow(.9,dt*60));if(Math.abs(coins-displayCoins)<.005)displayCoins=coins;coinsHud();savedT=Math.max(0,savedT-dt);
+ const hk=Math.min(1,.15*dt*60);
+ displayCoins+=(coins-displayCoins)*Math.min(1,.1*dt*60);if(Math.abs(coins-displayCoins)<.005)displayCoins=coins;coinsHud();savedT=Math.max(0,savedT-dt);
  boost=Math.max(0,boost-(sel&&T[sel.t].keep?0:.8)*dt);
  const cs=tvs;shops.forEach((sh,si)=>{tvs=sh.tvs;shopI=si;tvs.forEach((par,i)=>{const nbB=Math.max(0,...nbrs(i).filter(j=>j>=0&&j<tvs.length).map(j=>T[tvs[j].t].nb||0));[par,par.twin,...(par.cl||[])].forEach(tv=>{if(!tv)return;const LW=tv.w,LH=tv.h;
   const sp=30*(1+.1*S.speed)*T[tv.t].sp*(1+nbB)*(par===sel?1+boost:1);
@@ -219,7 +221,11 @@ function drawTV(tv,ox,oy,s,hl,slot=-1){
  if(hl)R('#ffd400',-1,-1,90,2),R('#ffd400',-1,63,90,2),R('#ffd400',-1,-1,2,66),R('#ffd400',87,-1,2,66);
  X.globalAlpha=1;X.restore();
 }
-function drawTabs(){if(shops.length<2)return;const n=shops.length,w=W/n;shops.forEach((sh,i)=>{R(i===sc?'#ffd400':'#2c2c33',i*w+1,322,w-2,16);txt(SHOPS[i].n+(SHOPS[i].k>1&&n<4?' +'+Math.round((SHOPS[i].k-1)*100)+'%':''),i*w+w/2,333,i===sc?'#000':'#aaa',6,'center');if(badge[i])txt('!',i*w+w-8,333,'#ff5a3a',8,'center')})}
+function drawTabs(){if(shops.length<2)return;const n=shops.length,w=W/n;
+ if(n>4){R('#2c2c33',0,322,W,16);R('#ffd400',14,322,W-28,16);txt(SHOPS[sc].n,W/2,333,'#000',6,'center');
+  X.fillStyle='#888';X.beginPath();X.moveTo(4,330);X.lineTo(14,325);X.lineTo(14,335);X.closePath();X.fill();X.beginPath();X.moveTo(W-4,330);X.lineTo(W-14,325);X.lineTo(W-14,335);X.closePath();X.fill();
+  if(badge.some((b,i)=>b&&i!==sc))txt('!',W-20,333,'#ff5a3a',8,'center');return}
+ shops.forEach((sh,i)=>{R(i===sc?'#ffd400':'#2c2c33',i*w+1,322,w-2,16);txt(SHOPS[i].n+(SHOPS[i].k>1&&n<4?' +'+Math.round((SHOPS[i].k-1)*100)+'%':''),i*w+w/2,333,i===sc?'#000':'#aaa',6,'center');if(badge[i])txt('!',i*w+w-8,333,'#ff5a3a',8,'center')})}
 function drawDex(){
  const pages=Math.ceil(T.length/5);
  R('rgba(0,0,0,.93)',0,0,W,H);txt('TV INDEX',100,24,'#ffd400',9,'center');
@@ -280,6 +286,8 @@ C.addEventListener('pointerdown',e=>{
   else if(x>=14&&x<=96&&y>=280&&y<=296){const k=tvs.indexOf(sel);if(k>0){[tvs[0],tvs[k]]=[tvs[k],tvs[0]]}}
   else sel=null;return}
  if(slideT>0&&y<320)return;
+
+ if(y>=320&&shops.length>4){if(x<24)goShop(Math.max(0,sc-1));else if(x>W-24)goShop(Math.min(shops.length-1,sc+1));return}
  if(y>=320&&shops.length>1){const k=Math.min(shops.length-1,Math.floor(x/(W/shops.length)));goShop(k);return}
  for(let i=0;i<tvs.length;i++){const s=slotXY(i);if(x>=s.x&&x<=s.x+88*s.s&&y>=s.y&&y<=s.y+64*s.s){sel=tvs[i];boost=0;sellArm=0;return}}
  closeCard();
@@ -290,26 +298,27 @@ let simSkip=0;const skip=n=>{for(let k=0;k<n*10;k++)update(.1);simSkip+=n};
 const force=()=>{const o=sel||tvs[0];if(!o)return;o.x=SW-o.w-.01;o.y=SH-o.h-.01;o.dx=1;o.dy=1;o.a=.8};
 const DV=document.createElement('div');DV.id='dev';const DS=document.createElement('div');DV.appendChild(DS);
 const dsel=document.createElement('select');T.forEach((t,i)=>{const o=document.createElement('option');o.value=i;o.textContent=t.n;dsel.appendChild(o)});
-const acts=[['+10',()=>coins+=10],['+1K',()=>coins+=1e3],['+100K',()=>coins+=1e5],['+10M',()=>coins+=1e7],['Skip 1m',()=>skip(60)],['Skip 10m',()=>skip(600)],['Skip 1h',()=>skip(3600)],['Force corner',force],['Unlock tiers',()=>{S.un=T.map(()=>true)}],['Add TV',()=>{const t=+dsel.value;if(tvs.length<slots()){tvs.push(mk(t));shops[sc].tvs=tvs;S.un[t]=true}}],['Free shop',()=>{if(shops.length<4){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)}}],
-['Fill all tiers',()=>{shops.forEach(s=>{s.tvs=T.map((_,t)=>mk(t))});tvs=shops[sc].tvs;sel=null}],['Fill 1 each (current shop)',()=>{shops[sc].tvs=T.map((_,t)=>mk(t));tvs=shops[sc].tvs;sel=null}]];
+const acts=[['+10',()=>coins+=10],['+1K',()=>coins+=1e3],['+100K',()=>coins+=1e5],['+10M',()=>coins+=1e7],['Skip 1m',()=>skip(60)],['Skip 10m',()=>skip(600)],['Skip 1h',()=>skip(3600)],['Force corner',force],['Unlock tiers',()=>{S.un=T.map(()=>true)}],['Add TV',()=>{const t=+dsel.value;if(tvs.length<slots()){tvs.push(mk(t));shops[sc].tvs=tvs;S.un[t]=true}}],['Free shop',()=>{if(shops.length<SHOPS.length){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)}}],
+['Fill all tiers',()=>{shops.forEach(s=>{s.tvs=T.map((_,t)=>mk(t))});tvs=shops[sc].tvs;sel=null}],['Fill current shop',()=>{shops[sc].tvs=T.map((_,t)=>mk(t));tvs=shops[sc].tvs;sel=null}]];
 acts.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{f();refresh()};DV.appendChild(b)});DV.appendChild(dsel);document.body.appendChild(DV);
 const DB=document.createElement('button');DB.id='devb';DB.textContent='DEV';document.body.appendChild(DB);
 const togDev=()=>{DV.style.display=DV.style.display==='block'?'none':'block'};DB.onclick=togDev;addEventListener('keydown',e=>{if(e.key==='`')togDev()});
 const t00=performance.now();setInterval(()=>{if(DV.style.display!=='block')return;const el=(performance.now()-t00)/1000+simSkip;DS.textContent='v'+VERSION+' | bounces '+(window.__b||0)+' | corners '+corners+' | '+((window.__b||0)/el).toFixed(2)+' bounces/s | TVs '+tvs.length+' | shop '+(sc+1)+'/'+shops.length+' | coins '+fmt(coins)},300);
 /* SETTINGS */
-const CFG={slide:!RM,nums:true,labels:false,dev:true,sound:true};
+const CFG={slide:!RM,nums:true,labels:false,dev:true,sound:false};
 try{Object.assign(CFG,JSON.parse(localStorage.getItem('tvcfg')||'{}'))}catch(e){}
 function applyCfg(){document.body.classList.toggle('lab',CFG.labels);DB.style.display=CFG.dev?'':'none';try{localStorage.setItem('tvcfg',JSON.stringify(CFG))}catch(e){}}
 const SP=document.createElement('div');SP.id='set';const box=document.createElement('div');box.id='setbox';SP.appendChild(box);
-[['slide','Shop slide effect'],['nums','Bounce numbers'],['labels','Upgrade labels'],['dev','Dev button'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg()};box.appendChild(b)});
+[['slide','Shop slide effect'],['nums','Bounce numbers'],['labels','Upgrade labels'],['dev','Dev button'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg();if(k==='sound'&&CFG.sound)audioInit()};box.appendChild(b)});
 const rb=document.createElement('button');let ra=0;rb.textContent='Reset game';rb.onclick=()=>{if(ra){resetting=true;try{localStorage.removeItem('cornerShop')}catch(e){}location.reload()}else{ra=1;rb.textContent='Tap again to reset';setTimeout(()=>{ra=0;rb.textContent='Reset game'},3000)}};box.appendChild(rb);
-const DISCORD_URL='[PASTE YOUR DISCORD INVITE URL HERE]';
-const dcb=document.createElement('button');dcb.textContent='🎮 Join Discord';dcb.onclick=()=>{if(/^https?:\/\//.test(DISCORD_URL))window.open(DISCORD_URL,'_blank','noopener')};box.appendChild(dcb);
+const DISCORD_URL='https://discord.gg/PLACEHOLDER';
+const dcb=document.createElement('button');dcb.textContent='🎮 Join Discord';dcb.onclick=()=>{window.open(DISCORD_URL,'_blank','noopener')};box.appendChild(dcb);
 const cb=document.createElement('button');cb.textContent='Close';cb.onclick=()=>{SP.style.display='none'};box.appendChild(cb);
 document.body.appendChild(SP);document.getElementById('setb').onclick=()=>{SP.style.display='flex'};applyCfg();
 /* AUDIO: context is created on the first pointerdown/keydown (mobile autoplay policy); missing files are skipped silently */
 const SFX={bounce:{src:'assets/sfx_bounce.wav',vol:.3,max:3},corner:{src:'assets/sfx_corner.wav',vol:.6},switch:{src:'assets/sfx_switch.wav',vol:.4}},AU={ctx:null,buf:{},n:{}};
 function audioInit(){
+ if(!CFG.sound)return;
  if(AU.ctx){if(AU.ctx.state==='suspended')AU.ctx.resume();return}
  try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;AU.ctx=new AC();if(AU.ctx.state==='suspended')AU.ctx.resume();
   Object.keys(SFX).forEach(k=>{fetch(SFX[k].src).then(r=>r.ok?r.arrayBuffer():null).then(b=>b?AU.ctx.decodeAudioData(b):null).then(d=>{if(d)AU.buf[k]=d}).catch(()=>{})})}catch(e){}}
