@@ -325,22 +325,9 @@ const acts=[
 ['Fill current shop',()=>{shops[sc].tvs=T.map((_,t)=>mk(t));tvs=shops[sc].tvs;sel=null}],
 ['Reset all costs',()=>DEBUG.resetAllCosts()]
 ];
+acts.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{f();refresh()};DV.appendChild(b)});
+
 acts.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{f();refresh()};DV.appendChild(b)});const brBtn=document.createElement('button');brBtn.textContent='Balance Report';brBtn.onclick=()=>{
-  const next=SHOPS[sc+1],vis=U.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0;
-  const L=[
-    'CPS: '+fmt(cps)+'/s',
-    next?('Next shop: '+fmt(next.tv)+' | '+(cps>0?(next.tv/cps/60).toFixed(1):'∞')+' min (target 10-15)'):'Next shop: N/A',
-    'Fill 1 slot: '+fmt(SHOPS[sc].tv)+' | '+(cps>0?(SHOPS[sc].tv/cps/60).toFixed(1):'∞')+' min',
-    cheapest?('Cheapest upgrade: '+fmt(cheapest)+' | '+(cps>0?(cheapest/cps/60).toFixed(1):'∞')+' min'):'No upgrades',
-    lastBounceVal?('Last bounce: '+fmt(lastBounceVal)):'Last bounce: —',
-    lastCornerVal?('Last corner: '+fmt(lastCornerVal)):'Last corner: —',
-    (lastBounceVal&&lastCornerVal)?('Ratio: '+(lastCornerVal/lastBounceVal).toFixed(1)+'x (target 5-10x)'):'',
-    'TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Showroom: +'+Math.round(showB()*100)+'%',
-  ].filter(Boolean);
-  console.log('\n=== BALANCE REPORT ===\n'+L.join('\n')+'\n========================\n');
-  alert(L.join('\n'));
- 
-};DV.appendChild(brBtn);acts.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{f();refresh()};DV.appendChild(b)});const brBtn=document.createElement('button');brBtn.textContent='Balance Report';brBtn.onclick=()=>{
   const next=SHOPS[sc+1],vis=U.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0;
   const L=[
     'CPS: '+fmt(cps)+'/s',
