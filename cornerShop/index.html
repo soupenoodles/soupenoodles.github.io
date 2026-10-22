@@ -37,7 +37,7 @@ canvas{height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rende
 <div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.5.5 shop5';
+const VERSION='1.5.5+ shop5';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:12},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:[{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}]};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[
@@ -46,11 +46,11 @@ const T=[
 {n:'QUANTUM',sp:5,c:600,body:'#e0e0ff',scr:'#1a0030',cm:4,split:3},
 {n:'NEURAL',sp:7,c:1500,body:'#1a0a2a',scr:'#2a0030',cm:6,keep:1},
 {n:'SINGULARITY',sp:10,c:4000,body:'#0a0a0a',scr:'#000',cm:10,bp:1,nb:.5},
-{n:'MILITARY',sp:14,c:10000,body:'#2a3a2a',scr:'#0a1a0a'},
-{n:'BROKEN',sp:18,c:25000,body:'#3a3a3a',scr:'#1a0a0a'},
-{n:'ORGANIC',sp:24,c:60000,body:'#1a3a1a',scr:'#0a1a0a'},
-{n:'XENO',sp:32,c:150000,body:'#2a1a3a',scr:'#0a001a'},
-{n:'OMNI',sp:50,c:400000,body:'#ffffff',scr:'#000'}
+{n:'MILITARY',sp:14,c:10000,body:'#2a3a2a',scr:'#0a1a0a',bp:1},
+{n:'BROKEN',sp:18,c:25000,body:'#3a3a3a',scr:'#1a0a0a',bp:2},
+{n:'ORGANIC',sp:24,c:60000,body:'#1a3a1a',scr:'#0a1a0a',bp:3},
+{n:'XENO',sp:32,c:150000,body:'#2a1a3a',scr:'#0a001a',bp:5},
+{n:'OMNI',sp:50,c:400000,body:'#ffffff',scr:'#000',bp:10}   
 ];
 const TVI=T.map((t,i)=>{const im=new Image();im.src='assets/tv'+i+'.png';return im}),TVC=[];/* missing tvN.png falls back to the code-drawn TV */
 DEBUG.tvRect=[
