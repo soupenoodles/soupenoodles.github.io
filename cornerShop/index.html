@@ -380,6 +380,10 @@ autoBtn.onclick=()=>{autoBtn.textContent='Waiting...';setTimeout(()=>{autoBtn.te
   console.log('\n=== AUTO BALANCE REPORT (10s) ===\n'+L.join('\n')+'\n========================================\n');alert(L.join('\n'));
 },10000)};
 lbl('TV SELECT');
+ lbl('SHOP');
+const ssSel=document.createElement('select');for(let i=0;i<SHOPS.length;i++){const o=document.createElement('option');o.value=i;o.textContent=i+' '+SHOPS[i].n+' (k:'+SHOPS[i].k+')';ssSel.appendChild(o)}
+const ssGo=document.createElement('button');ssGo.textContent='Go';ssGo.onclick=()=>{const i=+ssSel.value;if(i>=shops.length){shops.push({tvs:[],fit:0,bought:0})}sc=i;tvs=shops[i].tvs;sel=null;refresh()};
+DV.appendChild(ssSel);DV.appendChild(ssGo);   
 DV.appendChild(dsel);     
  
 const csel=document.createElement('select');U.forEach((u,i)=>{const o=document.createElement('option');o.value=i;o.textContent=u.n;csel.appendChild(o)});
