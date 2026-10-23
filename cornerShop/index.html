@@ -9,7 +9,9 @@
 html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:"Press Start 2P",ui-monospace,monospace;overflow:hidden;touch-action:manipulation;user-select:none}
 #g{position:relative;display:flex;gap:6px;height:100%;padding:6px;justify-content:center}
 canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;;image-rendering:auto;border:3px solid var(--or);background:#000}
-#col{display:flex;flex-direction:column;gap:6px;width:76px;z-index:6;position:relative}
+#col{display:flex;flex-direction:column;gap:6px;width:76px;z-index:6;position:relative;transition:transform .2s,opacity .2s}
+#col.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
+#colTog{position:fixed;right:6px;top:50%;transform:translateY(-50%);z-index:7;font:inherit;font-size:10px;padding:8px 4px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer}     
 #coins{border:3px solid var(--ye);color:var(--ye);font-size:8px;padding:3px 2px 10px;text-align:center;background:#000;flex:1 1 100%;min-width:0}#top{display:flex;gap:4px;flex-wrap:wrap}#idx,#setb{flex:1;height:26px;font:inherit;font-size:12px;background:var(--ye);border:3px solid #000;outline:2px solid var(--ye);cursor:pointer;padding:0}
 .u{position:relative;flex:1 1 0;min-height:0;max-height:70px;background:var(--ye);color:var(--ink);border:3px solid #000;outline:2px solid var(--ye);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3px 2px 5px;font:inherit;cursor:pointer;overflow:hidden}
 .u .ic{font-size:18px;line-height:1.1}
@@ -37,7 +39,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.5.6';
+const VERSION='1.5.6 48h test';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:12},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:[{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}]};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[
@@ -133,7 +135,7 @@ const mk1=t=>{const hu=Math.random()*360;return{t,w:t===3?21:14,h:t===3?12:8,x:M
 const mk=t=>{const o=mk1(t);if(t===4){o.twin=mk1(4);o.twin.partner=o;o.partner=o.twin;o.twin.isTwin=true}
  if(t===6){o.cl=[mk1(6),mk1(6)];o.cl.forEach((c,k)=>{c.isTwin=true;c.partner=o;c.x=Math.min(SW-c.w,o.x+4*(k+1));c.y=Math.min(SH-c.h,o.y+4*(k+1))})}return o};
 let tvs=[mk(0)];const shops=[{tvs,fit:0,bought:0}],badge=SHOPS.map(()=>false);let sc=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.reduce((a,s)=>a+s.tvs.length,0)<=1)return;if(sellArm<=0){sellArm=2;return}const v=sellVal(sel);coins+=v;tvs.splice(tvs.indexOf(sel),1);shops[sc].tvs=tvs;sel=null;sellArm=0;toast='SOLD +'+fmt(v);toastT=1.8;shake=1}
-function goShop(k){if(k===sc)return;sfx('switch');tabT=.2;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false}
+function goShop(k)function goShop(k){if(k===sc)return;sfx('switch');tabT=.2;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false;telemetry.shopTimes.push({s:k,t:Date.now()})}   
 const people=[...Array(12)].map((_,i)=>({x:i*17,d:i%2?1:-1,stop:0,v:10+Math.random()*8,c:pedRoll(),fr:Math.random()*4}));
 const fmt=n=>n<10?(Math.floor(n*10+1e-6)/10).toFixed(1):n<1e3?''+Math.floor(n):n<1e6?(n/1e3).toFixed(n<1e4?2:1)+'K':n<1e9?(n/1e6).toFixed(2)+'M':n<1e12?(n/1e9).toFixed(2)+'B':(n/1e12).toFixed(2)+'T';   
 const pair=()=>{for(let t=0;t<T.length-1;t++){const ix=tvs.map((v,i)=>v.t===t?i:-1).filter(i=>i>=0);if(ix.length>1)return[ix[0],ix[1],t]}return null};
@@ -160,7 +162,8 @@ DEBUG.resetCost=i=>{DEBUG.upgradeCosts[i].override=null;refresh()};
 DEBUG.resetAllCosts=()=>{U.forEach((_,i)=>{DEBUG.upgradeCosts[i].override=null});refresh()};
 const col=document.getElementById('col'),coinsEl=document.getElementById('coinsTxt'),coinsBox=document.getElementById('coins'),sndEl=document.getElementById('snd');let coinsStr='';
 let cpsEl=null;function coinsHud(){const s=fmt(displayCoins);if(s!==coinsStr){coinsStr=s;coinsEl.textContent=s}if(!cpsEl){cpsEl=document.createElement('span');cpsEl.style.cssText='display:block;font-size:5px;color:#888;margin-top:2px';coinsBox.appendChild(cpsEl)}cpsEl.textContent=fmt(cps)+'/s'}   U.forEach((u,i)=>{const b=document.createElement('button');b.className='u';b.innerHTML='<div class="ic">'+u.ic+'</div><div class="pips"></div><div class="cost"></div><div class="nm">'+u.n+'</div>';b.onclick=()=>{if(lastPT==='mouse'||lastPT==='pen'){const u=U[i];if(status(u)==='aff'){coins-=u.cost();u.buy();refresh()}}else if(cur===i&&!hov)closeCard();else openCard(i)};b.onpointerenter=e=>{if(e.pointerType==='mouse')openCard(i,true)};b.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};u.el=b;col.appendChild(b)});
-let cur=-1,cardTimer=0,hov=false,lastPT='mouse',firstR=true;addEventListener('pointerdown',e=>{lastPT=e.pointerType},true);
+const colTog=document.createElement('button');colTog.id='colTog';colTog.textContent='⇄';colTog.onclick=()=>{col.classList.toggle('hidden');colTog.textContent=col.classList.contains('hidden')?'⇐':'⇄'};document.body.appendChild(colTog);   
+ let cur=-1,cardTimer=0,hov=false,lastPT='mouse',firstR=true;addEventListener('pointerdown',e=>{lastPT=e.pointerType},true);
 const card=document.getElementById('card'),buyB=document.getElementById('buy');col.appendChild(card);
 card.onpointerenter=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=999};card.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};
 function status(u){const mx=typeof u.max==='function'?u.max():u.max;if(u.max&&u.lv()>=mx&&u.n!=='Buy TV')return'max';if(u.can&&u.can())return'blocked';return coins>=u.cost()?'aff':'no'}
@@ -174,6 +177,7 @@ function refresh(){
  U.forEach((u,i)=>{if(status(u)==='aff'&&u.cost()<bc){bc=u.cost();best=i}});
  U.forEach((u,i)=>{const s=status(u),mx=typeof u.max==='function'?u.max():u.max;
   u.el.className='u '+(s==='max'?'max':s==='aff'?'aff':'no')+(i===best?' best':'')+(i===cur?' sel':'');
+  if(s==='max'&&!u._maxed){u._maxed=true;telemetry.upgMax.push({u:u.n,t:Date.now()})}
   u.el.style.setProperty('--p',Math.min(100,coins/u.cost()*100)+'%');
   let p='';if(mx>10){p='<i class="bar"><b style="width:'+Math.min(100,u.lv()/mx*100)+'%"></b></i>'}else if(mx){for(let k=0;k<mx;k++)p+='<i class="pip'+(k<u.lv()?'':' e')+'"></i>'}else p=pair()?'ready':'';
   u.el.children[1].className='pips'+(mx>8?' t':'');u.el.children[1].innerHTML=p;u.el.children[2].textContent=s==='max'?'MAX':fmt(u.cost())});
@@ -307,7 +311,7 @@ C.addEventListener('pointerdown',e=>{
  if(dex){if(++dexPage>=Math.ceil(T.length/5)){dex=false;dexPage=0}return}
  if(sel){
   if(x>168&&y<28){sel=null}
-  else if(x>10&&x<190&&y>88&&y<222){boost=Math.min(2,boost+.4);sel.flash=sel.flash||0}
+  else if(x>10&&x<190&&y>88&&y<222){boost=Math.min(2,boost+.4):telemetry.taps++;telemetry.tapTiers.push(sel.t);sel.flash=sel.flash||0}
   else if(x>=104&&x<=186&&y>=280&&y<=296){doSell()}
   else if(x>=14&&x<=96&&y>=280&&y<=296){const k=tvs.indexOf(sel);if(k>0){[tvs[0],tvs[k]]=[tvs[k],tvs[0]]}}
   else sel=null;return}
@@ -412,9 +416,11 @@ function syncSnd(){sndEl.textContent=CFG.sound?'🔊':'🔇'}
 function applyCfg(){syncSnd();document.body.classList.toggle('lab',CFG.labels);DB.style.display=CFG.dev?'':'none';try{localStorage.setItem('tvcfg',JSON.stringify(CFG))}catch(e){}}
 const SP=document.createElement('div');SP.id='set';const box=document.createElement('div');box.id='setbox';SP.appendChild(box);
 const cfgSync={};
+
 [['slide','Shop slide effect'],['nums','Numbers'],['flashes','Flashes'],['labels','Upgrade labels'],['dev','Dev button'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};cfgSync[k]=f;f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg();if(k==='sound'&&CFG.sound)audioInit()};box.appendChild(b)});
 sndEl.onclick=e=>{e.stopPropagation();CFG.sound=!CFG.sound;cfgSync.sound();applyCfg();if(CFG.sound)audioInit()};
-const rb=document.createElement('button');let ra=0;rb.textContent='Reset game';rb.onclick=()=>{if(ra){resetting=true;try{localStorage.removeItem('cornerShop')}catch(e){}location.reload()}else{ra=1;rb.textContent='Tap again to reset';setTimeout(()=>{ra=0;rb.textContent='Reset game'},3000)}};box.appendChild(rb);
+const verEl=document.createElement('div');verEl.textContent='v'+VERSION;verEl.style.cssText='font-size:6px;color:#666;text-align:center;padding:2px';box.appendChild(verEl);   
+ const rb=document.createElement('button');let ra=0;rb.textContent='Reset game';rb.onclick=()=>{if(ra){resetting=true;try{localStorage.removeItem('cornerShop')}catch(e){}location.reload()}else{ra=1;rb.textContent='Tap again to reset';setTimeout(()=>{ra=0;rb.textContent='Reset game'},3000)}};box.appendChild(rb);
 const DISCORD_URL='https://discord.gg/PLACEHOLDER';
 const dcb=document.createElement('button');dcb.textContent='🎮 Join Discord';dcb.onclick=()=>{window.open(DISCORD_URL,'_blank','noopener')};box.appendChild(dcb);
 const cb=document.createElement('button');cb.textContent='Close';cb.onclick=()=>{SP.style.display='none'};box.appendChild(cb);
