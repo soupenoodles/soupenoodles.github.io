@@ -202,6 +202,7 @@ function bounce(tv,hx,hy,i){
   let pay=1*m*(1+.2*w.length)*(tv.t===1?1.25:1)*(T0.cm||1)*qs,tag='';
   const now=performance.now()/1000;
   if(tv.t===4&&tv.partner.ct&&now-tv.partner.ct<5){pay*=3;tag='DOUBLE ';tv.partner.ct=0}else tv.ct=now;
+  pay=Math.min(pay,Math.max(SHOPS[shopI].tv*2,50));coins+=pay;lastCornerVal=pay;corners++;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===sc)shake=3;   
   let dex=false,dexPage=0,coins=0,displayCoins=0,cps=0,cpsTimer=0,lastCoins=0,lastBounceVal=0,lastCornerVal=0   ;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===sc)shake=3;
   if(tv.t===2){const n=nbrs(i).filter(j=>j>=0&&j<tvs.length).length;if(n){coins+=.5*pay*n;tag='CHAIN x'+n+' '}}
   toast=(shopI!==sc?SHOPS[shopI].n+': ':'')+tag+'CORNER! +'+fmt(pay);toastT=2.2;if(shopI!==sc)badge[shopI]=true;else if(sel===own){if(CFG.nums){const p=focusXY(own.t,tv.x+LW/2,tv.y+LH/2);floats.push({x:p.x,y:p.y,t:1.6,fv:1,big:1,s:'+'+fmt(pay)})}}else{const s=slotXY(i);floats.push({x:s.x+44*s.s,y:s.y+8,t:2.2,g:1,s:'+'+fmt(pay)})}
