@@ -12,7 +12,11 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 #col{display:flex;flex-direction:column;gap:6px;width:76px;z-index:6;position:relative;transition:transform .2s,opacity .2s}
 #col.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
 #colTog{position:fixed;right:6px;top:50%;transform:translateY(-50%);z-index:7;font:inherit;font-size:10px;padding:8px 4px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer}     
-#coins{border:3px solid var(--ye);color:var(--ye);font-size:8px;padding:3px 2px 10px;text-align:center;background:#000;flex:1 1 100%;min-width:0}#top{display:flex;gap:4px;flex-wrap:wrap}#idx,#setb{flex:1;height:26px;font:inherit;font-size:12px;background:var(--ye);border:3px solid #000;outline:2px solid var(--ye);cursor:pointer;padding:0}
+#coins{border:3px solid var(--ye);color:var(--ye);font-size:8px;padding:3px 2px 10px;text-align:center;background:#000;flex:1 1 100%;min-width:0}
+const orientEl=document.createElement('span');orientEl.style.cssText='display:block;font-size:8px;text-align:center;padding:2px';
+const updOrient=()=>{orientEl.textContent=matchMedia('(orientation:portrait)').matches?'📱':'📱↔️'};
+addEventListener('resize',updOrient);updOrient();coinsBox.appendChild(orientEl);   
+#top{display:flex;gap:4px;flex-wrap:wrap}#idx,#setb{flex:1;height:26px;font:inherit;font-size:12px;background:var(--ye);border:3px solid #000;outline:2px solid var(--ye);cursor:pointer;padding:0}
 .u{position:relative;flex:1 1 0;min-height:0;max-height:70px;background:var(--ye);color:var(--ink);border:3px solid #000;outline:2px solid var(--ye);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3px 2px 5px;font:inherit;cursor:pointer;overflow:hidden}
 .u .ic{font-size:18px;line-height:1.1}
 .u .pips{display:flex;gap:2px;min-height:5px;font-size:6px}
@@ -162,7 +166,8 @@ DEBUG.resetCost=i=>{DEBUG.upgradeCosts[i].override=null;refresh()};
 DEBUG.resetAllCosts=()=>{U.forEach((_,i)=>{DEBUG.upgradeCosts[i].override=null});refresh()};
 const col=document.getElementById('col'),coinsEl=document.getElementById('coinsTxt'),coinsBox=document.getElementById('coins'),sndEl=document.getElementById('snd');let coinsStr='';
 let cpsEl=null;function coinsHud(){const s=fmt(displayCoins);if(s!==coinsStr){coinsStr=s;coinsEl.textContent=s}if(!cpsEl){cpsEl=document.createElement('span');cpsEl.style.cssText='display:block;font-size:5px;color:#888;margin-top:2px';coinsBox.appendChild(cpsEl)}cpsEl.textContent=fmt(cps)+'/s'}   U.forEach((u,i)=>{const b=document.createElement('button');b.className='u';b.innerHTML='<div class="ic">'+u.ic+'</div><div class="pips"></div><div class="cost"></div><div class="nm">'+u.n+'</div>';b.onclick=()=>{if(lastPT==='mouse'||lastPT==='pen'){const u=U[i];if(status(u)==='aff'){coins-=u.cost();u.buy();refresh()}}else if(cur===i&&!hov)closeCard();else openCard(i)};b.onpointerenter=e=>{if(e.pointerType==='mouse')openCard(i,true)};b.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};u.el=b;col.appendChild(b)});
-const colTog=document.createElement('button');colTog.id='colTog';colTog.textContent='⇄';colTog.onclick=()=>{col.classList.toggle('hidden');colTog.textContent=col.classList.contains('hidden')?'⇐':'⇄'};document.body.appendChild(colTog);   
+const colTog=document.createElement('button');colTog.id='colTog';colTog.textContent='⇄';colTog.onclick=()=>{col.classList.toggle('hidden');colTog.textContent=col.classList.contains('hidden')?'⇐':'⇄'};document.body.appendChild(colTog); 
+const holdBtn=document.createElement('button');holdBtn.id='holdB';holdBtn.textContent='🤚';holdBtn.style.cssText='position:fixed;left:6px;top:6px;z-index:21;font-size:10px;padding:6px;background:#222;color:#ffd400;border:2px solid #444;opacity:.7;cursor:pointer';holdBtn.onclick=()=>{telemetry.holds.push(Date.now());holdBtn.textContent='✓';setTimeout(()=>holdBtn.textContent='🤚',800)};document.body.appendChild(holdBtn);     
  let cur=-1,cardTimer=0,hov=false,lastPT='mouse',firstR=true;addEventListener('pointerdown',e=>{lastPT=e.pointerType},true);
 const card=document.getElementById('card'),buyB=document.getElementById('buy');col.appendChild(card);
 card.onpointerenter=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=999};card.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};
@@ -202,13 +207,10 @@ function bounce(tv,hx,hy,i){
   let pay=1*m*(1+.2*w.length)*(tv.t===1?1.25:1)*(T0.cm||1)*qs,tag='';
   const now=performance.now()/1000;
   if(tv.t===4&&tv.partner.ct&&now-tv.partner.ct<5){pay*=3;tag='DOUBLE ';tv.partner.ct=0}else tv.ct=now;
-  pay=Math.min(pay,Math.max(SHOPS[shopI].tv*2,50));coins+=pay;lastCornerVal=pay;corners++;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===sc)shake=3;   
-  let dex=false,dexPage=0,coins=0,displayCoins=0,cps=0,cpsTimer=0,lastCoins=0,lastBounceVal=0,lastCornerVal=0   ;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===sc)shake=3;
+  pay=Math.min(pay,Math.max(SHOPS[shopI].tv*2,50));coins+=pay;lastCornerVal=pay;corners++;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===sc)shake=3;
   if(tv.t===2){const n=nbrs(i).filter(j=>j>=0&&j<tvs.length).length;if(n){coins+=.5*pay*n;tag='CHAIN x'+n+' '}}
   toast=(shopI!==sc?SHOPS[shopI].n+': ':'')+tag+'CORNER! +'+fmt(pay);toastT=2.2;if(shopI!==sc)badge[shopI]=true;else if(sel===own){if(CFG.nums){const p=focusXY(own.t,tv.x+LW/2,tv.y+LH/2);floats.push({x:p.x,y:p.y,t:1.6,fv:1,big:1,s:'+'+fmt(pay)})}}else{const s=slotXY(i);floats.push({x:s.x+44*s.s,y:s.y+8,t:2.2,g:1,s:'+'+fmt(pay)})}
- }else if(d<Math.max(win*2.5,2)){const q=i===0?people.find((p,k)=>k<crowdN()&&!p.stop):null;if(q&&Math.random()<.15)q.stop=1.5;if(tv===sel){toast='SO CLOSE...';toastT=1}}
- if(i>=0&&shopI===sc&&CFG.nums&&!(d<=win)){if(own===sel){if(floats.length<20){const p=focusXY(own.t,tv.x+LW/2,tv.y+LH/2);floats.push({x:p.x,y:p.y,t:.8,fv:1,s:'+'+fmt(g)})}}else if(floats.length<12){const s=slotXY(i);floats.push({x:s.x+Math.random()*60*s.s,y:s.y+8,t:.8,s:'+'+fmt(g)})}}
-}
+}   
 function update(dt){
  const hk=Math.min(1,.15*dt*60);
  const pd=displayCoins;displayCoins+=(coins-displayCoins)*Math.min(1,.1*dt*60);if(Math.abs(coins-displayCoins)<.005)displayCoins=coins;coinsHud();savedT=Math.max(0,savedT-dt);tabT=Math.max(0,tabT-dt);
@@ -348,7 +350,10 @@ mkBtn('Export data',()=>{
     tapByTier:telemetry.tapTiers.reduce((a,t)=>(a[t]=(a[t]||0)+1,a),{}),
     upgMax:telemetry.upgMax.map(x=>x.u+' @ '+new Date(x.t).toLocaleTimeString()),
     shops:telemetry.shopTimes.map(x=>'shop'+x.s+' @ '+new Date(x.t).toLocaleTimeString()),
-    coins:fmt(coins),cps:fmt(cps)+'/s',
+coins:fmt(coins),cps:fmt(cps)+'/s',
+lastClosed:telemetry.closed?new Date(telemetry.closed).toLocaleString():'never',
+lastHidden:telemetry.hidden?new Date(telemetry.hidden).toLocaleString():'never',
+holds:telemetry.holds.map(t=>new Date(t).toLocaleTimeString()),
     corners:corners
   };
   console.log(JSON.stringify(d,null,2));
@@ -450,7 +455,7 @@ function sfx(k){
  if(!CFG.sound||!AU.ctx||!AU.buf[k])return;const c=SFX[k];if(c.max&&(AU.n[k]||0)>=c.max)return;
  try{const s=AU.ctx.createBufferSource(),g=AU.ctx.createGain();s.buffer=AU.buf[k];g.gain.value=c.vol;s.connect(g);g.connect(AU.ctx.destination);AU.n[k]=(AU.n[k]||0)+1;s.onended=()=>{AU.n[k]=Math.max(0,(AU.n[k]||1)-1)};s.start()}catch(e){}}
 /* SAVE / LOAD: localStorage key "cornerShop" */
-function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShop',JSON.stringify({v:VERSION,coins,corners,sc,S,badge,seen:U.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,fit:s.fit}))}))}catch(e){}}
+function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShop',JSON.stringify({v:VERSION,coins,corners,sc,S,badge,seen:U.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,fit:s.fit})),telemetry}))}catch(e){}}
 function loadGame(){
  let d=null;try{d=JSON.parse(localStorage.getItem('cornerShop')||'null')}catch(e){}
  if(!d||typeof d!=='object')return;
@@ -463,14 +468,15 @@ function loadGame(){
   sc=Math.max(0,Math.min(shops.length-1,d.sc|0));tvs=shops[sc].tvs;
   if(Array.isArray(d.badge))d.badge.forEach((b,i)=>{if(i<badge.length)badge[i]=!!b});
   if(Array.isArray(d.seen))d.seen.forEach((v,i)=>{if(v&&U[i])U[i].seen=true});
-  displayCoins=coins}catch(e){}}
+  displayCoins=coins;if(d.telemetry)Object.assign(telemetry,d.telemetry)}catch(e){}}
 loadGame();U[0].seen=U[1].seen=true;
-setInterval(()=>{saveGame();savedT=1},30000);addEventListener('beforeunload',saveGame);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame()});
+setInterval(()=>{saveGame();savedT=1},30000);addEventListener('beforeunload',()=>{telemetry.closed=Date.now();saveGame()});document.addEventListener('visibilitychange',()=>{if(document.hidden){telemetry.hidden=Date.now();saveGame()}});
+
 let acc=0;setInterval(refresh,200);
 let t0=performance.now(); 
 let savedT=0,resetting=false;
 let tabT=0,boost=0,sel=null,corners=0,shake=0,pulseT=0,pulseOn=false,floats=[],toast='',toastT=0;
-let telemetry={launch:Date.now(),taps:0,tapTiers:[],upgMax:[],shopTimes:[]};   
+let telemetry={launch:Date.now(),taps:0,tapTiers:[],upgMax:[],shopTimes:[],holds:[],closed:0,hidden:0}
 (function loop(n){const dt=Math.min(.1,(n-t0)/1000);t0=n;update(dt);render();requestAnimationFrame(loop)})(performance.now());
 refresh();
 </script></body></html>
