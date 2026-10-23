@@ -148,7 +148,7 @@ const U=[
 {ic:'👥',n:'Crowd',s:'More people',d:'More people walk past the shop.',max:10,lv:()=>S.crowd,cost:()=>c1(4*1.65**S.crowd),buy(){S.crowd++},eff:()=>`${crowdN()} > ${crowdN()+1} passersby`},
 {ic:'👀',n:'Attention',s:'More people stop',d:'More passersby stop to watch a corner.',max:10,lv:()=>S.stopC,cost:()=>c1(6*1.7**S.stopC),buy(){S.stopC++},eff:()=>`${12+3*S.stopC}% > ${15+3*S.stopC}%`},
 {ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier.',max:7,lv:()=>S.start,cost:()=>c1(250*15**S.start),buy(){S.start++},eff:()=>`${T[S.start].n} > ${T[S.start+1].n}`},
-{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:11,lv:()=>shops.length-1,cost:()=>c1(75*12**(shops.length-1)*(1-(S.pricetag||0)*.1)),buy(){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)},eff:()=>`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`},
+{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:11,lv:()=>shops.length-1,cost:()=>c1(75*12**(shops.length-1)*Math.max(.1,1-(S.pricetag||0)*.1)),buy(){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)},eff:()=>`-${(S.pricetag||0)*10}% > -${((S.pricetag||0)+1)*10}% shop cost`
 {ic:'🍀',n:'Lucky',s:'Better corner odds',d:'Widens the corner hit zone per level.',max:10,lv:()=>S.lucky||0,cost:()=>c1(50*1.8**(S.lucky||0)),buy(){S.lucky=(S.lucky||0)+1},eff:()=>`+${(S.lucky||0)*3}% > +${((S.lucky||0)+1)*3}% zone`},
 {ic:'🧲',n:'Magnet',s:'Bounces pay more',d:'Each bounce gives extra coins per level.',max:15,lv:()=>S.magnet||0,cost:()=>c1(30*1.6**(S.magnet||0)),buy(){S.magnet=(S.magnet||0)+1},eff:()=>`+${(S.magnet||0)*10}% > +${((S.magnet||0)+1)*10}% bounce`},
 {ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Extra showroom % per level, stacks with tier variety.',max:20,lv:()=>S.showroom||0,cost:()=>c1(100*1.7**(S.showroom||0)),buy(){S.showroom=(S.showroom||0)+1},eff:()=>`+${(S.showroom||0)*5}% > +${((S.showroom||0)+1)*5}% showroom`},
@@ -162,10 +162,11 @@ DEBUG.resetCost=i=>{DEBUG.upgradeCosts[i].override=null;refresh()};
 DEBUG.resetAllCosts=()=>{U.forEach((_,i)=>{DEBUG.upgradeCosts[i].override=null});refresh()};
 const col=document.getElementById('col'),coinsEl=document.getElementById('coinsTxt'),coinsBox=document.getElementById('coins'),sndEl=document.getElementById('snd');let coinsStr='';
 let cpsEl=null;function coinsHud(){const s=fmt(displayCoins);if(s!==coinsStr){coinsStr=s;coinsEl.textContent=s}if(!cpsEl){cpsEl=document.createElement('span');cpsEl.style.cssText='display:block;font-size:5px;color:#888;margin-top:2px';coinsBox.appendChild(cpsEl)}cpsEl.textContent=fmt(cps)+'/s'}   U.forEach((u,i)=>{const b=document.createElement('button');b.className='u';b.innerHTML='<div class="ic">'+u.ic+'</div><div class="pips"></div><div class="cost"></div><div class="nm">'+u.n+'</div>';b.onclick=()=>{if(lastPT==='mouse'||lastPT==='pen'){const u=U[i];if(status(u)==='aff'){coins-=u.cost();u.buy();refresh()}}else if(cur===i&&!hov)closeCard();else openCard(i)};b.onpointerenter=e=>{if(e.pointerType==='mouse')openCard(i,true)};b.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};u.el=b;col.appendChild(b)});
-const colTog=document.createElement('button');colTog.id='colTog';colTog.textContent='⇄';colTog.onclick=()=>{col.classList.toggle('hidden');colTog.textContent=col.classList.contains('hidden')?'⇐':'⇄'};document.body.appendChild(colTog);
+const colTog=document.createElement('button');
+colTog.id='colTog';colTog.textContent='⇄';colTog.onclick=()=>{col.classList.toggle('hidden');colTog.textContent=col.classList.contains('hidden')?'⇐':'⇄'};document.body.appendChild(colTog);
 const orientEl=document.createElement('span');orientEl.style.cssText='display:block;font-size:8px;text-align:center;padding:2px';
 const updOrient=()=>{orientEl.textContent=matchMedia('(orientation:portrait)').matches?'📱':'📱↔️'};
-addEventListener('resize',updOrient);updOrient();coinsBox.appendChild(orientEl);colTog.id='colTog';colTog.textContent='⇄';colTog.onclick=()=>{col.classList.toggle('hidden');colTog.textContent=col.classList.contains('hidden')?'⇐':'⇄'};document.body.appendChild(colTog); 
+addEventListener('resize',updOrient);updOrient();coinsBox.appendChild(orientEl);
 const holdBtn=document.createElement('button');holdBtn.id='holdB';holdBtn.textContent='🤚';holdBtn.style.cssText='position:fixed;left:6px;top:6px;z-index:21;font-size:10px;padding:6px;background:#222;color:#ffd400;border:2px solid #444;opacity:.7;cursor:pointer';holdBtn.onclick=()=>{telemetry.holds.push(Date.now());holdBtn.textContent='✓';setTimeout(()=>holdBtn.textContent='🤚',800)};document.body.appendChild(holdBtn);     
  let cur=-1,cardTimer=0,hov=false,lastPT='mouse',firstR=true;addEventListener('pointerdown',e=>{lastPT=e.pointerType},true);
 const card=document.getElementById('card'),buyB=document.getElementById('buy');col.appendChild(card);
@@ -218,7 +219,7 @@ function update(dt){
  const pd=displayCoins;displayCoins+=(coins-displayCoins)*Math.min(1,.1*dt*60);if(Math.abs(coins-displayCoins)<.005)displayCoins=coins;coinsHud();savedT=Math.max(0,savedT-dt);tabT=Math.max(0,tabT-dt);
  if(!CFG.flashes)pulseT=0;else if(pulseT<=0&&pd>0&&displayCoins-pd>pd*.1)pulseT=.15;
  if(pulseT>0){pulseT=Math.max(0,pulseT-dt);coinsBox.style.transform='scale('+(1+.05*Math.sin(Math.PI*(1-pulseT/.15))).toFixed(3)+')';pulseOn=true}else if(pulseOn){coinsBox.style.transform='';pulseOn=false}
- cpsTimer+=dt;if(cpsTimer>=1){cps=coins-lastCoins;DEBUG.cps=cps;lastCoins=coins;cpsTimer=0}   
+ cpsTimer+=dt;if(cpsTimer>=1){cps=Math.max(0,coins-lastCoins);DEBUG.cps=cps;lastCoins=coins;cpsTimer=0}   
  boost=Math.max(0,boost-(sel&&T[sel.t].keep?0:.8)*dt);
  const cs=tvs;shops.forEach((sh,si)=>{tvs=sh.tvs;shopI=si;tvs.forEach((par,i)=>{const nbB=Math.max(0,...nbrs(i).filter(j=>j>=0&&j<tvs.length).map(j=>T[tvs[j].t].nb||0));[par,par.twin,...(par.cl||[])].forEach(tv=>{if(!tv)return;const LW=tv.w,LH=tv.h;
   const sp=30*(1+.1*S.speed)*T[tv.t].sp*(1+nbB)*(par===sel?1+boost:1);
@@ -241,7 +242,7 @@ const CF0={shelf:{x:0,y:0,scale:1},counter:{x:0,y:0,scale:1},color:null,alpha:1,
 /* slot: 0 = counter, 1-9 = shelf, -1 = no slot (focus view, TV Index): position/scale offsets skipped */
 function drawTV(tv,ox,oy,s,hl,slot=-1){
  const cf=DEBUG.tvConfig[tv.t]||CF0,o=slot<0?OFF0:slot===0?cf.counter:cf.shelf;
-X.save();X.globalAlpha=cf.alpha;const so=slot>=0?(DEBUG.shopOffsets[sc]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}):{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]};const sr=slot>=1&&slot<=9?Math.floor((slot-1)/3):-1;X.translate(ox+44*s+o.x+(sr>=0?so.shelfX[sr]:0),oy+32*s+o.y+(slot===0?so.counterY:sr>=0?so.shelfY[sr]:0));X.scale(s*o.scale,s*o.scale);X.translate(-44,-32);const T0=T[tv.t],sp=tvSprite(tv.t),LW0=tv.w||14,LH0=tv.h||8,scr=cf.screenColor||T0.scr;    const lg=(dx,dy)=>[tv,tv.twin,...(tv.cl||[])].forEach(o=>{if(!o)return;const c=tv.t===0?col:'hsl('+o.hue+',90%,60%)';R(c,dx+o.x,dy+o.y,LW0,LH0);R('rgba(0,0,0,.55)',dx+o.x+3,dy+o.y+2,2,LH0>10?6:4);R('rgba(0,0,0,.55)',dx+o.x+8,dy+o.y+2,2,LH0>10?6:4)});
+X.save();X.globalAlpha=cf.alpha;const so=slot>=0?(DEBUG.shopOffsets[sc]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}):{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]};const sr=slot>=1&&slot<=9?Math.floor((slot-1)/3):-1;X.translate(ox+44*s+o.x+(sr>=0?so.shelfX[sr]:0),oy+32*s+o.y+(slot===0?so.counterY:sr>=0?so.shelfY[sr]:0));X.scale(s*o.scale,s*o.scale);X.translate(-44,-32);const T0=T[tv.t],sp=tvSprite(tv.t),LW0=tv.w||14,LH0=tv.h||8,scr=cf.screenColor||T0.scr;const col=tv.t===0?'hsl(0,0%,'+(60+30*Math.sin(tv.hue/20))+'%)':'hsl('+tv.hue+',90%,60%)';const lg=(dx,dy)=>[tv,tv.twin,...(tv.cl||[])].forEach(o=>{if(!o)return;const c=tv.t===0?col:'hsl('+o.hue+',90%,60%)';R(c,dx+o.x,dy+o.y,LW0,LH0);R('rgba(0,0,0,.55)',dx+o.x+3,dy+o.y+2,2,LH0>10?6:4);R('rgba(0,0,0,.55)',dx+o.x+8,dy+o.y+2,2,LH0>10?6:4)});
  if(sp){
   const r=DEBUG.tvRect[tv.t]||[44,38,382,251],kx=88/480,ky=64/350;
   X.drawImage(tvTint(tv.t,sp,cf.color),0,0,88,64);
@@ -368,7 +369,7 @@ acts.filter(([l])=>l.startsWith('Skip')).forEach(([l,f])=>mkBtn(l,f));
 lbl('ACTIONS');
 acts.filter(([l])=>!l.startsWith('+')&&!l.startsWith('Skip')).forEach(([l,f])=>mkBtn(l,f));
 lbl('REPORTS');
-mkBtn('Balance Report',()=>{
+const brBtn=mkBtn('Balance Report',()=>{
   const next=SHOPS[sc+1],vis=U.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0;
   const L=['CPS: '+fmt(cps)+'/s',
   next?('Next shop: '+fmt(next.tv)+' | '+(cps>0?(next.tv/cps/60).toFixed(1):'∞')+' min (target 10-15)'):'Next shop: N/A',
@@ -471,14 +472,16 @@ function loadGame(){
   if(Array.isArray(d.badge))d.badge.forEach((b,i)=>{if(i<badge.length)badge[i]=!!b});
   if(Array.isArray(d.seen))d.seen.forEach((v,i)=>{if(v&&U[i])U[i].seen=true});
   displayCoins=coins;if(d.telemetry)Object.assign(telemetry,d.telemetry)}catch(e){}}
+let acc=0;setInterval(refresh,200);
+let t0=performance.now(); 
+let dex=false,dexPage=0,coins=0,displayCoins=0,cps=0,cpsTimer=0,lastCoins=0,lastBounceVal=0,lastCornerVal=0;
+let savedT=0,resetting=false;
+let tabT=0,boost=0,sel=null,corners=0,shake=0,pulseT=0,pulseOn=false,floats=[],toast='',toastT=0;
+let telemetry={launch:Date.now(),taps:0,tapTiers:[],upgMax:[],shopTimes:[],holds:[],closed:0,hidden:0};
+
 loadGame();U[0].seen=U[1].seen=true;
 setInterval(()=>{saveGame();savedT=1},30000);addEventListener('beforeunload',()=>{telemetry.closed=Date.now();saveGame()});document.addEventListener('visibilitychange',()=>{if(document.hidden){telemetry.hidden=Date.now();saveGame()}});
 
-let acc=0;setInterval(refresh,200);
-let t0=performance.now(); 
-let savedT=0,resetting=false;
-let tabT=0,boost=0,sel=null,corners=0,shake=0,pulseT=0,pulseOn=false,floats=[],toast='',toastT=0;
-let telemetry={launch:Date.now(),taps:0,tapTiers:[],upgMax:[],shopTimes:[],holds:[],closed:0,hidden:0}:
 (function loop(n){const dt=Math.min(.1,(n-t0)/1000);t0=n;update(dt);render();requestAnimationFrame(loop)})(performance.now());
 refresh();
 </script></body></html>
