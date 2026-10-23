@@ -135,7 +135,7 @@ const mk1=t=>{const hu=Math.random()*360;return{t,w:t===3?21:14,h:t===3?12:8,x:M
 const mk=t=>{const o=mk1(t);if(t===4){o.twin=mk1(4);o.twin.partner=o;o.partner=o.twin;o.twin.isTwin=true}
  if(t===6){o.cl=[mk1(6),mk1(6)];o.cl.forEach((c,k)=>{c.isTwin=true;c.partner=o;c.x=Math.min(SW-c.w,o.x+4*(k+1));c.y=Math.min(SH-c.h,o.y+4*(k+1))})}return o};
 let tvs=[mk(0)];const shops=[{tvs,fit:0,bought:0}],badge=SHOPS.map(()=>false);let sc=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.reduce((a,s)=>a+s.tvs.length,0)<=1)return;if(sellArm<=0){sellArm=2;return}const v=sellVal(sel);coins+=v;tvs.splice(tvs.indexOf(sel),1);shops[sc].tvs=tvs;sel=null;sellArm=0;toast='SOLD +'+fmt(v);toastT=1.8;shake=1}
-function goShop(k)function goShop(k){if(k===sc)return;sfx('switch');tabT=.2;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false;telemetry.shopTimes.push({s:k,t:Date.now()})}   
+function goShop(k){if(k===sc)return;sfx('switch');tabT=.2;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false;telemetry.shopTimes.push({s:k,t:Date.now()})}   
 const people=[...Array(12)].map((_,i)=>({x:i*17,d:i%2?1:-1,stop:0,v:10+Math.random()*8,c:pedRoll(),fr:Math.random()*4}));
 const fmt=n=>n<10?(Math.floor(n*10+1e-6)/10).toFixed(1):n<1e3?''+Math.floor(n):n<1e6?(n/1e3).toFixed(n<1e4?2:1)+'K':n<1e9?(n/1e6).toFixed(2)+'M':n<1e12?(n/1e9).toFixed(2)+'B':(n/1e12).toFixed(2)+'T';   
 const pair=()=>{for(let t=0;t<T.length-1;t++){const ix=tvs.map((v,i)=>v.t===t?i:-1).filter(i=>i>=0);if(ix.length>1)return[ix[0],ix[1],t]}return null};
