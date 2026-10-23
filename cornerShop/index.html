@@ -478,7 +478,7 @@ let acc=0;setInterval(refresh,200);
 let t0=performance.now(); 
 let savedT=0,resetting=false;
 let tabT=0,boost=0,sel=null,corners=0,shake=0,pulseT=0,pulseOn=false,floats=[],toast='',toastT=0;
-let telemetry={launch:Date.now(),taps:0,tapTiers:[],upgMax:[],shopTimes:[],holds:[],closed:0,hidden:0}
+let telemetry={launch:Date.now(),taps:0,tapTiers:[],upgMax:[],shopTimes:[],holds:[],closed:0,hidden:0}:
 (function loop(n){const dt=Math.min(.1,(n-t0)/1000);t0=n;update(dt);render();requestAnimationFrame(loop)})(performance.now());
 refresh();
 </script></body></html>
