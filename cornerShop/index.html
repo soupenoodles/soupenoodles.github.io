@@ -40,7 +40,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.5.6 48h test';
+const VERSION='1.5.7 48h test';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:12},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:[{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}]};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[
@@ -152,7 +152,7 @@ const U=[
 {ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:11,lv:()=>shops.length-1,cost:()=>c1(75*12**(shops.length-1)*(1-(S.pricetag||0)*.1)),buy(){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)},eff:()=>`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`},
 {ic:'🧲',n:'Magnet',s:'Bounces pay more',d:'Each bounce gives extra coins per level.',max:15,lv:()=>S.magnet||0,cost:()=>c1(30*1.6**(S.magnet||0)),buy(){S.magnet=(S.magnet||0)+1},eff:()=>`+${(S.magnet||0)*10}% > +${((S.magnet||0)+1)*10}% bounce`},
 {ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Extra showroom % per level, stacks with tier variety.',max:20,lv:()=>S.showroom||0,cost:()=>c1(100*1.7**(S.showroom||0)),buy(){S.showroom=(S.showroom||0)+1},eff:()=>`+${(S.showroom||0)*5}% > +${((S.showroom||0)+1)*5}% showroom`},
-{ic:'🏷️',n:'Price tag',s:'Shops cost less to open',d:'Each level reduces next shop cost by 10%.',max:10,lv:()=>S.pricetag||0,cost:()=>c1(500*2**(S.pricetag||0)),buy(){S.pricetag=(S.pricetag||0)+1},eff:()=>`+${(S.pricetag||0)*20}% > +${((S.pricetag||0)+1)*20}% shop cost`},
+{ic:'🏷️',n:'Price tag',s:'Shops cost less to open',d:'Each level reduces next shop cost by 10%.',max:10,lv:()=>S.pricetag||0,cost:()=>c1(500*2**(S.pricetag||0)),buy(){S.pricetag=(S.pricetag||0)+1},eff:()=>`-${(S.pricetag||0)*10}% > -${((S.pricetag||0)+1)*10}% shop cost`},
 {ic:'📦',n:'Restock',s:'TVs cost more to buy',d:'Each level increases Buy TV cost by 15%.',max:15,lv:()=>S.restock||0,cost:()=>c1(200*1.8**(S.restock||0)),buy(){S.restock=(S.restock||0)+1},eff:()=>`+${(S.restock||0)*15}% > +${((S.restock||0)+1)*15}% TV cost`}
 ];
 U[0].seen=U[1].seen=true;
