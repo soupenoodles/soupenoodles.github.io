@@ -340,7 +340,19 @@ const acts=[
 ];
 const lbl=t=>{const d=document.createElement('div');d.textContent=t;d.style.cssText='font-size:6px;color:#666;margin:4px 0 2px;border-top:1px solid #333;padding-top:4px';DV.appendChild(d)};
 const mkBtn=(t,f)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{f();refresh()};DV.appendChild(b);return b};
-
+mkBtn('Export data',()=>{
+  const d={launch:new Date(telemetry.launch).toISOString(),
+    sessionMin:((Date.now()-telemetry.launch)/60000).toFixed(1),
+    totalTaps:telemetry.taps,
+    tapByTier:telemetry.tapTiers.reduce((a,t)=>(a[t]=(a[t]||0)+1,a),{}),
+    upgMax:telemetry.upgMax.map(x=>x.u+' @ '+new Date(x.t).toLocaleTimeString()),
+    shops:telemetry.shopTimes.map(x=>'shop'+x.s+' @ '+new Date(x.t).toLocaleTimeString()),
+    coins:fmt(coins),cps:fmt(cps)+'/s',
+    corners:corners
+  };
+  console.log(JSON.stringify(d,null,2));
+  alert(JSON.stringify(d,null,2));
+});   
 lbl('COINS');
 acts.filter(([l])=>l.startsWith('+')).forEach(([l,f])=>mkBtn(l,f));
 lbl('TIME');
