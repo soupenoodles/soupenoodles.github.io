@@ -140,7 +140,7 @@
 			[...DEBUG.pedPool,...DEBUG.lookPool].forEach(ld);
 			/* walk strip is horizontal: frame w = naturalWidth/4, frame h = naturalHeight. Look sprite is scaled so its figure matches the walk figure height (falls back to walk frame height if pixels can't be read) */
 			const pedFit={};
-			function pedBox(im,x0,w){const h=im.naturalHeight,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(im,x0,0,w,h,0,0,w,h);const d=g.getImageData(0,0,w,h).data;let t=h,b=-1,l=w,r=-1;for(let y=0;y<h;y++)for(let x="0;x"<w;x++)if(d[(y=""*w=""+x="")*4=""+3=""]>
+			function pedBox(im,x0,w){const h=im.naturalHeight,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(im,x0,0,w,h,0,0,w,h);const d=g.getImageData(0,0,w,h).data;let t=h,b=-1,l=w,r=-1;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>
 				16){if(y<t)t=y;if(y="">
 					b)b=y;if(x<l)l=x;if(x="">
 						r)r=x}return b<0?null:[t="",b=""+1="",l="",r=""+1=""
