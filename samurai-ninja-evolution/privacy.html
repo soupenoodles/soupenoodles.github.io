@@ -23,12 +23,12 @@
 <body>
 <main>
 <h1>Privacy Policy</h1>
-<p class="meta">Samurai Ninja Evolution &middot; by Soupe Noodles &middot; Last updated: October 19, 2026</p>
+<p class="meta">Samurai Ninja Evolution &middot; by Soupe Noodles &middot; Last updated: October 26, 2026</p>
 
-<p>This Privacy Policy explains what information the game <strong>Samurai Ninja Evolution</strong> ("the game") collects, how it is used, and the choices you have. The game is published by <strong>Soupe Noodles</strong> ("we", "us"). It is currently available to play in web browsers on <a href="https://www.crazygames.com">CrazyGames</a>, and an Android version is coming soon to Google Play. By playing the game you agree to this policy.</p>
+<p>This Privacy Policy explains what information the game <strong>Samurai Ninja Evolution</strong> ("the game") collects, how it is used, and the choices you have. The game is published by <strong>Soupe Noodles</strong> ("we", "us"). It is available to play in web browsers on <a href="https://www.crazygames.com">CrazyGames</a> and as an Android app on Google Play. By playing the game you agree to this policy.</p>
 
 <h2>1. Information we do not collect</h2>
-<p>The game does not ask for your real name, email address, phone number, contacts, photos, camera, microphone or location. There is no in-game chat, and players cannot send messages, images or other content to each other.</p>
+<p>The game does not ask for your real name, email address, phone number, contacts, photos, camera, microphone or location. There is no in-game chat, and players cannot send messages, images or other content to each other. The game does not ask you to create an account.</p>
 
 <h2>2. Your ninja name</h2>
 <p>Other players see a display name above your ninja. If you are logged in to CrazyGames, the game uses your CrazyGames username (CrazyGames requires this for multiplayer games). Otherwise you get a random ninja name (for example "SwiftFox42"), which you can change in the menu. Names typed in the game go through a word filter, and names shown from other players are filtered too.</p>
@@ -36,10 +36,10 @@
 <h2>3. Your progress</h2>
 <p>Your progress (for example damage, trophies, pets, swords, auras, rebirths, tutorial and event rewards) and your settings (volume, graphics, mute, name) are saved:</p>
 <ul>
-  <li><strong>on your device</strong>, in your browser's storage for the game, and</li>
+  <li><strong>on your device</strong>, in the game's local storage (browser storage on the web, app storage on Android), and</li>
   <li><strong>with CrazyGames</strong>, using the CrazyGames cloud-save service, when you play on CrazyGames. This keeps your progress if you play on another device while logged in to your CrazyGames account.</li>
 </ul>
-<p>We (Soupe Noodles) do not run our own servers and do not receive or store your save data. If you clear your browser data while not logged in to CrazyGames, your progress may be lost.</p>
+<p>On Android, your save stays on your device. If you uninstall the app or clear its data, your progress is lost. We do not store your full save on our servers; see section 5 for the small amount of progress information the game sends to our backend.</p>
 
 <h2>4. Online multiplayer</h2>
 <p>When you are online, you can see other players walking around the same world. To make this work the game connects to <strong>Photon</strong> (Exit Games), a multiplayer service. While you are connected, the following is shared with the other players in your room (up to 16) through Photon's servers:</p>
@@ -48,69 +48,100 @@
   <li>your ninja's position, movement and attacks,</li>
   <li>the sword, aura and pets your ninja is using, and whether you are inside a battle zone.</li>
 </ul>
-<p>This information is only used live, to show your ninja to others, and is gone when you leave. Like any internet service, Photon processes your IP address to connect you to its servers. Training, fights, rewards and saves are not sent through Photon. You can play offline: if the connection fails or you choose to stay offline, nothing is shared with other players.</p>
+<p>This information is only used live, to show your ninja to others, and is gone when you leave. Like any internet service, Photon processes your IP address to connect you to its servers. Training, fights, rewards and saves are not sent through Photon. The game also works offline: if the connection fails, nothing is shared with other players.</p>
 
 <h2>5. Services used by the game</h2>
 <div class="table">
 <table>
-  <tr><th>Service</th><th>What it does</th><th>Information it may process</th></tr>
+  <tr><th>Service</th><th>Where</th><th>What it does</th><th>Information it may process</th></tr>
   <tr>
     <td>CrazyGames (CrazyGames SDK)</td>
+    <td>Web</td>
     <td>Hosts the game, shows ads (including optional rewarded videos for boosts), provides your username when logged in, and stores your cloud save.</td>
     <td>Your CrazyGames username and account status, your game save, gameplay start/stop events, ad views, device and browser information, and IP address, under CrazyGames' own privacy policy.</td>
   </tr>
   <tr>
     <td>Photon (Exit Games)</td>
+    <td>Web, Android</td>
     <td>Online multiplayer: lets players in the same room see each other.</td>
     <td>The live game data listed in section 4, and IP address for the connection.</td>
   </tr>
   <tr>
-    <td>Discord (optional)</td>
-    <td>If you choose to join our Discord server, you can get a reward code there and type it in the game.</td>
-    <td>The game itself sends nothing to Discord. Anything you do on Discord is covered by Discord's own privacy policy.</td>
+    <td>Google AdMob (Google Mobile Ads SDK)</td>
+    <td>Android</td>
+    <td>Shows banner, interstitial and optional rewarded video ads. Shows a consent form where required by law.</td>
+    <td>Advertising ID, IP address and approximate location derived from it, ad interactions, device and app information, and diagnostics, under Google's privacy policy. See section 6.</td>
+  </tr>
+  <tr>
+    <td>Firebase Crashlytics and Remote Config (Google)</td>
+    <td>Android</td>
+    <td>Crashlytics collects crash reports so we can fix bugs. Remote Config lets us adjust settings such as ad frequency without an app update.</td>
+    <td>Crash logs and stack traces, device model, OS version, app version, game state at the time of a crash (for example current zone and rebirth count), a Firebase installation identifier, and diagnostics.</td>
+  </tr>
+  <tr>
+    <td>Unity Gaming Services (Unity Technologies)</td>
+    <td>Web, Android</td>
+    <td>Anonymous sign-in and our backend (Cloud Code and Cloud Save). Used to post milestone announcements to our Discord server.</td>
+    <td>An anonymous player ID generated by Unity (no email or password), your IP address, and the progress information described below.</td>
+  </tr>
+  <tr>
+    <td>Discord</td>
+    <td>Web, Android</td>
+    <td>Our community server. Our backend posts milestone announcements there, and you can join the server to get a reward code.</td>
+    <td>See below. Anything you do on Discord itself is covered by Discord's own privacy policy.</td>
   </tr>
 </table>
 </div>
+<p><strong>Milestone announcements.</strong> When you reach certain milestones (for example a rebirth or a rare find), the game sends your display name, number of rebirths, lifetime trophies, highest zone and the milestone event to our backend (Unity Cloud Code). The backend posts a message to a channel on our Discord server, which members of that server can read. This is why you should not use your real name as your ninja name. If you do not want to be announced, contact us (section 16) and we will exclude you.</p>
 
 <h2>6. Advertising</h2>
-<p>On CrazyGames, ads are provided and managed by CrazyGames and its advertising partners. Rewarded videos are always optional: you choose to watch one in exchange for a boost. Ad personalization and consent are handled by CrazyGames according to your region and choices. See the <a href="https://www.crazygames.com/privacy-policy">CrazyGames privacy policy</a> for details.</p>
+<p><strong>Web (CrazyGames).</strong> Ads are provided and managed by CrazyGames and its advertising partners. Rewarded videos are always optional: you choose to watch one in exchange for a boost. Ad personalization and consent are handled by CrazyGames according to your region and choices. See the <a href="https://www.crazygames.com/privacy-policy">CrazyGames privacy policy</a> for details.</p>
+<p><strong>Android (Google AdMob).</strong> The Android game shows banner ads, interstitial ads (full-screen ads shown at natural breaks, never in the middle of a fight, and not during your first minutes of play) and optional rewarded video ads. AdMob may use your device's advertising ID and other data to show ads and measure them. In the EEA, the UK and other regions where required, the game shows a consent form (Google's User Messaging Platform) the first time you play, and you can review or change your choice later from <em>Settings &rarr; Ad privacy</em> in the game. You can also reset or delete your advertising ID, or opt out of ad personalization, in your Android settings (<em>Settings &rarr; Privacy &rarr; Ads</em>). See <a href="https://policies.google.com/technologies/ads">How Google uses data in ads</a>.</p>
 
-<h2>7. Android version (coming soon)</h2>
-<p>An Android version is coming soon to Google Play. Before it is released, we will update this policy to describe any additional services it uses (for example for ads or app analytics) and the choices you will have.</p>
+<h2>7. Android version</h2>
+<p>The Android app uses the services marked "Android" in section 5. It does not need access to your contacts, photos, camera, microphone or precise location. It uses the internet connection for multiplayer, ads and crash reports. It is intended for players aged 13 and over (see section 11).</p>
 
 <h2>8. How we use information</h2>
 <ul>
   <li>To run the game, save your progress and show other players online.</li>
   <li>To keep names appropriate (word filter).</li>
-  <li>To show optional rewarded ads that support the game.</li>
+  <li>To find and fix crashes and tune the game (Crashlytics, Remote Config).</li>
+  <li>To post milestone announcements to our Discord community.</li>
+  <li>To show ads (including optional rewarded ads) that support the game.</li>
   <li>To answer you if you contact us.</li>
 </ul>
 <p>We do not sell your personal information, and we do not try to identify individual players.</p>
 
 <h2>9. Sharing</h2>
-<p>We do not share information with anyone except the services listed above, which process it to run the game or under their own terms, and where required by law.</p>
+<p>We do not sell your personal information. We share information only with the services listed in section 5, which process it to run the game, show ads or fix crashes, and where required by law. Your display name and in-game rank are visible to other players in your room, and the milestone information described in section 5 is visible to members of our Discord server. Ad partners reached through AdMob may receive the data described in section 6 under Google's policies.</p>
 
 <h2>10. Data retention and deletion</h2>
 <ul>
-  <li><strong>On your device:</strong> deleted when you clear your browser's site data for the game.</li>
+  <li><strong>On your device:</strong> deleted when you clear the game's data or uninstall the app (Android), or clear your browser's site data (web).</li>
   <li><strong>CrazyGames cloud save and account:</strong> managed by CrazyGames; you can manage or delete your CrazyGames account in their settings or contact them.</li>
   <li><strong>Multiplayer data:</strong> only exists while you are connected.</li>
+  <li><strong>Unity Gaming Services (anonymous player ID and related data):</strong> kept until you ask us to delete it. To request deletion, email us at the address in section 16 with your ninja name; we will delete the data we hold for you, and the associated Unity data, and remove you from future announcements. Uninstalling the app does not by itself delete it.</li>
+  <li><strong>Discord announcements:</strong> messages already posted on our Discord server can be removed on request.</li>
+  <li><strong>Crash reports and ad data:</strong> held by Google (Firebase and AdMob) under their retention policies. Crashlytics data is typically kept for 90 days.</li>
 </ul>
 <p>If you contact us by email or through our website form, we keep your message only as long as needed to answer it. You can ask us to delete it at any time.</p>
 
 <h2>11. Children's privacy</h2>
-<p>The game is a general-audience game. We do not knowingly collect personal information from children, and the game has no chat or way for players to share personal information with each other. Account, age and consent settings on CrazyGames are handled by CrazyGames. If you believe a child has given us personal information, contact us and we will delete it.</p>
+<p>The game is intended for players aged 13 and over. We do not knowingly collect personal information from children under 13, and the game has no chat or way for players to share personal information with each other. Account, age and consent settings on CrazyGames are handled by CrazyGames. If you believe a child under 13 has given us personal information, contact us and we will delete it.</p>
 
 <h2>12. Security</h2>
-<p>We keep what we handle to a minimum and rely on the security of CrazyGames and Photon. No method of storage or transmission is completely secure, so we cannot guarantee absolute security.</p>
+<p>We keep what we handle to a minimum and rely on the security of CrazyGames, Photon, Google and Unity. Data sent to Google and Unity services is encrypted in transit. No method of storage or transmission is completely secure, so we cannot guarantee absolute security.</p>
 
 <h2>13. Your rights</h2>
-<p>Depending on where you live (for example the EU/EEA, the UK or California), you may have rights to access, correct, delete or restrict the use of your personal data, and to object to certain processing. To exercise a right, contact us using the details below. For data held by CrazyGames or Photon, you can also contact them directly.</p>
+<p>Depending on where you live (for example the EU/EEA, the UK or California), you may have rights to access, correct, delete or restrict the use of your personal data, and to object to certain processing. To exercise a right, contact us using the details below. For data held by CrazyGames, Photon, Google or Unity, you can also contact them directly. EEA and UK residents can also lodge a complaint with their local data protection authority.</p>
 
 <h2>14. Third-party policies</h2>
 <ul>
   <li><a href="https://www.crazygames.com/privacy-policy">CrazyGames Privacy Policy</a></li>
   <li><a href="https://www.photonengine.com/terms/privacyandcookiepolicy">Photon (Exit Games) Privacy Policy</a></li>
+  <li><a href="https://policies.google.com/privacy">Google Privacy Policy (AdMob, Firebase)</a></li>
+  <li><a href="https://firebase.google.com/support/privacy">Firebase privacy and security</a></li>
+  <li><a href="https://unity.com/legal/privacy-policy">Unity Privacy Policy (Unity Gaming Services)</a></li>
   <li><a href="https://discord.com/privacy">Discord Privacy Policy</a></li>
 </ul>
 
