@@ -361,7 +361,7 @@ function='' update(dt=''
 																						if(sel){
 																						if(x>168&&y<28){sel=null=''
 																			 else='' if(x=''>
-																							10&&x<190&&y>88&&y<222){boost=Math.min(2,boost+.4);telemetry.taps++;telemetry.tapTiers.push(sel.t);sel.flash='sel.flash||0'
+																							10&&x<190&&y>88&&y<222){boost=Math.min(2,boost+.4);telemetry.taps++;telemetry.tapTiers.push(sel.t);if(telemetry.tapTiers.length>2000)telemetry.tapTiers.shift();sel.flash='sel.flash||0'
 																else='' if(x=''>
 																								=104&&x<=186&&y>=280&&y<=296){doSell()}
 																								else if(x>=14&&x<=96&&y>=280&&y<=296){const k=tvs.indexOf(sel);if(k>0){[tvs[0],tvs[k]]=[tvs[k],tvs[0]]}}
