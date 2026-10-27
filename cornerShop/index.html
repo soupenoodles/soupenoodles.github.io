@@ -33,7 +33,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 #buy:disabled{background:#999;cursor:default}#card.info #buy,#card.info #buy:disabled{pointer-events:none;background:none;border:0;padding:0;font-size:8px}
 #dev{position:fixed;left:6px;bottom:34px;z-index:20;display:none;background:rgba(0,0,0,.92);border:2px solid var(--ye);padding:6px;max-width:230px;max-height:80vh;overflow-y:auto;font-size:7px;line-height:1.6}   
 #set{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}
-#prestige{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.88);padding:12px}#pbox{background:#111;border:3px solid var(--ye);padding:12px;width:min(94vw,420px);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:9px;font-size:8px;line-height:1.6}#pbox h2{font-size:10px;color:var(--ye);margin:0}#pbox p{font-size:7px;line-height:1.8;margin:0;color:#ddd}#pbox button{font:inherit;font-size:7px;padding:9px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer;text-align:left}#pbox button{background:#080808;color:#eee;border-color:#444}#pbox button:disabled{background:#080808;color:#777;border-color:#333;cursor:default}#pbox button.can-buy,#pbox button.ready{background:#5ac85a;color:#000;border-color:#173d17}#pbox .skill{border:1px solid #665a20;padding:7px;display:flex;flex-direction:column;gap:5px}#pbox .muted{color:#999;font-size:6px}#p-progress{display:flex;flex-direction:column;gap:4px}#p-progress-label{font-size:6px;color:#ddd;line-height:1.7}#p-progress-track{height:10px;border:2px solid #555;background:#050505;padding:1px}#p-progress-fill{height:100%;width:0;background:#5ac85a;transition:width .2s}#setbox{background:#111;border:3px solid var(--ye);padding:12px;display:flex;flex-direction:column;gap:8px;width:min(86vw,300px)}#setbox button{font:inherit;font-size:8px;padding:10px 8px;background:var(--ye);color:#000;border:3px solid #000;cursor:pointer;text-align:left}.u .nm{display:none;font-size:5px;order:1}.u .ic{order:0}.u .pips{order:2}.u .cost{order:3}body.lab .u .nm{display:block}body.lab .u .ic{font-size:14px}
+#prestige{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.88);padding:12px}#pbox{background:#111;border:3px solid var(--ye);padding:12px;width:min(94vw,420px);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:9px;font-size:8px;line-height:1.6}#pbox h2{font-size:10px;color:var(--ye);margin:0}#pbox p{font-size:7px;line-height:1.8;margin:0;color:#ddd}#pbox button{font:inherit;font-size:7px;padding:9px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer;text-align:left}#pbox button:disabled{background:#555;color:#aaa}#pbox .skill{border:1px solid #665a20;padding:7px;display:flex;flex-direction:column;gap:5px}#pbox .skill button{background:#080808;color:#eee;border-color:#333}#pbox button.unavailable:disabled{background:#080808;color:#777;border-color:#333;cursor:default}#pbox button.available:not(:disabled){background:#35c759;color:#001800;border-color:#16752b}#pbox button.available:not(:disabled):hover{background:#54e875}#pbox .prestige-progress{display:flex;flex-direction:column;gap:4px}#pbox .prestige-progress-label{font-size:7px;color:#ddd}#pbox .prestige-track{height:12px;background:#050505;border:1px solid #555;overflow:hidden}#pbox .prestige-fill{height:100%;background:#777;transition:width .2s}#pbox .prestige-progress-caption{font-size:6px;color:#999}#pbox .muted{color:#999;font-size:6px}#setbox{background:#111;border:3px solid var(--ye);padding:12px;display:flex;flex-direction:column;gap:8px;width:min(86vw,300px)}#setbox button{font:inherit;font-size:8px;padding:10px 8px;background:var(--ye);color:#000;border:3px solid #000;cursor:pointer;text-align:left}.u .nm{display:none;font-size:5px;order:1}.u .ic{order:0}.u .pips{order:2}.u .cost{order:3}body.lab .u .nm{display:block}body.lab .u .ic{font-size:14px}
 .bar{display:block;width:46px;height:5px;background:rgba(0,0,0,.25)}.bar b{display:block;height:5px;background:#000}.pips.t{gap:1px}.pips.t .pip{width:4px;height:4px}
 @media (prefers-reduced-motion:reduce){.u.best{animation:none}#card{transition:none}}
 </style></head><body>
@@ -358,40 +358,45 @@ acts.filter(([l])=>l.startsWith('Skip')).forEach(([l,f])=>mkBtn(l,f));
 lbl('ACTIONS');
 acts.filter(([l])=>!l.startsWith('+')&&!l.startsWith('Skip')).forEach(([l,f])=>mkBtn(l,f));
 lbl('REPORTS');
-const brBtn=mkBtn('Balance Report',()=>{
+function balanceReportLines(){
   const next=SHOPS[sc+1],vis=U.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0;
-  const L=['CPS: '+fmt(cps)+'/s',
-  next?('Next shop: '+fmt(next.tv)+' | '+(cps>0?(next.tv/cps/60).toFixed(1):'∞')+' min (target 10-15)'):'Next shop: N/A',
-  'Fill 1 slot: '+fmt(SHOPS[sc].tv)+' | '+(cps>0?(SHOPS[sc].tv/cps/60).toFixed(1):'∞')+' min',
-  cheapest?('Cheapest upgrade: '+fmt(cheapest)+' | '+(cps>0?(cheapest/cps/60).toFixed(1):'∞')+' min'):'No upgrades',
-  lastBounceVal?('Last bounce: '+fmt(lastBounceVal)):'Last bounce: —',
-  lastCornerVal?('Last corner: '+fmt(lastCornerVal)):'Last corner: —',
-  (lastBounceVal&&lastCornerVal)?('Ratio: '+(lastCornerVal/lastBounceVal).toFixed(1)+'x (target 5-10x)'):'',
-  'TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Showroom: +'+Math.round(showB()*100)+'%'].filter(Boolean);
-  console.log('\n=== BALANCE REPORT ===\n'+L.join('\n')+'\n========================\n');alert(L.join('\n'));
-});
+  const payback=v=>cps>0?(v/cps/60).toFixed(1)+' min':'∞';
+  return [
+    'CPS: '+fmt(cps)+'/s',
+    next?('Next shop: '+fmt(next.tv)+' | '+payback(next.tv)+' (target 10-15 min)'):'Next shop: N/A',
+    'Buy TV (next): '+fmt(U[1].cost())+' | '+payback(U[1].cost()),
+    cheapest?('Cheapest visible upgrade: '+fmt(cheapest)+' | '+payback(cheapest)):'No upgrades visible',
+    lastBounceVal?('Last bounce: '+fmt(lastBounceVal)):'Last bounce: —',
+    lastCornerVal?('Last corner: '+fmt(lastCornerVal)):'Last corner: —',
+    (lastBounceVal&&lastCornerVal)?('Corner/bounce ratio: '+(lastCornerVal/lastBounceVal).toFixed(1)+'x (target 5-10x)'):'',
+    'TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Global upgrade scale: x'+shopUpgradeScale().toFixed(2),
+    'Prestige: '+prestigeGain()+' available | score '+prestigeScore()+' | claimed '+P.claimedScore
+  ].filter(Boolean);
+}
+function cappedUpgradeCostReport(){
+  // Mirrors the cost curves in U. The scale is the current highest-shop global multiplier.
+  const scale=shopUpgradeScale();
+  const defs=[
+    ['Speed',1,1.55,20],['Corner zone',3,1.65,15],['Crowd',4,1.65,10],
+    ['Attention',6,1.7,10],['TV grade',250,15,7],['Lucky',50,1.8,10],
+    ['Magnet',30,1.6,15],['Showroom',100,1.7,20],['Price tag',500,2,10],['Restock',200,1.8,15]
+  ];
+  const rows=defs.map(([name,base,mult,max])=>{let total=0;for(let level=0;level<max;level++)total+=c1(base*mult**level*scale);return {name,total}});
+  const total=rows.reduce((sum,row)=>sum+row.total,0);
+  return {rows,total,scale};
+}
+const showBalanceReport=()=>{const L=balanceReportLines();console.log('\n=== BALANCE REPORT v'+VERSION+' ===\n'+L.join('\n')+'\n========================');alert(L.join('\n'))};
+mkBtn('Balance Report',showBalanceReport);
 mkBtn('Upgrade total',()=>{
-  const grind=[[0,1,1.55,20],[2,3,1.65,15],[3,6,1.5,15],[4,4,1.65,10],[5,6,1.7,10],[8,50,1.8,10],[9,30,1.6,15],[10,100,1.7,20]];
-  let total=0;grind.forEach(([i,base,mult,max])=>{for(let l=0;l<max;l++)total+=c1(base*mult**l)});
-  console.log('Total grind upgrade cost: '+fmt(total));
-  alert('Total grind upgrade cost: '+fmt(total)+'\n→ Set next shop tv to ~'+fmt(total*1.2));
+  const r=cappedUpgradeCostReport();
+  const L=['Capped upgrade cost (current global scale x'+r.scale.toFixed(2)+'):',...r.rows.map(x=>x.name+': '+fmt(x.total)),'TOTAL: '+fmt(r.total),'','Includes all levels of capped global upgrades. Excludes Buy TV, Merge, and New shop because their costs depend on shop, TV tier, purchase count, or merge count.','Suggested next-shop base price (1.2x total): '+fmt(r.total*1.2)];
+  console.log('\n=== UPGRADE COST REPORT v'+VERSION+' ===\n'+L.join('\n')+'\n================================');alert(L.join('\n'));
 });
 const autoBtn=mkBtn('Auto Report (10s)',()=>{});
 autoBtn.onclick=()=>{autoBtn.textContent='Waiting...';setTimeout(()=>{autoBtn.textContent='Auto Report (10s)';
-  const next=SHOPS[sc+1],vis=U.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0;
-  const grind=[[0,1,1.55,20],[2,3,1.65,15],[3,6,1.5,15],[4,4,1.65,10],[5,6,1.7,10],[8,50,1.8,10],[9,30,1.6,15],[10,100,1.7,20]];
-  let ut=0;grind.forEach(([i,base,mult,max])=>{for(let l=0;l<max;l++)ut+=c1(base*mult**l)});
-  const L=['CPS: '+fmt(cps)+'/s',
-  next?('Next shop: '+fmt(next.tv)+' | '+(cps>0?(next.tv/cps/60).toFixed(1):'∞')+' min (target 10-15)'):'Next shop: N/A',
-  'Fill 1 slot: '+fmt(SHOPS[sc].tv)+' | '+(cps>0?(SHOPS[sc].tv/cps/60).toFixed(1):'∞')+' min',
-  cheapest?('Cheapest upgrade: '+fmt(cheapest)+' | '+(cps>0?(cheapest/cps/60).toFixed(1):'∞')+' min'):'No upgrades',
-  lastBounceVal?('Last bounce: '+fmt(lastBounceVal)):'Last bounce: —',
-  lastCornerVal?('Last corner: '+fmt(lastCornerVal)):'Last corner: —',
-  (lastBounceVal&&lastCornerVal)?('Ratio: '+(lastCornerVal/lastBounceVal).toFixed(1)+'x (target 5-10x)'):'',
-  'TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Showroom: +'+Math.round(showB()*100)+'%',
-  'Upgrade total (grind): '+fmt(ut),
-  '→ Suggested next shop tv: '+fmt(ut*1.2)];
-  console.log('\n=== AUTO BALANCE REPORT (10s) ===\n'+L.join('\n')+'\n========================================\n');alert(L.join('\n'));
+  const r=cappedUpgradeCostReport();
+  const L=[...balanceReportLines(),'Capped upgrades total: '+fmt(r.total),'Suggested next-shop base price (1.2x capped upgrades): '+fmt(r.total*1.2)];
+  console.log('\n=== AUTO BALANCE REPORT v'+VERSION+' (10s) ===\n'+L.join('\n')+'\n========================================');alert(L.join('\n'));
 },10000)};
 lbl('TV SELECT');
  lbl('SHOP');
@@ -444,17 +449,41 @@ function prestigeReset(){
  shops.length=0;const first=[mk(0)];shops.push({tvs:first,fit:0,bought:0});tvs=first;sel=null;displayCoins=0;cps=0;lastCoins=0;P.runEarned=0;P.lifetimeEarned=Math.max(0,P.lifetimeEarned);coins=Math.floor(skillLevel('start')*100);displayCoins=coins;toast='PRESTIGE! +'+earned+' SKILL POINTS';toastT=4;saveGame();renderPrestige();refresh();
 }
 function renderPrestige(){
- PB.innerHTML='';const h=document.createElement('h2');h.textContent='PRESTIGE & SKILL TREE';PB.appendChild(h);
- const summary=document.createElement('p');summary.textContent='Prestige now: '+prestigeGain()+' point(s) | Unspent: '+P.points+' | Lifetime earned: '+fmt(P.lifetimeEarned)+' | Highest shop this run: '+SHOPS[highestShop()].n;PB.appendChild(summary);
- const rule=document.createElement('p');rule.textContent='Reward score = 2 points per shop beyond the first + 1 point per 1,000× lifetime-earnings tier. You only receive score increases not claimed before. Prestige resets run upgrades and shops, but keeps skill points and skills.';PB.appendChild(rule);
- const score=prestigeScore(),target=(P.claimedScore||0)+1,ready=prestigeGain()>0,progress=ready?100:Math.max(0,Math.min(100,score/Math.max(1,target)*100));
- const progressBox=document.createElement('div');progressBox.id='p-progress';
- const progressLabel=document.createElement('div');progressLabel.id='p-progress-label';progressLabel.textContent=ready?'PRESTIGE READY — '+prestigeGain()+' point(s) available':'Progress to next prestige point: '+score+' / '+target;progressBox.appendChild(progressLabel);
- const track=document.createElement('div');track.id='p-progress-track';track.setAttribute('role','progressbar');track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');track.setAttribute('aria-valuenow',String(Math.round(progress)));
- const fill=document.createElement('div');fill.id='p-progress-fill';fill.style.width=progress+'%';track.appendChild(fill);progressBox.appendChild(track);PB.appendChild(progressBox);
- SKILLS.forEach(sk=>{const box=document.createElement('div');box.className='skill';const title=document.createElement('div');title.textContent=sk.name+' — Level '+skillLevel(sk.id)+'/'+sk.max;box.appendChild(title);const desc=document.createElement('p');desc.textContent=sk.desc;box.appendChild(desc);const level=skillLevel(sk.id),cost=level<sk.max?sk.cost(level):0,canBuy=level<sk.max&&P.points>=cost;const b=document.createElement('button');b.textContent=level>=sk.max?'MAXED':'Upgrade — '+cost+' point(s)';b.disabled=!canBuy;if(canBuy)b.className='can-buy';b.onclick=()=>{if(P.points<cost||skillLevel(sk.id)>=sk.max)return;P.points-=cost;P.skills[sk.id]=skillLevel(sk.id)+1;saveGame();renderPrestige();refresh()};box.appendChild(b);PB.appendChild(box)});
- const prestige=document.createElement('button');prestige.textContent=ready?'PRESTIGE NOW — gain '+prestigeGain()+' point(s)':'KEEP PLAYING — prestige not ready';prestige.disabled=!ready;if(ready)prestige.className='ready';prestige.onclick=()=>{if(prestigeGain()<=0)return;if(confirm('Prestige now for '+prestigeGain()+' skill point(s)? Your current shops and run upgrades will reset. Skill-tree upgrades and lifetime earnings remain.'))prestigeReset()};PB.appendChild(prestige);
- const close=document.createElement('button');close.textContent='Close';close.onclick=()=>{PM.style.display='none'};PB.appendChild(close);
+ PB.innerHTML='';
+ const h=document.createElement('h2');h.textContent='PRESTIGE & SKILL TREE';PB.appendChild(h);
+ const gain=prestigeGain(),score=prestigeScore();
+ const summary=document.createElement('p');summary.textContent='Prestige now: '+gain+' point(s) | Unspent: '+P.points+' | Lifetime earned: '+fmt(P.lifetimeEarned)+' | Highest shop: '+SHOPS[highestShop()].n;PB.appendChild(summary);
+ const targetScore=P.claimedScore+1;
+ const shopScore=Math.max(0,(P.bestShop||0)*2);
+ const requiredEarnTier=Math.max(0,targetScore-shopScore);
+ const lifetime=Math.max(0,P.lifetimeEarned);
+ let progress=1,progressText='Prestige reward ready';
+ if(gain<=0){
+   if(requiredEarnTier<=0){progress=0;progressText='Progress toward next prestige point';}
+   else{
+     const lower=10**(3*Math.max(0,requiredEarnTier-1));
+     const upper=10**(3*requiredEarnTier);
+     progress=Math.max(0,Math.min(1,(lifetime-lower)/(upper-lower)));
+     if(lifetime>=upper)progress=1;
+     progressText='Lifetime earnings: '+fmt(lifetime)+' / '+fmt(upper)+' for next point';
+   }
+ }
+ const progressWrap=document.createElement('div');progressWrap.className='prestige-progress';
+ const progressLabel=document.createElement('div');progressLabel.className='prestige-progress-label';progressLabel.textContent=gain>0?'PRESTIGE AVAILABLE':progressText;progressWrap.appendChild(progressLabel);
+ const track=document.createElement('div');track.className='prestige-track';
+ const fill=document.createElement('div');fill.className='prestige-fill';fill.style.width=(gain>0?100:Math.round(progress*100))+'%';if(gain>0)fill.style.background='#35c759';track.appendChild(fill);progressWrap.appendChild(track);
+ const percent=document.createElement('div');percent.className='prestige-progress-caption';percent.textContent=gain>0?gain+' point(s) ready':Math.round(progress*100)+'% toward earnings milestone';progressWrap.appendChild(percent);PB.appendChild(progressWrap);
+ const rule=document.createElement('p');rule.textContent='Reward score combines highest shop unlocked (2 points per shop after the first) and lifetime earnings (1 point per 1,000× earnings tier). Only unclaimed score increases grant points. Prestige resets the current run, but keeps skill points and skills.';PB.appendChild(rule);
+ SKILLS.forEach(sk=>{
+   const level=skillLevel(sk.id),maxed=level>=sk.max,cost=maxed?0:sk.cost(level);
+   const box=document.createElement('div');box.className='skill';
+   const title=document.createElement('div');title.textContent=sk.name+' — Level '+level+'/'+sk.max;box.appendChild(title);
+   const desc=document.createElement('p');desc.textContent=sk.desc;box.appendChild(desc);
+   const b=document.createElement('button');b.textContent=maxed?'MAXED':'Upgrade — '+cost+' point(s)';b.disabled=maxed||P.points<cost;b.className=b.disabled?'unavailable':'available';
+   b.onclick=()=>{if(P.points<cost||skillLevel(sk.id)>=sk.max)return;P.points-=cost;P.spent=(P.spent||0)+cost;P.skills[sk.id]=skillLevel(sk.id)+1;saveGame();renderPrestige();refresh()};box.appendChild(b);PB.appendChild(box);
+ });
+ const prestige=document.createElement('button');prestige.id='prestige-action';prestige.textContent=gain>0?'PRESTIGE NOW — gain '+gain+' point(s)':'KEEP PLAYING — no new point yet';prestige.disabled=gain<=0;prestige.className=gain>0?'available':'unavailable';prestige.onclick=()=>{if(prestigeGain()<=0)return;if(confirm('Prestige now for '+prestigeGain()+' skill point(s)? Your current shops and run upgrades will reset. Skill-tree upgrades and lifetime earnings remain.'))prestigeReset()};PB.appendChild(prestige);
+ const close=document.createElement('button');close.textContent='Close';close.className='unavailable';close.onclick=()=>{PM.style.display='none'};PB.appendChild(close);
 }
 const prestigeOpen=document.createElement('button');prestigeOpen.textContent='🌟 Prestige / Skill Tree';prestigeOpen.onclick=()=>{renderPrestige();PM.style.display='flex'};box.insertBefore(prestigeOpen,verEl);
 /* AUDIO: context is created on the first pointerdown/keydown (mobile autoplay policy); missing files are skipped silently */
@@ -480,7 +509,7 @@ function loadGame(){
   coins=+d.coins||0;corners=+d.corners||0;
   if(d.P&&typeof d.P==='object'){['points','spent','claimedScore','lifetimeEarned','runEarned','prestiges','bestShop'].forEach(k=>{if(Number.isFinite(+d.P[k]))P[k]=Math.max(0,+d.P[k])});if(d.P.skills&&typeof d.P.skills==='object')SKILLS.forEach(sk=>{P.skills[sk.id]=Math.max(0,Math.min(sk.max,+d.P.skills[sk.id]||0))})}else P.bestShop=Math.max(P.bestShop,shops.length-1);
   if(d.S&&typeof d.S==='object'){Object.keys(S).forEach(k=>{if(k!=='un'&&typeof d.S[k]==='number')S[k]=d.S[k]});S.un=Array.isArray(d.S.un)?d.S.un.map(Boolean):[true];S.un[0]=true}
-  sc=Math.max(0,Math.min(shops.length-1,d.sc|0));tvs=shops[sc].tvs;
+  sc=Math.max(0,Math.min(shops.length-1,d.sc|0));tvs=shops[sc].tvs;P.bestShop=Math.max(P.bestShop,shops.length-1);
   if(Array.isArray(d.badge))d.badge.forEach((b,i)=>{if(i<badge.length)badge[i]=!!b});
   if(Array.isArray(d.seen))d.seen.forEach((v,i)=>{if(v&&U[i])U[i].seen=true});
   displayCoins=coins}catch(e){}}
