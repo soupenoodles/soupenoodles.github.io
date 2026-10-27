@@ -41,7 +41,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.6.2';
+const VERSION='1.6.3';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:14},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:Array.from({length:14},()=>({counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}))};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[
@@ -357,19 +357,23 @@ lbl('TIME');
 acts.filter(([l])=>l.startsWith('Skip')).forEach(([l,f])=>mkBtn(l,f));
 lbl('ACTIONS');
 acts.filter(([l])=>!l.startsWith('+')&&!l.startsWith('Skip')).forEach(([l,f])=>mkBtn(l,f));
-lbl('REPORTS');
+lbl('ECONOMY TESTS');
+let lastEconomyTestCPS=null;
+const measuredCPS=()=>lastEconomyTestCPS!==null?lastEconomyTestCPS:Math.max(0,cps);
+const waitAtRate=cost=>measuredCPS()>0?(cost/measuredCPS()/60).toFixed(1)+' min':'∞ (no measured income)';
+const emitReport=(title,lines)=>{const body=['=== '+title+' v'+VERSION+' ===',...lines,'========================'];console.log('\n'+body.join('\n'));alert(body.join('\n'))};
 function balanceReportLines(){
-  const next=SHOPS[sc+1],vis=U.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0;
-  const payback=v=>cps>0?(v/cps/60).toFixed(1)+' min':'∞';
+  const next=SHOPS[shops.length],nextCost=next?U[7].cost():0,vis=U.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0,rate=measuredCPS();
   return [
-    'CPS: '+fmt(cps)+'/s',
-    next?('Next shop: '+fmt(next.tv)+' | '+payback(next.tv)+' (target 10-15 min)'):'Next shop: N/A',
-    'Buy TV (next): '+fmt(U[1].cost())+' | '+payback(U[1].cost()),
-    cheapest?('Cheapest visible upgrade: '+fmt(cheapest)+' | '+payback(cheapest)):'No upgrades visible',
+    'Measured rate: '+fmt(rate)+'/s'+(lastEconomyTestCPS!==null?' (last simulated 60s test)':' (live CPS estimate)'),
+    'Current balance: '+fmt(coins)+' | unlocked shops: '+shops.length+'/'+SHOPS.length,
+    next?('Next shop: '+next.n+' | cost '+fmt(nextCost)+' | '+waitAtRate(nextCost)+' at measured rate'):'Next shop: ALL UNLOCKED',
+    'Buy TV (current shop): '+fmt(U[1].cost())+' | '+waitAtRate(U[1].cost()),
+    cheapest?('Cheapest visible upgrade: '+fmt(cheapest)+' | '+waitAtRate(cheapest)):'No upgrades visible',
     lastBounceVal?('Last bounce: '+fmt(lastBounceVal)):'Last bounce: —',
     lastCornerVal?('Last corner: '+fmt(lastCornerVal)):'Last corner: —',
     (lastBounceVal&&lastCornerVal)?('Corner/bounce ratio: '+(lastCornerVal/lastBounceVal).toFixed(1)+'x (target 5-10x)'):'',
-    'TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Global upgrade scale: x'+shopUpgradeScale().toFixed(2),
+    'Current shop: '+SHOPS[sc].n+' | TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Global upgrade scale: x'+shopUpgradeScale().toFixed(2),
     'Prestige: '+prestigeGain()+' available | score '+prestigeScore()+' | claimed '+P.claimedScore
   ].filter(Boolean);
 }
@@ -385,19 +389,66 @@ function cappedUpgradeCostReport(){
   const total=rows.reduce((sum,row)=>sum+row.total,0);
   return {rows,total,scale};
 }
-const showBalanceReport=()=>{const L=balanceReportLines();console.log('\n=== BALANCE REPORT v'+VERSION+' ===\n'+L.join('\n')+'\n========================');alert(L.join('\n'))};
-mkBtn('Balance Report',showBalanceReport);
-mkBtn('Upgrade total',()=>{
-  const r=cappedUpgradeCostReport();
-  const L=['Capped upgrade cost (current global scale x'+r.scale.toFixed(2)+'):',...r.rows.map(x=>x.name+': '+fmt(x.total)),'TOTAL: '+fmt(r.total),'','Includes all levels of capped global upgrades. Excludes Buy TV, Merge, and New shop because their costs depend on shop, TV tier, purchase count, or merge count.','Reference only — next-shop base price at 1.2x capped upgrades: '+fmt(r.total*1.2)];
-  console.log('\n=== UPGRADE COST REPORT v'+VERSION+' ===\n'+L.join('\n')+'\n================================');alert(L.join('\n'));
+mkBtn('Balance Report (instant)',()=>emitReport('BALANCE REPORT',balanceReportLines()));
+mkBtn('Test A: Simulate 60s',()=>{
+  const startEarned=P.runEarned,startCoins=coins,startShop=SHOPS[sc].n,startTVs=tvs.map(v=>T[v.t].n).join(', '),beforeCPS=cps;
+  skip(60);
+  const earned=Math.max(0,P.runEarned-startEarned),delta=coins-startCoins;
+  lastEconomyTestCPS=earned/60;
+  emitReport('TEST A — SIMULATED 60s PASSIVE INCOME',[
+    'Method: 600 updates x 0.1s = 60 simulated seconds; no real waiting.',
+    'Shop selected: '+startShop+' | TVs at start: '+(startTVs||'none'),
+    'Coins before: '+fmt(startCoins)+' | after: '+fmt(coins),
+    'Earned during test: '+fmt(earned)+' | balance change: '+fmt(delta),
+    'Measured earnings rate: '+fmt(lastEconomyTestCPS)+'/s',
+    'HUD CPS before test: '+fmt(beforeCPS)+'/s',
+    'Note: simulation updates all unlocked shops; avoid changing upgrades/shops during a test.'
+  ]);
 });
-const autoBtn=mkBtn('Auto Report (10s)',()=>{});
-autoBtn.onclick=()=>{autoBtn.textContent='Waiting...';setTimeout(()=>{autoBtn.textContent='Auto Report (10s)';
+mkBtn('Test B: Upgrade Costs',()=>{
+  const rate=measuredCPS(),lines=['Rate used for wait estimates: '+fmt(rate)+'/s (wait time is not upgrade ROI).','Current global upgrade scale: x'+shopUpgradeScale().toFixed(2),''];
+  U.forEach((u,i)=>{
+    const lv=u.lv(),mx=typeof u.max==='function'?u.max():u.max;
+    if(u.n==='Buy TV'||u.n==='Merge'||u.n==='New shop')return;
+    lines.push(u.n+': level '+lv+'/'+mx+(lv>=mx?' (MAX)':' | next level '+fmt(u.cost())+' | save time '+waitAtRate(u.cost())));
+  });
   const r=cappedUpgradeCostReport();
-  const L=[...balanceReportLines(),'Capped upgrades total: '+fmt(r.total),'Reference only — next-shop base price at 1.2x capped upgrades: '+fmt(r.total*1.2)];
-  console.log('\n=== AUTO BALANCE REPORT v'+VERSION+' (10s) ===\n'+L.join('\n')+'\n========================================');alert(L.join('\n'));
-},10000)};
+  lines.push('','Total cost to buy every level of capped global upgrades: '+fmt(r.total),'This is total spend, not a claim that all upgrades are equally valuable.');
+  emitReport('TEST B — UPGRADE COST SNAPSHOT',lines);
+});
+mkBtn('Test C: TV & Merge',()=>{
+  const p=pair(),buyCost=U[1].cost(),mergeCost=U[3].cost(),tier=Number.isFinite(S.start)?S.start:0;
+  const lines=[
+    'Selected shop: '+SHOPS[sc].n+' (era max tier '+SHOPS[sc].eraMax+')',
+    'TVs in selected shop: '+tvs.length+'/'+slots(),
+    'TV tiers: '+(tvs.length?tvs.map(v=>T[v.t].n).join(', '):'none'),
+    'Next purchased TV: '+T[Math.min(T.length-1,tier)].n+' | cost '+fmt(buyCost)+' | wait '+waitAtRate(buyCost),
+    'Restock discount: '+Math.min(75,(S.restock||0)*5)+'%',
+    p?('Available merge: '+T[p[2]].n+' + '+T[p[2]].n+' → '+T[p[2]+1].n+' | cost '+fmt(mergeCost)+' | wait '+waitAtRate(mergeCost)):'Merge: unavailable (need two matching TV tiers)',
+    p?('Tier speed value: '+T[p[2]].sp+' → '+T[p[2]+1].sp+' ('+(T[p[2]+1].sp/T[p[2]].sp).toFixed(2)+'x base speed)'):'',
+    'These are cost/affordability measurements; actual earnings depend on bounce/corner behavior and other bonuses.'
+  ].filter(Boolean);
+  emitReport('TEST C — TV & MERGE SNAPSHOT',lines);
+});
+mkBtn('Test D: Shop Progression',()=>{
+  const next=SHOPS[shops.length],rate=measuredCPS(),nextCost=next?U[7].cost():0,prev=SHOPS[Math.max(0,shops.length-1)];
+  const lines=[
+    'Unlocked shops: '+shops.length+'/'+SHOPS.length,
+    'Current selected shop: '+SHOPS[sc].n+' | k '+SHOPS[sc].k,
+    'Highest unlocked shop: '+prev.n+' | k '+prev.k,
+    next?('Next shop: '+next.n+' | actual New Shop cost '+fmt(nextCost)+' | wait '+waitAtRate(nextCost)):'All shops unlocked',
+    next?('Shop k change: '+prev.k+' → '+next.k+' ('+(next.k/prev.k).toFixed(2)+'x multiplier)'):'',
+    'Price Tag discount: '+Math.min(90,(S.pricetag||0)*10)+'%',
+    'Measured income rate: '+fmt(rate)+'/s',
+    'This is a wait-time estimate at the measured rate; income may change after buying TVs/upgrades or switching investment strategy.'
+  ].filter(Boolean);
+  emitReport('TEST D — SHOP PROGRESSION SNAPSHOT',lines);
+});
+mkBtn('Upgrade Total',()=>{
+  const r=cappedUpgradeCostReport();
+  const L=['Capped upgrade cost (current global scale x'+r.scale.toFixed(2)+'):',...r.rows.map(x=>x.name+': '+fmt(x.total)),'TOTAL: '+fmt(r.total),'','Includes all levels of capped global upgrades. Excludes Buy TV, Merge, and New shop because their costs depend on shop, TV tier, purchase count, or merge count.'];
+  emitReport('UPGRADE COST REPORT',L);
+});
 lbl('TV SELECT');
  lbl('SHOP');
 const ssSel=document.createElement('select');for(let i=0;i<SHOPS.length;i++){const o=document.createElement('option');o.value=i;o.textContent=i+' '+SHOPS[i].n+' (k:'+SHOPS[i].k+')';ssSel.appendChild(o)}
