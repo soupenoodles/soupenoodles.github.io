@@ -41,7 +41,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.6.4';
+const VERSION='1.6.5';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:14},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:Array.from({length:14},()=>({counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}))};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[
@@ -99,7 +99,12 @@ function tvTint(i,sp,color){/* 'color' blend keeps the sprite's shading, destina
  if(!color)return sp;const k=i+'|'+color;if(TVT[k])return TVT[k];
  const c=document.createElement('canvas');c.width=sp.width;c.height=sp.height;const g=c.getContext('2d');
  g.drawImage(sp,0,0);g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(sp,0,0);return TVT[k]=c}
-const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,lucky:0,magnet:0,showroom:0,pricetag:0,restock:0,un:[true]};
+/* Upgrade levels are stored independently per shop. Each shop's effective level begins at the previous shop's maximum, while its local progress starts at zero. */
+const UPGRADE_MAX={speed:20,corner:10,crowd:10,stopC:10,start:7,lucky:10,magnet:15,showroom:20,pricetag:10,restock:15};
+const S=new Proxy({speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,lucky:0,magnet:0,showroom:0,pricetag:0,restock:0,un:[true]}, {
+ get(target,key){if(typeof key==='string'&&Object.prototype.hasOwnProperty.call(UPGRADE_MAX,key)&&typeof shops!=='undefined'&&typeof sc!=='undefined'&&shops[sc])return upgradeOffset(key)+localUpgradeLevel(key);return target[key]},
+ set(target,key,value){if(typeof key==='string'&&Object.prototype.hasOwnProperty.call(UPGRADE_MAX,key)&&typeof shops!=='undefined'&&typeof sc!=='undefined'&&shops[sc]){shops[sc].upgrades=shops[sc].upgrades||{};shops[sc].upgrades[key]=Math.max(0,Math.min(UPGRADE_MAX[key],Number(value)-upgradeOffset(key)));return true}target[key]=value;return true}
+});
 /* Prestige is persistent; runEarned tracks gross income, including money later spent. */
 const P={points:0,spent:0,claimedScore:0,lifetimeEarned:0,runEarned:0,prestiges:0,bestShop:0,skills:{income:0,merge:0,start:0}};
 const SKILLS=[{id:'income',name:'Signal Amplifier',desc:'+10% income per level',max:10,cost:l=>l+1},{id:'merge',name:'Fusion Protocol',desc:'-8% merge cost per level',max:5,cost:l=>l+1},{id:'start',name:'Emergency Fund',desc:'Start each run with more coins',max:5,cost:l=>l+1}];
@@ -135,33 +140,41 @@ function pedFitOf(wi,li){
   if(bs.length&&lb)f={k:(Math.max(...bs.map(q=>q[1]))-Math.min(...bs.map(q=>q[0])))/(lb[1]-lb[0]),wb:Math.max(...bs.map(q=>q[1])),wcx:bs.reduce((a,q)=>a+(q[2]+q[3])/2,0)/bs.length,lb:lb[1],lcx:(lb[2]+lb[3])/2}}catch(e){}
  if(Math.abs(f.k-1)<.02)f.k=1;return pedFit[key]=f}
 const SB=[0,0,.1,.25,.5,1];/* showroom bonus by distinct tiers; 5+ stays at the last value */
-const crowdN=()=>2+S.crowd,showB=()=>SB[Math.min(new Set(tvs.map(v=>v.t)).size,SB.length-1)]+(S.showroom||0)*.05,eraPriceMult=(shopIndex,tier)=>Math.pow(3,Math.max(0,tier-SHOPS[shopIndex].eraMax)),AB=['No ability','Corners +25%','Neighbors get 50%','Bigger logo, -25%','Twin logos x3','No ability','Logo splits into 3, x4 corner','Logos heal (never lose speed), x6 corner','Pulls neighbors in, x10 corner, all bounces pay corner rate'],slots=()=>10, mult=()=>1+.25*S.floors;
+const crowdN=()=>Math.min(100,2+S.crowd),showB=()=>SB[Math.min(new Set(tvs.map(v=>v.t)).size,SB.length-1)]+(S.showroom||0)*.05,eraPriceMult=(shopIndex,tier)=>Math.pow(3,Math.max(0,tier-SHOPS[shopIndex].eraMax)),AB=['No ability','Corners +25%','Neighbors get 50%','Bigger logo, -25%','Twin logos x3','No ability','Logo splits into 3, x4 corner','Logos heal (never lose speed), x6 corner','Pulls neighbors in, x10 corner, all bounces pay corner rate'],slots=()=>10, mult=()=>1+.25*S.floors;
 const nbrs=i=>i===0?[1,2,3]:[(i-1)%3>0?i-1:-1,(i-1)%3<2?i+1:-1,i+3<=9?i+3:-1,i>3?i-3:0];
 const wrap=(s,n)=>{const o=[];let l='';s.split(' ').forEach(w=>{if((l+' '+w).trim().length>n){o.push(l);l=w}else l=(l+' '+w).trim()});if(l)o.push(l);return o};
 const mk1=t=>{const hu=Math.random()*360;return{t,w:t===3?21:14,h:t===3?12:8,x:Math.random()*(SW-(t===3?21:14)),y:Math.random()*(SH-(t===3?12:8)),dx:Math.random()<.5?-1:1,dy:Math.random()<.5?-1:1,a:.5+Math.random()*.5,hue:hu,hueTarget:hu,since:0,flash:0,near:0,ct:0}};
 const mk=t=>{const o=mk1(t);if(t===4){o.twin=mk1(4);o.twin.partner=o;o.partner=o.twin;o.twin.isTwin=true}
  if(t===6){o.cl=[mk1(6),mk1(6)];o.cl.forEach((c,k)=>{c.isTwin=true;c.partner=o;c.x=Math.min(SW-c.w,o.x+4*(k+1));c.y=Math.min(SH-c.h,o.y+4*(k+1))})}return o};
-let tvs=[mk(0)];const shops=[{tvs,fit:0,bought:0}],badge=SHOPS.map(()=>false);let sc=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.reduce((a,s)=>a+s.tvs.length,0)<=1)return;if(sellArm<=0){sellArm=2;return}const v=sellVal(sel);gainCoins(v);tvs.splice(tvs.indexOf(sel),1);shops[sc].tvs=tvs;sel=null;sellArm=0;toast='SOLD +'+fmt(v);toastT=1.8;shake=1}
+let tvs=[mk(0)];const shops=[{tvs,fit:0,bought:0,upgrades:{}}],badge=SHOPS.map(()=>false);let sc=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;
+function localUpgradeLevel(key,shopIndex=sc){const shop=shops[shopIndex];return Math.max(0,Math.min(UPGRADE_MAX[key]||0,Number(shop&&shop.upgrades&&shop.upgrades[key])||0))}
+function upgradeOffset(key,shopIndex=sc){return Math.max(0,shopIndex)* (UPGRADE_MAX[key]||0)}
+function cornerZoneValue(level){return .1+.7*(1-Math.exp(-Math.max(0,level)/30))}
+function luckyZoneValue(level){return .15*(1-Math.exp(-Math.max(0,level)/35))}
+function stopChance(){return Math.min(.9,.12+.5*(1-Math.exp(-Math.max(0,S.stopC)/35)))}
+function priceTagDiscount(){return Math.min(.95,Math.max(0,S.pricetag)/(Math.max(0,S.pricetag)+10))}
+function restockDiscount(){return .75*(1-Math.exp(-Math.max(0,S.restock)/25))}
+const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.reduce((a,s)=>a+s.tvs.length,0)<=1)return;if(sellArm<=0){sellArm=2;return}const v=sellVal(sel);gainCoins(v);tvs.splice(tvs.indexOf(sel),1);shops[sc].tvs=tvs;sel=null;sellArm=0;toast='SOLD +'+fmt(v);toastT=1.8;shake=1}
 function goShop(k){if(k===sc)return;sfx('switch');tabT=.2;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;sel=null;badge[k]=false}   
-const people=[...Array(12)].map((_,i)=>({x:i*17,d:i%2?1:-1,stop:0,v:10+Math.random()*8,c:pedRoll(),fr:Math.random()*4}));
+const people=[...Array(100)].map((_,i)=>({x:i*17,d:i%2?1:-1,stop:0,v:10+Math.random()*8,c:pedRoll(),fr:Math.random()*4}));
 const fmt=n=>n<10?(Math.floor(n*10+1e-6)/10).toFixed(1):n<1e3?''+Math.floor(n):n<1e6?(n/1e3).toFixed(n<1e4?2:1)+'K':n<1e9?(n/1e6).toFixed(2)+'M':n<1e12?(n/1e9).toFixed(2)+'B':(n/1e12).toFixed(2)+'T';   
 const pair=()=>{for(let t=0;t<T.length-1;t++){const ix=tvs.map((v,i)=>v.t===t?i:-1).filter(i=>i>=0);if(ix.length>1)return[ix[0],ix[1],t]}return null};
 const c1=x=>x<10?Math.round(x*10)/10:Math.round(x),sumBuys=()=>shops.reduce((a,s)=>a+s.bought,0);
 const highestShop=()=>Math.max(0,shops.length-1),prestigeScore=()=>Math.max(0,(P.bestShop||0)*2+Math.floor(Math.log10(Math.max(1,P.lifetimeEarned))/3)),prestigeGain=()=>Math.max(0,prestigeScore()-P.claimedScore),skillLevel=id=>P.skills[id]||0,shopUpgradeScale=()=>Math.pow(SHOPS[highestShop()].k,.75),gainCoins=n=>{if(!Number.isFinite(n)||n<=0)return;coins+=n;P.lifetimeEarned+=n;P.runEarned+=n};
 const U=[
-{ic:'⚡',n:'Speed',s:'Logos go faster',d:'Logos move faster: more bounces, more coins.',max:20,lv:()=>S.speed,cost:()=>c1(1*1.55**S.speed*shopUpgradeScale()),buy(){S.speed++},eff:()=>`+${10*S.speed}% > +${10*S.speed+10}%`},
-{ic:'📺',n:'Buy TV',s:'Add a TV here',d:'Adds a TV to a free slot.',max:()=>slots(),lv:()=>tvs.length,cost:()=>c1(SHOPS[sc].firstTV*1.7**shops[sc].bought*(1-Math.min(.75,(S.restock||0)*.05))*eraPriceMult(sc,S.start)),can:()=>tvs.length<slots()?'':'No free slot',buy(){const t=S.start;tvs.push(mk(t));shops[sc].bought++;shops[sc].tvs=tvs;if(!S.un[t]){S.un[t]=true;toast='NEW TV: '+T[t].n+'!';toastT=3}},eff:()=>`${tvs.length} > ${tvs.length+1} TVs`},
-{ic:'◎',n:'Corner zone',s:'Easier corners',d:'Wider zone counts as a corner hit.',max:15,lv:()=>S.corner,cost:()=>c1(3*1.65**S.corner*shopUpgradeScale()),buy(){S.corner++},eff:()=>`${(.1+.15*S.corner).toFixed(2)}px > ${(.25+.15*S.corner).toFixed(2)}px`},
+{ic:'⚡',n:'Speed',s:'Logos go faster',d:'Logos move faster: more bounces, more coins.',max:20,lv:()=>localUpgradeLevel('speed'),cost:()=>c1(1*1.55**S.speed),buy(){S.speed++},eff:()=>`+${10*S.speed}% > +${10*(S.speed+1)}%`},
+{ic:'📺',n:'Buy TV',s:'Add a TV here',d:'Adds a TV to a free slot.',max:()=>slots(),lv:()=>tvs.length,cost:()=>c1(SHOPS[sc].firstTV*1.7**shops[sc].bought*(1-restockDiscount())*eraPriceMult(sc,Math.min(T.length-1,S.start))),can:()=>tvs.length<slots()?'':'No free slot',buy(){const t=Math.min(T.length-1,S.start);tvs.push(mk(t));shops[sc].bought++;shops[sc].tvs=tvs;if(!S.un[t]){S.un[t]=true;toast='NEW TV: '+T[t].n+'!';toastT=3}},eff:()=>`${tvs.length} > ${tvs.length+1} TVs`},
+{ic:'◎',n:'Corner zone',s:'Easier corners',d:'A controlled corner radius; later shops improve it without making every bounce a corner.',max:10,lv:()=>localUpgradeLevel('corner'),cost:()=>c1(3*1.65**S.corner),buy(){S.corner++},eff:()=>`${cornerZoneValue(S.corner).toFixed(2)}px > ${cornerZoneValue(S.corner+1).toFixed(2)}px`},
 {ic:'⇄',n:'Merge',s:'Fuse a pair',d:'Fuse two matching TVs into the next tier.',lv:()=>0,cost:()=>{const p=pair();return c1(6*1.5**S.merges*eraPriceMult(sc,p?p[2]+1:0)*Math.max(.6,1-.08*skillLevel('merge'))*shopUpgradeScale())},can:()=>pair()?'':'Need 2 same TVs',buy(){const[a,b,t]=pair();tvs=tvs.filter((_,i)=>i!==a&&i!==b);tvs.splice(a,0,mk(t+1));sel=null;shops[sc].tvs=tvs;S.merges++;if(!S.un[t+1]){S.un[t+1]=true;toast='NEW TV: '+T[t+1].n+'!';toastT=3}},eff:()=>{const p=pair();return p?T[p[2]].n+' > '+T[p[2]+1].n:'-'}},
-{ic:'👥',n:'Crowd',s:'More people',d:'More people walk past the shop.',max:10,lv:()=>S.crowd,cost:()=>c1(4*1.65**S.crowd*shopUpgradeScale()),buy(){S.crowd++},eff:()=>`${crowdN()} > ${crowdN()+1} passersby`},
-{ic:'👀',n:'Attention',s:'More people stop',d:'More passersby stop to watch a corner.',max:10,lv:()=>S.stopC,cost:()=>c1(6*1.7**S.stopC*shopUpgradeScale()),buy(){S.stopC++},eff:()=>`${12+3*S.stopC}% > ${15+3*S.stopC}%`},
-{ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier.',max:7,lv:()=>S.start,cost:()=>c1(250*15**S.start*shopUpgradeScale()),buy(){S.start++},eff:()=>`${T[S.start].n} > ${T[S.start+1].n}`},
-{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:13,lv:()=>shops.length-1,cost:()=>c1((SHOPS[shops.length]?.tv||0)*Math.max(.1,1-(S.pricetag||0)*.1)),can:()=>shops.length>=SHOPS.length?'All shops unlocked':'',buy(){shops.push({tvs:[],fit:0,bought:0});P.bestShop=Math.max(P.bestShop,shops.length-1);goShop(shops.length-1)},eff:()=>shops.length<SHOPS.length?`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`:'All shops unlocked'},
-{ic:'🍀',n:'Lucky',s:'Better corner odds',d:'Widens the corner hit zone per level.',max:10,lv:()=>S.lucky||0,cost:()=>c1(50*1.8**(S.lucky||0)*shopUpgradeScale()),buy(){S.lucky=(S.lucky||0)+1},eff:()=>`+${(S.lucky||0)*3}% > +${((S.lucky||0)+1)*3}% zone`},
-{ic:'🧲',n:'Magnet',s:'Bounces pay more',d:'Each bounce gives extra coins per level.',max:15,lv:()=>S.magnet||0,cost:()=>c1(30*1.6**(S.magnet||0)*shopUpgradeScale()),buy(){S.magnet=(S.magnet||0)+1},eff:()=>`+${(S.magnet||0)*10}% > +${((S.magnet||0)+1)*10}% bounce`},
-{ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Extra showroom % per level, stacks with tier variety.',max:20,lv:()=>S.showroom||0,cost:()=>c1(100*1.7**(S.showroom||0)*shopUpgradeScale()),buy(){S.showroom=(S.showroom||0)+1},eff:()=>`+${(S.showroom||0)*5}% > +${((S.showroom||0)+1)*5}% showroom`},
-{ic:'🏷️',n:'Price tag',s:'Shops cost less to open',d:'Each level reduces next shop cost by 10%.',max:10,lv:()=>S.pricetag||0,cost:()=>c1(500*2**(S.pricetag||0)*shopUpgradeScale()),buy(){S.pricetag=(S.pricetag||0)+1},eff:()=>`${Math.min(90,(S.pricetag||0)*10)}% > ${Math.min(90,((S.pricetag||0)+1)*10)}% discount`},
-{ic:'📦',n:'Restock',s:'Discount new TVs',d:'Each level reduces Buy TV cost by 5%, up to 75%.',max:15,lv:()=>S.restock||0,cost:()=>c1(200*1.8**(S.restock||0)*shopUpgradeScale()),buy(){S.restock=(S.restock||0)+1},eff:()=>`${Math.min(75,(S.restock||0)*5)}% > ${Math.min(75,((S.restock||0)+1)*5)}% TV discount`}
+{ic:'👥',n:'Crowd',s:'More people',d:'More people walk past the shop.',max:10,lv:()=>localUpgradeLevel('crowd'),cost:()=>c1(4*1.65**S.crowd),buy(){S.crowd++},eff:()=>`${crowdN()} > ${Math.min(100,crowdN()+1)} passersby`},
+{ic:'👀',n:'Attention',s:'More people stop',d:'More passersby stop to watch a corner.',max:10,lv:()=>localUpgradeLevel('stopC'),cost:()=>c1(6*1.7**S.stopC),buy(){S.stopC++},eff:()=>`${Math.round(stopChance()*100)}% > ${Math.round(Math.min(.9,.12+.5*(1-Math.exp(-(S.stopC+1)/35)))*100)}%`},
+{ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier.',max:7,lv:()=>localUpgradeLevel('start'),cost:()=>c1(250*15**S.start),buy(){S.start++},eff:()=>`${T[Math.min(T.length-1,S.start)].n} > ${T[Math.min(T.length-1,S.start+1)].n}`},
+{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:13,lv:()=>shops.length-1,cost:()=>c1((SHOPS[shops.length]?.tv||0)*Math.max(.05,1-priceTagDiscount())),can:()=>shops.length>=SHOPS.length?'All shops unlocked':'',buy(){shops.push({tvs:[],fit:0,bought:0,upgrades:{}});P.bestShop=Math.max(P.bestShop,shops.length-1);goShop(shops.length-1)},eff:()=>shops.length<SHOPS.length?`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`:'All shops unlocked'},
+{ic:'🍀',n:'Lucky',s:'Better corner odds',d:'Widens the corner hit zone per level.',max:10,lv:()=>localUpgradeLevel('lucky'),cost:()=>c1(50*1.8**(S.lucky||0)),buy(){S.lucky=(S.lucky||0)+1},eff:()=>`${(luckyZoneValue(S.lucky)*100).toFixed(1)}% > ${(luckyZoneValue(S.lucky+1)*100).toFixed(1)}% zone`},
+{ic:'🧲',n:'Magnet',s:'Bounces pay more',d:'Each bounce gives extra coins per level.',max:15,lv:()=>localUpgradeLevel('magnet'),cost:()=>c1(30*1.6**(S.magnet||0)),buy(){S.magnet=(S.magnet||0)+1},eff:()=>`+${(S.magnet||0)*10}% > +${((S.magnet||0)+1)*10}% bounce`},
+{ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Extra showroom % per level, stacks with tier variety.',max:20,lv:()=>localUpgradeLevel('showroom'),cost:()=>c1(100*1.7**(S.showroom||0)),buy(){S.showroom=(S.showroom||0)+1},eff:()=>`+${(S.showroom||0)*5}% > +${((S.showroom||0)+1)*5}% showroom`},
+{ic:'🏷️',n:'Price tag',s:'Shops cost less to open',d:'Increasing discount with diminishing returns; later shops can improve it further.',max:10,lv:()=>localUpgradeLevel('pricetag'),cost:()=>c1(500*2**(S.pricetag||0)),buy(){S.pricetag=(S.pricetag||0)+1},eff:()=>`${Math.round(priceTagDiscount()*100)}% > ${Math.round(Math.min(.95,(S.pricetag+1)/(S.pricetag+11))*100)}% discount`},
+{ic:'📦',n:'Restock',s:'Discount new TVs',d:'Discounts TV purchases with diminishing returns across shops.',max:15,lv:()=>localUpgradeLevel('restock'),cost:()=>c1(200*1.8**(S.restock||0)),buy(){S.restock=(S.restock||0)+1},eff:()=>`${Math.round(restockDiscount()*100)}% > ${Math.round(.75*(1-Math.exp(-(S.restock+1)/25))*100)}% TV discount`}
 ];
 U[0].seen=U[1].seen=true;
 U.forEach((u,i)=>{DEBUG.upgradeCosts[i]={override:null};const f=u.cost;u.cost=()=>{const o=DEBUG.upgradeCosts[i].override;return o!==null&&o!==undefined?o:f()}});
@@ -203,12 +216,12 @@ function bounce(tv,hx,hy,i){
  const T0=T[tv.t],qs=1/(T0.split||1),m=mult()*(1+showB())*T0.c*SHOPS[shopI].k*(1+.1*skillLevel('income'));tv.since++;tv.hueTarget+=47;tv.a=.4+Math.random()*.75;
  const g=Math.min((T0.bp||.1)*m*(tv.t===3?.75:1)*qs*(1+(S.magnet||0)*.1),Math.max(SHOPS[shopI].tv*.5,10));gainCoins(g);lastBounceVal=g;   
 
- let win=((.1+.15*S.corner+(S.lucky||0)*.03)*(tv===sel?1-.12*boost:1)+tv.since*.003)*(tv.t===3?1.5:1),d=99;
+ let win=((cornerZoneValue(S.corner)+luckyZoneValue(S.lucky||0))*(tv===sel?1-.12*boost:1)+tv.since*.003)*(tv.t===3?1.5:1),d=99;
  if(hx&&hy)d=0;else if(hx)d=Math.min(tv.y,SH-LH-tv.y);else d=Math.min(tv.x,SW-LW-tv.x);
  if(d<=win)sfx('corner');else if(shopI===sc)sfx('bounce');
  if(d<=win){
   const cx=tv.x<(SW-LW)/2,cy=tv.y<(SH-LH)/2;tv.x=cx?0:SW-LW;tv.y=cy?0:SH-LH;tv.dx=cx?1:-1;tv.dy=cy?1:-1;
-  const w=i===0?people.filter((p,k)=>k<crowdN()&&!p.stop&&Math.random()<.12+.03*S.stopC):[];w.forEach(p=>p.stop=3);
+  const w=i===0?people.filter((p,k)=>k<crowdN()&&!p.stop&&Math.random()<stopChance()):[];w.forEach(p=>p.stop=3);
   let pay=1*m*(1+.2*w.length)*(tv.t===1?1.25:1)*(T0.cm||1)*qs,tag='';
   const now=performance.now()/1000;
   if(tv.t===4&&tv.partner.ct&&now-tv.partner.ct<5){pay*=3;tag='DOUBLE ';tv.partner.ct=0}else tv.ct=now;
@@ -344,7 +357,7 @@ const acts=[
 ['Skip 1m',()=>skip(60)],['Skip 10m',()=>skip(600)],['Skip 1h',()=>skip(3600)],
 ['Force corner',force],['Unlock tiers',()=>{S.un=T.map(()=>true)}],
 ['Add TV',()=>{const t=+dsel.value;if(tvs.length<slots()){tvs.push(mk(t));shops[sc].tvs=tvs;S.un[t]=true}}],
-['Free shop',()=>{if(shops.length<SHOPS.length){shops.push({tvs:[],fit:0,bought:0});goShop(shops.length-1)}}],
+['Free shop',()=>{if(shops.length<SHOPS.length){shops.push({tvs:[],fit:0,bought:0,upgrades:{}});goShop(shops.length-1)}}],
 ['Fill all tiers',()=>{shops.forEach(s=>{s.tvs=T.map((_,t)=>mk(t))});tvs=shops[sc].tvs;sel=null}],
 ['Fill current shop',()=>{shops[sc].tvs=T.map((_,t)=>mk(t));tvs=shops[sc].tvs;sel=null}],
 ['Reset all costs',()=>DEBUG.resetAllCosts()]
@@ -373,19 +386,19 @@ function balanceReportLines(){
     lastBounceVal?('Last bounce: '+fmt(lastBounceVal)):'Last bounce: —',
     lastCornerVal?('Last corner: '+fmt(lastCornerVal)):'Last corner: —',
     (lastBounceVal&&lastCornerVal)?('Corner/bounce ratio: '+(lastCornerVal/lastBounceVal).toFixed(1)+'x (target 5-10x)'):'',
-    'Current shop: '+SHOPS[sc].n+' | TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Global upgrade scale: x'+shopUpgradeScale().toFixed(2),
+    'Current shop: '+SHOPS[sc].n+' | TVs: '+tvs.length+' | Shop k: '+SHOPS[sc].k+' | Upgrade levels are shop-local with inherited starting levels',
     'Prestige: '+prestigeGain()+' available | score '+prestigeScore()+' | claimed '+P.claimedScore
   ].filter(Boolean);
 }
 function cappedUpgradeCostReport(){
-  // Mirrors the cost curves in U. The scale is the current highest-shop global multiplier.
-  const scale=shopUpgradeScale();
+  // Mirrors first-shop costs. Each later shop inherits the previous shop's maximum effective level and price.
+  const scale=1;
   const defs=[
-    ['Speed',1,1.55,20],['Corner zone',3,1.65,15],['Crowd',4,1.65,10],
+    ['Speed',1,1.55,20],['Corner zone',3,1.65,10],['Crowd',4,1.65,10],
     ['Attention',6,1.7,10],['TV grade',250,15,7],['Lucky',50,1.8,10],
     ['Magnet',30,1.6,15],['Showroom',100,1.7,20],['Price tag',500,2,10],['Restock',200,1.8,15]
   ];
-  const rows=defs.map(([name,base,mult,max])=>{let total=0;for(let level=0;level<max;level++)total+=c1(base*mult**level*scale);return {name,total}});
+  const rows=defs.map(([name,base,mult,max])=>{let total=0;const startLevel=sc*max;for(let level=0;level<max;level++)total+=c1(base*mult**(startLevel+level)*scale);return {name,total}});
   const total=rows.reduce((sum,row)=>sum+row.total,0);
   return {rows,total,scale};
 }
@@ -406,7 +419,7 @@ mkBtn('Test A: Simulate 60s',()=>{
   ]);
 });
 mkBtn('Test B: Upgrade Costs',()=>{
-  const rate=measuredCPS(),lines=['Rate used for wait estimates: '+fmt(rate)+'/s (wait time is not upgrade ROI).','Current global upgrade scale: x'+shopUpgradeScale().toFixed(2),''];
+  const rate=measuredCPS(),lines=['Rate used for wait estimates: '+fmt(rate)+'/s (wait time is not upgrade ROI).','Upgrade costs use inherited shop levels; current shop index: '+sc,''];
   U.forEach((u,i)=>{
     const lv=u.lv(),mx=typeof u.max==='function'?u.max():u.max;
     if(u.n==='Buy TV'||u.n==='Merge'||u.n==='New shop')return;
@@ -423,7 +436,7 @@ mkBtn('Test C: TV & Merge',()=>{
     'TVs in selected shop: '+tvs.length+'/'+slots(),
     'TV tiers: '+(tvs.length?tvs.map(v=>T[v.t].n).join(', '):'none'),
     'Next purchased TV: '+T[Math.min(T.length-1,tier)].n+' | cost '+fmt(buyCost)+' | wait '+waitAtRate(buyCost),
-    'Restock discount: '+Math.min(75,(S.restock||0)*5)+'%',
+    'Restock discount: '+Math.round(restockDiscount()*100)+'%',
     p?('Available merge: '+T[p[2]].n+' + '+T[p[2]].n+' → '+T[p[2]+1].n+' | cost '+fmt(mergeCost)+' | wait '+waitAtRate(mergeCost)):'Merge: unavailable (need two matching TV tiers)',
     p?('Tier speed value: '+T[p[2]].sp+' → '+T[p[2]+1].sp+' ('+(T[p[2]+1].sp/T[p[2]].sp).toFixed(2)+'x base speed)'):'',
     'These are cost/affordability measurements; actual earnings depend on bounce/corner behavior and other bonuses.'
@@ -437,9 +450,9 @@ mkBtn('Test D: Shop Progression',()=>{
     'Current selected shop: '+SHOPS[sc].n+' | k '+SHOPS[sc].k,
     'Highest unlocked shop: '+prev.n+' | k '+prev.k,
     next?('Next shop: '+next.n+' | actual New Shop cost '+fmt(nextCost)+' | wait '+waitAtRate(nextCost)):'All shops unlocked',
-    next?('First TV in '+next.n+': '+fmt(c1(next.firstTV*(1-Math.min(.75,(S.restock||0)*.05))*eraPriceMult(shops.length,S.start)))+' | shop starts empty'):'',
+    next?('First TV in '+next.n+': '+fmt(c1(next.firstTV*(1-restockDiscount())*eraPriceMult(shops.length,S.start)))+' | shop starts empty'):'',
     next?('Shop k change: '+prev.k+' → '+next.k+' ('+(next.k/prev.k).toFixed(2)+'x multiplier)'):'',
-    'Price Tag discount: '+Math.min(90,(S.pricetag||0)*10)+'%',
+    'Price Tag discount: '+Math.round(priceTagDiscount()*100)+'%',
     'Measured income rate: '+fmt(rate)+'/s',
     'This is a wait-time estimate at the measured rate; income may change after buying TVs/upgrades or switching investment strategy.'
   ].filter(Boolean);
@@ -453,7 +466,7 @@ mkBtn('Upgrade Total',()=>{
 lbl('TV SELECT');
  lbl('SHOP');
 const ssSel=document.createElement('select');for(let i=0;i<SHOPS.length;i++){const o=document.createElement('option');o.value=i;o.textContent=i+' '+SHOPS[i].n+' (k:'+SHOPS[i].k+')';ssSel.appendChild(o)}
-const ssGo=document.createElement('button');ssGo.textContent='Go';ssGo.onclick=()=>{const i=+ssSel.value;while(shops.length<=i)shops.push({tvs:[],fit:0,bought:0});sc=i;tvs=shops[i].tvs;sel=null;refresh()};
+const ssGo=document.createElement('button');ssGo.textContent='Go';ssGo.onclick=()=>{const i=+ssSel.value;while(shops.length<=i)shops.push({tvs:[],fit:0,bought:0,upgrades:{}});sc=i;tvs=shops[i].tvs;sel=null;refresh()};
 DV.appendChild(ssSel);DV.appendChild(ssGo);   
 DV.appendChild(dsel);     
  
@@ -498,7 +511,7 @@ function prestigeReset(){
  const earned=prestigeGain();if(earned<=0)return;
  P.points+=earned;P.claimedScore=prestigeScore();P.prestiges++;
  coins=0;corners=0;sc=0;shopI=0;badge.fill(false);S.speed=0;S.corner=0;S.crowd=0;S.floors=0;S.bought=1;S.merges=0;S.start=0;S.stopC=0;S.lucky=0;S.magnet=0;S.showroom=0;S.pricetag=0;S.restock=0;S.un=[true];
- shops.length=0;const first=[mk(0)];shops.push({tvs:first,fit:0,bought:0});tvs=first;sel=null;displayCoins=0;cps=0;lastCoins=0;P.runEarned=0;P.lifetimeEarned=Math.max(0,P.lifetimeEarned);coins=Math.floor(skillLevel('start')*100);displayCoins=coins;toast='PRESTIGE! +'+earned+' SKILL POINTS';toastT=4;saveGame();renderPrestige();refresh();
+ shops.length=0;const first=[mk(0)];shops.push({tvs:first,fit:0,bought:0,upgrades:{}});tvs=first;sel=null;displayCoins=0;cps=0;lastCoins=0;P.runEarned=0;P.lifetimeEarned=Math.max(0,P.lifetimeEarned);coins=Math.floor(skillLevel('start')*100);displayCoins=coins;toast='PRESTIGE! +'+earned+' SKILL POINTS';toastT=4;saveGame();renderPrestige();refresh();
 }
 function renderPrestige(){
  PB.innerHTML='';
@@ -550,17 +563,22 @@ function sfx(k){
  if(!CFG.sound||!AU.ctx||!AU.buf[k])return;const c=SFX[k];if(c.max&&(AU.n[k]||0)>=c.max)return;
  try{const s=AU.ctx.createBufferSource(),g=AU.ctx.createGain();s.buffer=AU.buf[k];g.gain.value=c.vol;s.connect(g);g.connect(AU.ctx.destination);AU.n[k]=(AU.n[k]||0)+1;s.onended=()=>{AU.n[k]=Math.max(0,(AU.n[k]||1)-1)};s.start()}catch(e){}}
 /* SAVE / LOAD: localStorage key "cornerShop" */
-function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShop',JSON.stringify({v:VERSION,coins,corners,sc,S,P,badge,seen:U.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,fit:s.fit}))}))}catch(e){}}
+function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShop',JSON.stringify({v:VERSION,coins,corners,sc,S,P,badge,seen:U.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,fit:s.fit,upgrades:s.upgrades||{}}))}))}catch(e){}}
 function loadGame(){
  let d=null;try{d=JSON.parse(localStorage.getItem('cornerShop')||'null')}catch(e){}
  if(!d||typeof d!=='object')return;
  try{
-  const ns=Array.isArray(d.shops)?d.shops.slice(0,SHOPS.length).map(s=>({tvs:(Array.isArray(s.tvs)?s.tvs:[]).slice(0,slots()).map(t=>mk(Math.max(0,Math.min(T.length-1,t|0)))),bought:+s.bought||0,fit:+s.fit||0})):[];
+  const ns=Array.isArray(d.shops)?d.shops.slice(0,SHOPS.length).map(s=>({tvs:(Array.isArray(s.tvs)?s.tvs:[]).slice(0,slots()).map(t=>mk(Math.max(0,Math.min(T.length-1,t|0)))),bought:+s.bought||0,fit:+s.fit||0,upgrades:s.upgrades&&typeof s.upgrades==='object'?Object.fromEntries(Object.keys(UPGRADE_MAX).map(k=>[k,Math.max(0,Math.min(UPGRADE_MAX[k],Number(s.upgrades[k])||0))])):{}})):[];
   if(ns.length){shops.length=0;ns.forEach(s=>shops.push(s))}
   if(!shops.some(s=>s.tvs.length))shops[0].tvs.push(mk(0));
   coins=+d.coins||0;corners=+d.corners||0;
   if(d.P&&typeof d.P==='object'){['points','spent','claimedScore','lifetimeEarned','runEarned','prestiges','bestShop'].forEach(k=>{if(Number.isFinite(+d.P[k]))P[k]=Math.max(0,+d.P[k])});if(d.P.skills&&typeof d.P.skills==='object')SKILLS.forEach(sk=>{P.skills[sk.id]=Math.max(0,Math.min(sk.max,+d.P.skills[sk.id]||0))})}else P.bestShop=Math.max(P.bestShop,shops.length-1);
-  if(d.S&&typeof d.S==='object'){Object.keys(S).forEach(k=>{if(k!=='un'&&typeof d.S[k]==='number')S[k]=d.S[k]});S.un=Array.isArray(d.S.un)?d.S.un.map(Boolean):[true];S.un[0]=true}
+  if(d.S&&typeof d.S==='object'){
+   Object.keys(S).forEach(k=>{if(k!=='un'&&!Object.prototype.hasOwnProperty.call(UPGRADE_MAX,k)&&typeof d.S[k]==='number')S[k]=d.S[k]});
+   S.un=Array.isArray(d.S.un)?d.S.un.map(Boolean):[true];S.un[0]=true;
+   const hasShopUpgradeData=ns.some(x=>Object.keys(x.upgrades||{}).length>0);
+   if(!hasShopUpgradeData)Object.keys(UPGRADE_MAX).forEach(k=>{shops[0].upgrades[k]=Math.max(0,Math.min(UPGRADE_MAX[k],Number(d.S[k])||0))});
+  }
   sc=Math.max(0,Math.min(shops.length-1,d.sc|0));tvs=shops[sc].tvs;P.bestShop=Math.max(P.bestShop,shops.length-1);
   if(Array.isArray(d.badge))d.badge.forEach((b,i)=>{if(i<badge.length)badge[i]=!!b});
   if(Array.isArray(d.seen))d.seen.forEach((v,i)=>{if(v&&U[i])U[i].seen=true});
