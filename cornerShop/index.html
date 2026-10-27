@@ -41,7 +41,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.6.3';
+const VERSION='1.6.4';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:14},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:Array.from({length:14},()=>({counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}))};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[
@@ -104,22 +104,22 @@ const S={speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,luc
 const P={points:0,spent:0,claimedScore:0,lifetimeEarned:0,runEarned:0,prestiges:0,bestShop:0,skills:{income:0,merge:0,start:0}};
 const SKILLS=[{id:'income',name:'Signal Amplifier',desc:'+10% income per level',max:10,cost:l=>l+1},{id:'merge',name:'Fusion Protocol',desc:'-8% merge cost per level',max:5,cost:l=>l+1},{id:'start',name:'Emergency Fund',desc:'Start each run with more coins',max:5,cost:l=>l+1}];
 const SHOPS=[
-/* Normal timeline: eraMax is the highest TV grade considered ordinary in this shop. */
-{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,eraMax:1,sh:[76,110,145],sx:100.2,cx:99,cy:201},
-{n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:75,eraMax:1,sh:[77,109,141],sx:97.0,cx:87,cy:198},
-{n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.2,tv:900,eraMax:1,sh:[74,107,142],sx:98.7,cx:92,cy:203},
-{n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:10800,eraMax:1,sh:[70,112,151],sx:99.8,cx:96,cy:214},
-{n:'1990s',bg:'#241e1a',shelf:'#b77a42',k:5,tv:129600,eraMax:2,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2000s',bg:'#1b2430',shelf:'#678bb2',k:7,tv:1555200,eraMax:3,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2010s',bg:'#18202b',shelf:'#3c9ac7',k:10,tv:18662400,eraMax:4,sh:[76,110,145],sx:100,cx:95,cy:205},
+/* tv = shop unlock/economy scale; firstTV = first TV purchase price. k = income multiplier. */
+{n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,firstTV:2,eraMax:1,sh:[76,110,145],sx:100.2,cx:99,cy:201},
+{n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:75,firstTV:19,eraMax:1,sh:[77,109,141],sx:97.0,cx:87,cy:198},
+{n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.3,tv:900,firstTV:225,eraMax:1,sh:[74,107,142],sx:98.7,cx:92,cy:203},
+{n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:10800,firstTV:2700,eraMax:1,sh:[70,112,151],sx:99.8,cx:96,cy:214},
+{n:'1990s',bg:'#241e1a',shelf:'#b77a42',k:5.3,tv:129600,firstTV:32400,eraMax:2,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2000s',bg:'#1b2430',shelf:'#678bb2',k:8,tv:1555200,firstTV:388800,eraMax:3,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2010s',bg:'#18202b',shelf:'#3c9ac7',k:12,tv:18662400,firstTV:4665600,eraMax:4,sh:[76,110,145],sx:100,cx:95,cy:205},
 /* Collapse timeline */
-{n:'THE WAR',bg:'#282016',shelf:'#8e7047',k:14,tv:223948800,eraMax:9,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'OUTBREAK',bg:'#211b1b',shelf:'#8b3838',k:20,tv:2687385600,eraMax:10,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'QUARANTINE',bg:'#17231b',shelf:'#5b8c62',k:28,tv:32248627200,eraMax:11,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'REBUILD',bg:'#28241a',shelf:'#b49a5b',k:40,tv:386983526400,eraMax:11,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'RESEARCH',bg:'#17222b',shelf:'#4b91a8',k:56,tv:4643802316800,eraMax:12,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'FIRST CONTACT',bg:'#21182b',shelf:'#9b6ac4',k:80,tv:55725627801600,eraMax:12,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'THE NEXUS',bg:'#15151a',shelf:'#c6d4df',k:115,tv:668707533619200,eraMax:13,sh:[76,110,145],sx:100,cx:95,cy:205}];
+{n:'THE WAR',bg:'#282016',shelf:'#8e7047',k:18,tv:223948800,firstTV:55987200,eraMax:9,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'OUTBREAK',bg:'#211b1b',shelf:'#8b3838',k:27,tv:2687385600,firstTV:671846400,eraMax:10,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'QUARANTINE',bg:'#17231b',shelf:'#5b8c62',k:40,tv:32248627200,firstTV:8062156800,eraMax:11,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'REBUILD',bg:'#28241a',shelf:'#b49a5b',k:60,tv:386983526400,firstTV:96745881600,eraMax:11,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'RESEARCH',bg:'#17222b',shelf:'#4b91a8',k:90,tv:4643802316800,firstTV:1160950579200,eraMax:12,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'FIRST CONTACT',bg:'#21182b',shelf:'#9b6ac4',k:135,tv:55725627801600,firstTV:13931406950400,eraMax:12,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'THE NEXUS',bg:'#15151a',shelf:'#c6d4df',k:200,tv:668707533619200,firstTV:167176883404800,eraMax:13,sh:[76,110,145],sx:100,cx:95,cy:205}];
 SHOPS.forEach(s=>{s.slots=[{x:s.cx-30.8,y:s.cy-44.8,s:.7}];[s.sh[2],s.sh[1],s.sh[0]].forEach(y=>[-38,0,38].forEach(d=>s.slots.push({x:s.sx+d-17.6,y:y-24.6,s:.4})))});
 const IMG=[],shopImg=i=>{const p=DEBUG.shopImages[i];if(!IMG[i]||IMG[i].dataset.p!==p){const im=new Image();im.dataset.p=p;im.src=p;IMG[i]=im}return IMG[i]},IMOK=i=>{const im=shopImg(i);return im.complete&&im.naturalWidth>0};
 const imgCache={},ld=p=>imgCache[p]||(imgCache[p]=Object.assign(new Image(),{src:p})),imOK=im=>im.complete&&im.naturalWidth>0,pedRoll=()=>Math.floor(Math.random()*Math.min(DEBUG.pedPool.length,DEBUG.lookPool.length));
@@ -150,7 +150,7 @@ const c1=x=>x<10?Math.round(x*10)/10:Math.round(x),sumBuys=()=>shops.reduce((a,s
 const highestShop=()=>Math.max(0,shops.length-1),prestigeScore=()=>Math.max(0,(P.bestShop||0)*2+Math.floor(Math.log10(Math.max(1,P.lifetimeEarned))/3)),prestigeGain=()=>Math.max(0,prestigeScore()-P.claimedScore),skillLevel=id=>P.skills[id]||0,shopUpgradeScale=()=>Math.pow(SHOPS[highestShop()].k,.75),gainCoins=n=>{if(!Number.isFinite(n)||n<=0)return;coins+=n;P.lifetimeEarned+=n;P.runEarned+=n};
 const U=[
 {ic:'⚡',n:'Speed',s:'Logos go faster',d:'Logos move faster: more bounces, more coins.',max:20,lv:()=>S.speed,cost:()=>c1(1*1.55**S.speed*shopUpgradeScale()),buy(){S.speed++},eff:()=>`+${10*S.speed}% > +${10*S.speed+10}%`},
-{ic:'📺',n:'Buy TV',s:'Add a TV here',d:'Adds a TV to a free slot.',max:()=>slots(),lv:()=>tvs.length,cost:()=>c1(SHOPS[sc].tv*1.7**shops[sc].bought*(1-Math.min(.75,(S.restock||0)*.05))*eraPriceMult(sc,S.start)),can:()=>tvs.length<slots()?'':'No free slot',buy(){const t=S.start;tvs.push(mk(t));shops[sc].bought++;shops[sc].tvs=tvs;if(!S.un[t]){S.un[t]=true;toast='NEW TV: '+T[t].n+'!';toastT=3}},eff:()=>`${tvs.length} > ${tvs.length+1} TVs`},
+{ic:'📺',n:'Buy TV',s:'Add a TV here',d:'Adds a TV to a free slot.',max:()=>slots(),lv:()=>tvs.length,cost:()=>c1(SHOPS[sc].firstTV*1.7**shops[sc].bought*(1-Math.min(.75,(S.restock||0)*.05))*eraPriceMult(sc,S.start)),can:()=>tvs.length<slots()?'':'No free slot',buy(){const t=S.start;tvs.push(mk(t));shops[sc].bought++;shops[sc].tvs=tvs;if(!S.un[t]){S.un[t]=true;toast='NEW TV: '+T[t].n+'!';toastT=3}},eff:()=>`${tvs.length} > ${tvs.length+1} TVs`},
 {ic:'◎',n:'Corner zone',s:'Easier corners',d:'Wider zone counts as a corner hit.',max:15,lv:()=>S.corner,cost:()=>c1(3*1.65**S.corner*shopUpgradeScale()),buy(){S.corner++},eff:()=>`${(.1+.15*S.corner).toFixed(2)}px > ${(.25+.15*S.corner).toFixed(2)}px`},
 {ic:'⇄',n:'Merge',s:'Fuse a pair',d:'Fuse two matching TVs into the next tier.',lv:()=>0,cost:()=>{const p=pair();return c1(6*1.5**S.merges*eraPriceMult(sc,p?p[2]+1:0)*Math.max(.6,1-.08*skillLevel('merge'))*shopUpgradeScale())},can:()=>pair()?'':'Need 2 same TVs',buy(){const[a,b,t]=pair();tvs=tvs.filter((_,i)=>i!==a&&i!==b);tvs.splice(a,0,mk(t+1));sel=null;shops[sc].tvs=tvs;S.merges++;if(!S.un[t+1]){S.un[t+1]=true;toast='NEW TV: '+T[t+1].n+'!';toastT=3}},eff:()=>{const p=pair();return p?T[p[2]].n+' > '+T[p[2]+1].n:'-'}},
 {ic:'👥',n:'Crowd',s:'More people',d:'More people walk past the shop.',max:10,lv:()=>S.crowd,cost:()=>c1(4*1.65**S.crowd*shopUpgradeScale()),buy(){S.crowd++},eff:()=>`${crowdN()} > ${crowdN()+1} passersby`},
@@ -437,6 +437,7 @@ mkBtn('Test D: Shop Progression',()=>{
     'Current selected shop: '+SHOPS[sc].n+' | k '+SHOPS[sc].k,
     'Highest unlocked shop: '+prev.n+' | k '+prev.k,
     next?('Next shop: '+next.n+' | actual New Shop cost '+fmt(nextCost)+' | wait '+waitAtRate(nextCost)):'All shops unlocked',
+    next?('First TV in '+next.n+': '+fmt(c1(next.firstTV*(1-Math.min(.75,(S.restock||0)*.05))*eraPriceMult(shops.length,S.start)))+' | shop starts empty'):'',
     next?('Shop k change: '+prev.k+' → '+next.k+' ('+(next.k/prev.k).toFixed(2)+'x multiplier)'):'',
     'Price Tag discount: '+Math.min(90,(S.pricetag||0)*10)+'%',
     'Measured income rate: '+fmt(rate)+'/s',
