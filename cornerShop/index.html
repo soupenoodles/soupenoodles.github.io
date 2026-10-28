@@ -128,7 +128,7 @@ const SHOPS=[
 {n:'THE NEXUS',bg:'#15151a',shelf:'#c6d4df',k:200,tv:668707533619200,firstTV:167176883404800,eraMax:13,sh:[76,110,145],sx:100,cx:95,cy:205}];
 const SHOP_UNLOCK_PRICE_SCALE=1000/900;
 const FIRST_TV_PRICE_SCALE=50000/19;
-SHOPS.forEach(s=>{s.tv*=SHOP_UNLOCK_PRICE_SCALE;s.firstTV*=FIRST_TV_PRICE_SCALE});
+SHOPS.forEach((s,i)=>{   s.tv*=SHOP_UNLOCK_PRICE_SCALE;   if(i>0) s.firstTV=50000*Math.pow(5,i-1); });
 const UPGRADE_BASE={speed:1,corner:3,merge:12/(Math.pow(1.5,.75)),crowd:500/Math.pow(1.65,9),attention:163/Math.pow(1.7,5),start:1000,lucky:50,magnet:30,showroom:100,pricetag:500,restock:200};
 const TV_GRADE_PRICE_MULT=56.3;
 SHOPS.forEach(s=>{s.slots=[{x:s.cx-30.8,y:s.cy-44.8,s:.7}];[s.sh[2],s.sh[1],s.sh[0]].forEach(y=>[-38,0,38].forEach(d=>s.slots.push({x:s.sx+d-17.6,y:y-24.6,s:.4})))});
