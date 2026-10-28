@@ -129,7 +129,7 @@ const SHOPS=[
 const SHOP_UNLOCK_PRICE_SCALE=1000/900;
 const FIRST_TV_PRICE_SCALE=50000/19;
 SHOPS.forEach((s,i)=>{s.tv*=SHOP_UNLOCK_PRICE_SCALE;if(i>0)s.firstTV*=FIRST_TV_PRICE_SCALE});
-const UPGRADE_BASE={speed:1,corner:3,merge:12/(Math.pow(1.5,.75)),crowd:500/Math.pow(1.65,9),attention:163/Math.pow(1.7,5),start:1000,lucky:50,magnet:30,showroom:100,pricetag:500,restock:200};
+const UPGRADE_BASE={speed:1,corner:3,merge:12/(Math.pow(1.5,.75)),crowd:500/Math.pow(1.65,9),attention:800/Math.pow(1.7,9),start:1000,lucky:50,magnet:30,showroom:100,pricetag:500,restock:200};
 const TV_GRADE_PRICE_MULT=56.3;
 SHOPS.forEach(s=>{s.slots=[{x:s.cx-30.8,y:s.cy-44.8,s:.7}];[s.sh[2],s.sh[1],s.sh[0]].forEach(y=>[-38,0,38].forEach(d=>s.slots.push({x:s.sx+d-17.6,y:y-24.6,s:.4})))});
 const IMG=[],shopImg=i=>{const p=DEBUG.shopImages[i];if(!IMG[i]||IMG[i].dataset.p!==p){const im=new Image();im.dataset.p=p;im.src=p;IMG[i]=im}return IMG[i]},IMOK=i=>{const im=shopImg(i);return im.complete&&im.naturalWidth>0};
@@ -170,7 +170,7 @@ const sellVal=o=>Math.round(.5*SHOPS[sc].tv*2**o.t);function doSell(){if(shops.r
 function makePeople(){return [...Array(12)].map((_,i)=>({x:Math.random()*Math.max(1,W-20),d:Math.random()<.5?1:-1,stop:0,noticed:false,v:8+Math.random()*5,c:pedRoll(),fr:Math.random()*4}))}
 let people=makePeople();shops[0].people=people;
 function goShop(k){if(k===sc)return;sfx('switch');tabT=.2;slideFrom=sc;slideDir=k>sc?1:-1;slideT=CFG.slide?SLIDE:0;sc=k;tvs=shops[k].tvs;people=shops[k].people||(shops[k].people=makePeople());sel=null;badge[k]=false}
-const fmt=n=>n<10?(Math.floor(n*10+1e-6)/10).toFixed(1):n<1e3?''+Math.floor(n):n<1e6?(n/1e3).toFixed(n<1e4?2:1)+'K':n<1e9?(n/1e6).toFixed(2)+'M':n<1e12?(n/1e9).toFixed(2)+'B':(n/1e12).toFixed(2)+'T';   
+const fmt=n=>{if(!Number.isFinite(n))return'∞';if(n<0)return'-'+fmt(-n);if(n<10)return(Math.floor(n*10+1e-6)/10).toFixed(1);if(n<1e3)return''+Math.floor(n);const units=['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];let tier=Math.floor(Math.log10(n)/3);if(tier<1)return''+Math.floor(n);const ix=tier-1;if(ix>=units.length)return n.toExponential(2);const v=n/Math.pow(1000,tier);return v.toFixed(v<10?2:v<100?1:0)+units[ix]};   
 const pair=()=>{for(let t=0;t<T.length-1;t++){const ix=tvs.map((v,i)=>v.t===t?i:-1).filter(i=>i>=0);if(ix.length>1)return[ix[0],ix[1],t]}return null};
 const c1=x=>x<10?Math.round(x*10)/10:Math.round(x),sumBuys=()=>shops.reduce((a,s)=>a+s.bought,0);
 const highestShop=()=>Math.max(0,shops.length-1),prestigeScore=()=>Math.max(0,(P.bestShop||0)*2+Math.floor(Math.log10(Math.max(1,P.lifetimeEarned))/3)),prestigeGain=()=>Math.max(0,prestigeScore()-P.claimedScore),skillLevel=id=>P.skills[id]||0,shopUpgradeScale=()=>Math.pow(SHOPS[highestShop()].k,.75),gainCoins=n=>{if(!Number.isFinite(n)||n<=0)return;coins+=n;P.lifetimeEarned+=n;P.runEarned+=n};
