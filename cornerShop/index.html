@@ -41,7 +41,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <script>
-const VERSION='1.7.10 TEST';
+const VERSION='1.7.11 ECONOMY FIX';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:14},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:Array.from({length:14},()=>({counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}))};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 const T=[
@@ -113,19 +113,19 @@ const SHOPS=[
 /* Price model: apply the same proportional adjustment to every shop. Shop 1 targets: Buy TV 50,000; New Shop 1,000. */
 {n:'1950s',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,firstTV:2,eraMax:1,sh:[76,110,145],sx:100.2,cx:99,cy:201},
 {n:'1960s',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:75,firstTV:19,eraMax:2,sh:[77,109,141],sx:97.0,cx:87,cy:198},
-{n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.3,tv:900,firstTV:225,eraMax:3,sh:[74,107,142],sx:98.7,cx:92,cy:203},
-{n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:10800,firstTV:2700,eraMax:4,sh:[70,112,151],sx:99.8,cx:96,cy:214},
-{n:'1990s',bg:'#241e1a',shelf:'#b77a42',k:5.3,tv:129600,firstTV:32400,eraMax:5,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2000s',bg:'#1b2430',shelf:'#678bb2',k:8,tv:1555200,firstTV:388800,eraMax:6,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'2010s',bg:'#18202b',shelf:'#3c9ac7',k:12,tv:18662400,firstTV:4665600,eraMax:7,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'1970s',bg:'#241a10',shelf:'#c8861a',k:2.3,tv:900,firstTV:95,eraMax:3,sh:[74,107,142],sx:98.7,cx:92,cy:203},
+{n:'1980s',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:10800,firstTV:475,eraMax:4,sh:[70,112,151],sx:99.8,cx:96,cy:214},
+{n:'1990s',bg:'#241e1a',shelf:'#b77a42',k:5.3,tv:129600,firstTV:2375,eraMax:5,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2000s',bg:'#1b2430',shelf:'#678bb2',k:8,tv:1555200,firstTV:11875,eraMax:6,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'2010s',bg:'#18202b',shelf:'#3c9ac7',k:12,tv:18662400,firstTV:59375,eraMax:7,sh:[76,110,145],sx:100,cx:95,cy:205},
 /* Collapse timeline */
-{n:'THE WAR',bg:'#282016',shelf:'#8e7047',k:18,tv:223948800,firstTV:55987200,eraMax:9,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'OUTBREAK',bg:'#211b1b',shelf:'#8b3838',k:27,tv:2687385600,firstTV:671846400,eraMax:10,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'QUARANTINE',bg:'#17231b',shelf:'#5b8c62',k:40,tv:32248627200,firstTV:8062156800,eraMax:11,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'REBUILD',bg:'#28241a',shelf:'#b49a5b',k:60,tv:386983526400,firstTV:96745881600,eraMax:12,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'RESEARCH',bg:'#17222b',shelf:'#4b91a8',k:90,tv:4643802316800,firstTV:1160950579200,eraMax:12,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'FIRST CONTACT',bg:'#21182b',shelf:'#9b6ac4',k:135,tv:55725627801600,firstTV:13931406950400,eraMax:13,sh:[76,110,145],sx:100,cx:95,cy:205},
-{n:'THE NEXUS',bg:'#15151a',shelf:'#c6d4df',k:200,tv:668707533619200,firstTV:167176883404800,eraMax:13,sh:[76,110,145],sx:100,cx:95,cy:205}];
+{n:'THE WAR',bg:'#282016',shelf:'#8e7047',k:18,tv:223948800,firstTV:712500,eraMax:9,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'OUTBREAK',bg:'#211b1b',shelf:'#8b3838',k:27,tv:2687385600,firstTV:8550000,eraMax:10,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'QUARANTINE',bg:'#17231b',shelf:'#5b8c62',k:40,tv:32248627200,firstTV:102600000,eraMax:11,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'REBUILD',bg:'#28241a',shelf:'#b49a5b',k:60,tv:386983526400,firstTV:1231200000,eraMax:12,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'RESEARCH',bg:'#17222b',shelf:'#4b91a8',k:90,tv:4643802316800,firstTV:14774400000,eraMax:12,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'FIRST CONTACT',bg:'#21182b',shelf:'#9b6ac4',k:135,tv:55725627801600,firstTV:177292800000,eraMax:13,sh:[76,110,145],sx:100,cx:95,cy:205},
+{n:'THE NEXUS',bg:'#15151a',shelf:'#c6d4df',k:200,tv:668707533619200,firstTV:2127513600000,eraMax:13,sh:[76,110,145],sx:100,cx:95,cy:205}];
 const SHOP_UNLOCK_PRICE_SCALE=1000/900;
 const FIRST_TV_PRICE_SCALE=50000/19;
 SHOPS.forEach(s=>{s.tv*=SHOP_UNLOCK_PRICE_SCALE;s.firstTV*=FIRST_TV_PRICE_SCALE});
@@ -180,7 +180,7 @@ const U=[
 {ic:'◎',n:'Corner zone',s:'Easier corners',d:'A controlled corner radius; later shops improve it without making every bounce a corner.',max:10,lv:()=>localUpgradeLevel('corner'),cost:()=>c1(UPGRADE_BASE.corner*1.65**upgradePriceLevel('corner')),buy(){S.corner++},eff:()=>`${cornerZoneValue(S.corner).toFixed(2)}px > ${cornerZoneValue(S.corner+1).toFixed(2)}px`},
 {ic:'⇄',n:'Merge',s:'Fuse a pair',d:'Fuse two matching TVs into the next tier.',lv:()=>shopMergeCount(),cost:()=>{const p=pair();return c1(mergeBasePrice(sc)*1.5**shopMergeCount(sc)*eraPriceMult(sc,p?p[2]+1:0)*Math.max(.6,1-.08*skillLevel('merge')))},can:()=>pair()?'':'Need 2 same TVs',buy(){const[a,b,t]=pair();tvs=tvs.filter((_,i)=>i!==a&&i!==b);tvs.splice(a,0,mk(t+1));sel=null;shops[sc].tvs=tvs;S.merges++;shops[sc].merges=(shops[sc].merges||0)+1;if(!S.un[t+1]){S.un[t+1]=true;toast='NEW TV: '+T[t+1].n+'!';toastT=3}},eff:()=>{const p=pair();return p?T[p[2]].n+' > '+T[p[2]+1].n:'-'}},
 {ic:'👥',n:'Crowd',s:'More people',d:'Each shop starts with 1 passerby. Crowd upgrades are local to this shop and never carry over.',max:10,lv:()=>localUpgradeLevel('crowd'),cost:()=>c1(UPGRADE_BASE.crowd*1.65**upgradePriceLevel('crowd')),buy(){S.crowd++},eff:()=>`${crowdN()} > ${Math.min(12,crowdN()+1)} passersby`},
-{ic:'👀',n:'Attention',s:'Notice TVs on the counter',d:'Passersby keep walking, but may notice the TV on the counter and give a small bonus. Maximum notice chance is 10%.',max:6,lv:()=>localUpgradeLevel('stopC'),cost:()=>c1(UPGRADE_BASE.attention*1.7**upgradePriceLevel('stopC')),buy(){S.stopC++},eff:()=>`${Math.round(stopChance()*100)}% > ${Math.round(Math.min(.10,.04+.01*(localUpgradeLevel('stopC')+1))*100)}% chance`},
+{ic:'👀',n:'Attention',s:'Notice TVs on the counter',d:'Passersby keep walking, but may notice the TV on the counter and give a small bonus. Maximum notice chance is 10%.',max:6,lv:()=>localUpgradeLevel('stopC'),cost:()=>c1(UPGRADE_BASE.attention*1.7**(upgradePriceLevel('stopC')+(sc===1?1:0))),buy(){S.stopC++},eff:()=>`${Math.round(stopChance()*100)}% > ${Math.round(Math.min(.10,.04+.01*(localUpgradeLevel('stopC')+1))*100)}% chance`},
 {ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier. Max levels increase by one with each new shop.',max:()=>upgradeMax('start'),lv:()=>localUpgradeLevel('start'),cost:()=>c1(UPGRADE_BASE.start*TV_GRADE_PRICE_MULT**upgradePriceLevel('start')),buy(){S.start++},eff:()=>`${T[Math.min(T.length-1,S.start)].n} > ${T[Math.min(T.length-1,S.start+1)].n}`},
 {ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:13,lv:()=>shops.length-1,cost:()=>c1((shops.length===1?250:(SHOPS[shops.length]?.tv||0))*Math.max(.05,1-priceTagDiscount())),can:()=>shops.length>=SHOPS.length?'All shops unlocked':'',buy(){shops.push({tvs:[],fit:0,bought:0,merges:0,upgrades:{},people:makePeople()});P.bestShop=Math.max(P.bestShop,shops.length-1);goShop(shops.length-1)},eff:()=>shops.length<SHOPS.length?`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`:'All shops unlocked'},
 {ic:'🍀',n:'Lucky',s:'Chance for a double corner payout',d:'A small, separate chance to double a corner payout. It does not make corners easier to hit.',max:10,lv:()=>localUpgradeLevel('lucky'),cost:()=>c1(UPGRADE_BASE.lucky*1.8**upgradePriceLevel('lucky')),buy(){S.lucky=(S.lucky||0)+1},eff:()=>`${Math.round(luckyChance(S.lucky)*100)}% > ${Math.round(luckyChance(S.lucky+1)*100)}% double chance`},
