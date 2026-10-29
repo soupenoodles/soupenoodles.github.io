@@ -8,7 +8,7 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:"Press Start 2P",ui-monospace,monospace;overflow:hidden;touch-action:manipulation;user-select:none}
 #g{position:relative;display:flex;gap:6px;height:100%;padding:6px;justify-content:center}
-canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rendering:auto;border:3px solid var(--or);background:#000}
+canvas{display:block;flex:0 0 auto;width:auto;height:auto;max-height:none;max-width:none;aspect-ratio:200/340;image-rendering:auto;border:3px solid var(--or);background:#000}
 #col{display:flex;flex-direction:column;gap:6px;width:76px;z-index:6;position:relative;transition:transform .2s,opacity .2s}
 #col.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
 #colTog{position:fixed;right:6px;top:50%;transform:translateY(-50%);z-index:7;font:inherit;font-size:10px;padding:8px 4px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer}     
@@ -39,7 +39,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 #mobileAd{display:none}
 @media (max-width:700px){
   #g{height:calc(100% - 64px - env(safe-area-inset-bottom,0px));}
-  canvas{max-height:100%;}
+  canvas{max-height:none;max-width:none;}
   #mobileAd{position:fixed;display:flex;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom,0px));padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:25;align-items:center;justify-content:center;background:#151515;border-top:2px solid #ff7a1a;color:#b9b9b9;}
   #mobileAd .adBox{width:min(100%,320px);height:50px;border:1px dashed #777;background:#202020;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:1px;}
   #mobileAd .adTag{font-size:8px;color:#ff7a1a;letter-spacing:2px;}
@@ -51,9 +51,23 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <div id="mobileAd" aria-label="Mobile banner advertisement preview"><div class="adBox"><span class="adTag">ADVERTISEMENT</span><span>320 × 50 BANNER PLACEHOLDER</span></div></div>
 <script>
-const VERSION='1.7.14 MOBILE BANNER PREVIEW';
+const VERSION='1.7.15 RESPONSIVE ASPECT RATIO FIX';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:14},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:Array.from({length:14},()=>({counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}))};
 const C=document.getElementById('c'),X=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
+// Fit the fixed 200×340 game coordinate space uniformly into the available viewport.
+// Canvas CSS dimensions are calculated together so browser flex sizing cannot squash either axis.
+function fitGameCanvas(){
+ const g=document.getElementById('g');if(!g)return;
+ const mobile=window.matchMedia('(max-width:700px)').matches;
+ const availW=Math.max(1,g.clientWidth-12-76-6);
+ const availH=Math.max(1,g.clientHeight-12);
+ const scale=Math.max(.1,Math.min((availW-6)/W,(availH-6)/H));
+ C.style.width=(W*scale+6)+'px';C.style.height=(H*scale+6)+'px';
+}
+window.addEventListener('resize',fitGameCanvas,{passive:true});
+window.addEventListener('orientationchange',()=>requestAnimationFrame(fitGameCanvas),{passive:true});
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitGameCanvas,{passive:true});
+requestAnimationFrame(fitGameCanvas);
 const T=[
 {n:'B/W SET',sp:1,c:1,body:'#7a5230',scr:'#1a1c1a'},{n:'COLOR SET',sp:1.25,c:3,body:'#2f5d8c',scr:'#0c1220'},{n:'PLASMA',sp:1.6,c:9,body:'#555b66',scr:'#0a0a14'},{n:'LCD',sp:2,c:27,body:'#2a2f3a',scr:'#061018'},{n:'4K OLED',sp:2.6,c:81,body:'#15151a',scr:'#000'},
 {n:'HOLO',sp:3.5,c:200,body:'#1a3a4a',scr:'#02181e'},/* placeholder: replace with real HOLO values */
