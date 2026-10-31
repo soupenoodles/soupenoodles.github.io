@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Merge Drop</title>
+<!-- CrazyGames SDK v3 -->
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <link rel="icon" href="data:,">
 <style>
 :root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -29,6 +31,28 @@ const RUN_GEM_DIV=400,RUN_GEM_MAX=5,DAILY_PLAY_CAP=30; // play reward: 1 gem / 4
 const SFX_OVERLAP=false;                    // true = sounds layer on each other, false = a new sound cuts the previous one
 const DISCORD='https://discord.gg/V7f9ea4EN',PRIVACY='https://soupenoodles.com/lapatatemerge/privacy.html';
 const GAME_VERSION='0.6.2';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
+
+// ===============================================================
+// ================CRAZYGAMES SDK INITIALIZATION=====================
+let crazyGamesReady = false;
+let crazyGamesEnvironment = 'disabled';
+
+async function initializeCrazyGames() {
+    try {
+        await window.CrazyGames.SDK.init();
+
+        crazyGamesReady = true;
+        crazyGamesEnvironment = window.CrazyGames.SDK.environment;
+
+        console.log('[CrazyGames] SDK initialized');
+        console.log('[CrazyGames] Environment:', crazyGamesEnvironment);
+
+    } catch (error) {
+        console.error('[CrazyGames] Initialization failed:', error);
+    }
+}
+
+initializeCrazyGames();
 // ===============================================================
 
 // ---------- Setup ----------
