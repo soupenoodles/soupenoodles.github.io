@@ -46,12 +46,12 @@ const L2=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){retu
 topScores=L2('md_top',[]);unAll=L2('md_un2',[]);disc=L2('md_disc',false);rew=L2('md_rew',[]);
 {const s=L2('md_set',{});muted=!!s.muted;musicOn=s.music!==false;lv=s.lv||1;const nl=(navigator.language||'').slice(0,2);lang=s.lang||(['fr','es','ar'].includes(nl)?nl:'en')}
 un=unAll[lv]||(unAll[lv]=[]);hasSave=!!L2('md_save',null);
-let gems=START_GEMS,boosts={bomb:START_BOOSTS,shake:START_BOOSTS,hammer:START_BOOSTS,undo:START_BOOSTS},target=null,shop=false,snap=null,newC=0,daily=false,lb=false,dailyShown=false,runGot=0,dd={day:-1,run:0,vids:0,last:-1,streak:0};
+let gems=START_GEMS,boosts={bomb:START_BOOSTS,shake:START_BOOSTS,hammer:START_BOOSTS,undo:START_BOOSTS},target=null,shop=false,snap=null,fx=null,parts=[],newC=0,daily=false,lb=false,dailyShown=false,runGot=0,dd={day:-1,run:0,vids:0,last:-1,streak:0};
 {const e=L2('md_eco',null);if(e){gems=e.gems;boosts=e.boosts;if(e.dd)dd=e.dd}}
 function dropMax(){return Math.min(DROP_MAX_LEVEL,2+Math.max(0,maxL-(DROP_FIRST_UNLOCK-1)))}
 const rnd=()=>{const m=dropMax();let t=0;for(let l=1;l<=m;l++)t+=DROP_WEIGHTS[l-1];let r=Math.random()*t;for(let l=1;l<=m;l++){r-=DROP_WEIGHTS[l-1];if(r<0)return l}return 1};
 function save(){topScores[lv]=Math.max(topScores[lv]||0,best);unAll[lv]=un;try{localStorage.setItem('md_top',JSON.stringify(topScores));localStorage.setItem('md_un2',JSON.stringify(unAll));localStorage.setItem('md_disc',JSON.stringify(disc));localStorage.setItem('md_rew',JSON.stringify(rew));localStorage.setItem('md_set',JSON.stringify({muted,music:musicOn,lv,lang}));localStorage.setItem('md_eco',JSON.stringify({gems,boosts,dd}))}catch(e){}}
-function reset(){runGot=0;newC=0;maxL=1;target=null;snap=null;balls=[];spawn=[];held=rnd();queue=[rnd(),rnd(),rnd()];hx=BX+BW/2;score=0;over=false;overT=0;overAge=0;cool=.3;chainT=0;combo=1;maxL=1}
+function reset(){fx=null;parts=[];runGot=0;newC=0;maxL=1;target=null;snap=null;balls=[];spawn=[];held=rnd();queue=[rnd(),rnd(),rnd()];hx=BX+BW/2;score=0;over=false;overT=0;overAge=0;cool=.3;chainT=0;combo=1;maxL=1}
 reset();
 
 // ---------- Levels, saves, menus ----------
@@ -137,7 +137,7 @@ function drawSettings(){
 }
 function draw(){
   btns=[];ctx.clearRect(0,0,W,H);
-  if(scene==='menu')drawMenu();else if(scene==='levels')drawLevels();else drawGame();
+  if(scene==='menu')drawMenu();else if(scene==='levels')drawLevels();else{drawGame();drawFx()}
   if(scene!=='play'&&toast.t>0)txt(toast.text,W/2,135,20,'#ffd23f',null,700);
   if(settings)drawSettings();
   if(shop)drawShop();
@@ -250,6 +250,19 @@ function drawNew(){
   txt('Circle '+newC,W/2,495,28,'#fff',null,700);txt('+'+GEM_REWARD+' '+tr('gems'),W/2,530,20,'#b266ff',null,700);btn('Continue',W/2,588,240,50,()=>{newC=0});
 }
 
+// ---------- New-circle celebration (no pause, no popup) ----------
+function burst(){const cx=BX+BW/2,cy=BY+135,C=['#ff5a5a','#ffd23f','#6ee26e','#3aa0ff','#ff6fb5','#a56bff'];for(let i=0;i<45;i++){const a=Math.random()*6.28,v=150+Math.random()*350;parts.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v-150,c:C[i%6],t:1.6+Math.random()*.6,r:Math.random()*6})}}
+function fxStep(dt){if(fx&&(fx.t-=dt)<=0)fx=null;parts=parts.filter(p=>(p.t-=dt)>0);for(const p of parts){p.vy+=700*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=dt*8}}
+function drawFx(){
+  for(const p of parts){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.globalAlpha=Math.min(1,p.t);ctx.fillStyle=p.c;ctx.fillRect(-4,-2,8,4);ctx.restore()}
+  if(!fx)return;
+  const e=2.4-fx.t,s=e<.2?e/.2*1.15:(e<.35?1.15-(e-.2)/.15*.15:1),x=BX+BW/2,y=BY+135,r=Math.min(R[fx.l],70)*s;
+  ctx.save();ctx.globalAlpha=Math.min(1,fx.t/.5);ball(x,y,r,fx.l);
+  const o=(t,yy,sz,c)=>{ctx.font='800 '+sz+'px '+FONT;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=7;ctx.strokeStyle='#222';ctx.strokeText(t,x,yy);ctx.fillStyle=c;ctx.fillText(t,x,yy)};
+  o(tr('NEW!'),y-r-14,30,'#ffd23f');o(tr('Circle')+' '+fx.l,y+r+34,26,'#fff');o('+'+GEM_REWARD+' '+tr('gems'),y+r+66,20,'#d9a8ff');
+  ctx.restore();
+}
+
 // ---------- Audio (synth placeholders; swap for .ogg files later) ----------
 let ac;
 function audioInit(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(ac&&ac.state==='suspended')ac.resume()}
@@ -257,7 +270,7 @@ function tone(f,d,t0,v,type){if(!ac||muted)return;const o=ac.createOscillator(),
 function sfx(l,cb){const a=A[l];if(a&&a.ok){if(!muted){a.currentTime=0;a.play().catch(()=>{})}return}const f=260*Math.pow(2,(l-1)*.18);tone(f,.1+.03*l,0,.22);tone(f*2,.08,0,.07,'triangle');if(cb>1)tone(f*1.5,.12,.06,.1)}
 
 // ---------- Game logic ----------
-function unlock(l){if(!un[l]){un[l]=true;if(l>2){newC=l;gems+=GEM_REWARD}save()}}
+function unlock(l){if(!un[l]){un[l]=true;if(l>2){fx={l,t:2.4};gems+=GEM_REWARD;burst();tone(988,.15,.1,.12);tone(1319,.25,.2,.12)}save()}}
 function drop(){
   if(over||cool>0||scene!=='play'||modalOpen()||target)return;
   snap=JSON.parse(JSON.stringify({balls,held,queue,score,maxL}));const b={x:hx,y:BY-34,vx:0,vy:0,r:R[held],l:held,age:0,pop:1};
@@ -395,7 +408,7 @@ addEventListener('keyup',e=>{
 
 // ---------- Loop ----------
 let last=performance.now();
-(function loop(t){const dt=Math.min(.033,(t-last)/1000);last=t;if(scene==='play'&&!modalOpen())update(dt);else toast.t-=dt;draw();requestAnimationFrame(loop)})(last);
+(function loop(t){const dt=Math.min(.033,(t-last)/1000);last=t;if(scene==='play'&&!modalOpen())update(dt);else toast.t-=dt;fxStep(dt);draw();requestAnimationFrame(loop)})(last);
 </script>
 </body>
 </html>
