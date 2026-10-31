@@ -28,7 +28,7 @@ const PRICES={bomb:100,shake:100,hammer:50,undo:50},BOMB_RADIUS=110;
 const DAILY=[10,10,15,15,20,20,40];          // daily reward gems for day 1..7 (missing a day restarts at day 1)
 const RUN_GEM_DIV=400,RUN_GEM_MAX=5,DAILY_PLAY_CAP=30; // play reward at game over: 1 gem per 400 score, max 5 per game, max 30 per day
 const VIDEO_DAILY=3;                         // free-gem videos allowed per day
-const GAME_VERSION='0.3.0';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
+const GAME_VERSION='0.4.0';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
 // ===============================================================
 const LINE=BY+LINE_OFFSET,CY=BY+BH-BR,UY=BY+BH+50,H=Math.max(800,BY+BH+130);
 cv.height=H;cv.style.width='min(100vw,calc(100dvh * '+(W/H)+'))';
@@ -63,6 +63,20 @@ const base=n=>'Assets/level'+n+'/',pad=n=>String(n).padStart(2,'0');
 const ICON={};let A={},M=null,btns=[];
 for(let n=1;n<=NL;n++){const im=new Image();im.onload=()=>{if(im.naturalWidth)ICON[n]=fit(im,144)};im.src=base(n)+'icon.png'}
 const col=l=>'hsl('+((l*30+(lv-1)*37)%360)+' 75% 62%)';
+// One sound per circle level: sfx/merge_01 ... merge_11 (.ogg or .mp3). It plays when that circle is dropped AND when it is made by a merge.
+// Level 1 also accepts the old name drop_01. Silence at the start/end of a file is trimmed automatically.
+async function loadSfx(n,l){
+  audioInit();if(!ac)return;
+  for(const nm of(l===1?['merge_01','drop_01']:['merge_'+pad(l)]))for(const ext of['ogg','mp3']){
+    try{
+      const r=await fetch(base(n)+'sfx/'+nm+'.'+ext);if(!r.ok)continue;
+      const b=await ac.decodeAudioData(await r.arrayBuffer());if(lv!==n)return;
+      const d=b.getChannelData(0),th=.01,sr=b.sampleRate;let i=0,j=d.length-1;
+      while(i<j&&Math.abs(d[i])<th)i++;while(j>i&&Math.abs(d[j])<th)j--;
+      const o=Math.max(0,i/sr-.005);A[l]={b,o,d:Math.max(.05,Math.min(b.duration,j/sr+.06)-o)};return;
+    }catch(e){}
+  }
+}
 function fit(im,s){ // shrinks any square image to s px in smooth steps (keeps edges clean)
   let c=im,w=im.naturalWidth;
   while(w/2>=s){const t=document.createElement('canvas');w=Math.round(w/2);t.width=t.height=w;t.getContext('2d').drawImage(c,0,0,w,w);c=t}
@@ -71,7 +85,7 @@ function fit(im,s){ // shrinks any square image to s px in smooth steps (keeps e
 function loadLevel(n){
   for(const k in SPRITES)delete SPRITES[k];
   for(let l=1;l<=11;l++){const im=new Image();im.onload=()=>{if(im.naturalWidth&&lv===n)SPRITES[l]=fit(im,R[l]*4)};im.src=base(n)+'circle_'+pad(l)+'.png'}
-  A={};for(let l=1;l<=11;l++){const a=new Audio();a.preload='auto';a.addEventListener('canplaythrough',()=>a.ok=1,{once:true});a.src=base(n)+'sfx/'+(l<2?'drop_':'merge_')+pad(l)+'.ogg';A[l]=a}
+  A={};for(let l=1;l<=11;l++)loadSfx(n,l);
   if(M)M.pause();M=new Audio();M.loop=true;M.volume=.4;M.addEventListener('canplaythrough',()=>{M.ok=1;applyMusic()},{once:true});M.src=base(n)+'music.ogg';
 }
 function applyMusic(){if(!M)return;if(musicOn&&scene==='play'&&!settings&&M.ok)M.play().catch(()=>{});else M.pause()}
@@ -272,7 +286,7 @@ function drawFx(){
 let ac;
 function audioInit(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(ac&&ac.state==='suspended')ac.resume()}
 function tone(f,d,t0,v,type){if(!ac||muted)return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(t0||0);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d)}
-function sfx(l,cb){const a=A[l];if(a&&a.ok){if(!muted){a.currentTime=0;a.play().catch(()=>{})}return}const f=260*Math.pow(2,(l-1)*.18);tone(f,.1+.03*l,0,.22);tone(f*2,.08,0,.07,'triangle');if(cb>1)tone(f*1.5,.12,.06,.1)}
+function sfx(l,cb){const s=A[l];if(s){if(!muted&&ac){audioInit();const src=ac.createBufferSource(),g=ac.createGain();src.buffer=s.b;g.gain.value=.9;src.connect(g).connect(ac.destination);src.start(0,s.o,s.d)}return}const f=260*Math.pow(2,(l-1)*.18);tone(f,.1+.03*l,0,.22);tone(f*2,.08,0,.07,'triangle');if(cb>1)tone(f*1.5,.12,.06,.1)}
 
 // ---------- Game logic ----------
 function unlock(l){if(!un[l]){un[l]=true;if(l>2){fx={l,t:2.4};gems+=GEM_REWARD;burst();tone(988,.15,.1,.12);tone(1319,.25,.2,.12)}save()}}
