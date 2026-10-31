@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Merge Lapatate</title>
+<title>Merge Drop</title>
 <link rel="icon" href="data:,">
-<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+<!--PLATFORM-->
 <style>
 :root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html,body{height:100%;margin:0;background:#000}
@@ -17,12 +17,26 @@ canvas{display:block;height:auto}
 <canvas id="c" width="640" height="800"></canvas>
 <script>
 // ===================== TWEAK THE GAME HERE =====================
-const BX=110,BY=150,BW=380,BH=520,BR=40;   // box: BH = HEIGHT, BW = width, BX/BY = position, BR = corner roundness
+const BX=110,BY=150,BW=380,BH0=520,BR=40;  // box: BH0 = default HEIGHT, BW = width, BX/BY = position, BR = corner roundness
 const LINE_OFFSET=50;                       // red game-over line: distance below the top of the box
-const DROP_FIRST_UNLOCK=6;                  // reaching this circle level adds Lv3 to the dropped circles (next level adds Lv4...)
+const DROP_FIRST_UNLOCK=6;   // (default; levels can override it in LEVEL_CFG)                  // reaching this circle level adds Lv3 to the dropped circles (next level adds Lv4...)
 const DROP_MAX_LEVEL=5;                     // highest level that can ever be dropped
 const DROP_WEIGHTS=[60,30,15,8,4,2,1,1];    // spawn chance per level (Lv1, Lv2, Lv3...)
-const MAX_MERGE_OVERRIDE={1:9,2:10,7:9};        // game level : highest circle. Any level not listed uses 11
+// ---- PER-LEVEL DIFFICULTY: one line per game level. Leave a field out and that level uses the defaults above. ----
+// maxMerge: highest circle (3-11) | dropFirstUnlock: circle level that adds Lv3 to the drops | dropMax: highest circle that can drop
+// weights: spawn chances [Lv1,Lv2,...] | boxH: box height (smaller = harder, max = BH0) | lineOffset: red line distance from the top (bigger = harder)
+// gravity: fall speed (default 1500) | slip: floor slipperiness (default .998, closer to 1 = slides more) | coinMult: coin reward x | diff: 1-5 dots on the level card
+const LEVEL_CFG={
+  1:{diff:1},
+  2:{diff:1,maxMerge:10},
+  3:{diff:2,maxMerge:10,dropFirstUnlock:5,boxH:500},
+  4:{diff:3,maxMerge:10,dropFirstUnlock:5,boxH:480,lineOffset:60,coinMult:1.2},
+  5:{diff:4,maxMerge:9,dropFirstUnlock:5,dropMax:6,boxH:460,lineOffset:60,gravity:1600,coinMult:1.5},
+  6:{diff:5,maxMerge:9,dropFirstUnlock:4,dropMax:6,boxH:440,lineOffset:70,gravity:1700,slip:.9995,coinMult:2},
+  7:{diff:5,maxMerge:9,dropFirstUnlock:4,dropMax:6,boxH:420,lineOffset:70,gravity:1700,slip:.9995,coinMult:2},
+  8:{diff:5,maxMerge:9,dropFirstUnlock:4,dropMax:6,boxH:420,lineOffset:70,gravity:1700,slip:.9995,coinMult:2},
+  9:{diff:5,maxMerge:9,dropFirstUnlock:4,dropMax:6,boxH:420,lineOffset:70,gravity:1700,slip:.9995,coinMult:2}};
+const INDEX_REWARD=30;                       // gems for unlocking EVERY circle of a level (a level can set indexReward in LEVEL_CFG)
 const COIN_RATE=0.1;                         // coins earned at game over = score x COIN_RATE
 const LEVEL_COST=[0,0,0,500,800,1200,0,0,0]; // coins needed to unlock game Level 1..9 (0 = free)
 const LEVELS_READY=6;                        // levels above this number show "Coming soon"
@@ -31,43 +45,25 @@ const PRICES={bomb:100,shake:100,hammer:50,undo:50},BOMB_RADIUS=110;
 const DAILY=[10,10,15,15,20,20,40];         // daily reward gems, day 1..7 (missing a day restarts at day 1)
 const RUN_GEM_DIV=400,RUN_GEM_MAX=5,DAILY_PLAY_CAP=30; // play reward: 1 gem / 400 score, max 5 per game, max 30 per day
 const SFX_OVERLAP=false;                    // true = sounds layer on each other, false = a new sound cuts the previous one
+const FX_SIZE=95;                           // radius of the "NEW!" circle shown when a new circle level is unlocked (same size for every level)
+const AD_EVERY_N_GAMES=3;                   // interstitial ad after every Nth game over (only on platforms that have ads)
 const DISCORD='https://discord.gg/V7f9ea4EN',PRIVACY='https://soupenoodles.com/lapatatemerge/privacy.html';
-const GAME_VERSION='0.6.4';console.log('%cMerge Lapatate v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
-// ===============================================================
-
-// ================CRAZYGAMES SDK INITIALIZATION=====================
-let crazyGamesReady = false;
-let crazyGamesEnvironment = 'disabled';
-
-async function initializeCrazyGames() {
-    try {
-        await window.CrazyGames.SDK.init();
-
-        crazyGamesReady = true;
-        crazyGamesEnvironment = window.CrazyGames.SDK.environment;
-
-        console.log('[CrazyGames] SDK initialized');
-        console.log('[CrazyGames] Environment:', crazyGamesEnvironment);
-
-    } catch (error) {
-        console.error('[CrazyGames] Initialization failed:', error);
-    }
-}
-
-initializeCrazyGames();
+const GAME_VERSION='0.7.0';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
 // ===============================================================
 
 // ---------- Setup ----------
 const W=640,cv=document.getElementById('c'),ctx=cv.getContext('2d');
-const LINE=BY+LINE_OFFSET,CY=BY+BH-BR,UY=BY+BH+50,H=Math.max(800,BY+BH+130),NL=9;
+let BH=BH0,LINE=BY+LINE_OFFSET,CY=BY+BH-BR,UY=BY+BH+50,GRAV=1500,FRIC=.998;const H=Math.max(800,BY+BH0+130),NL=9;
 cv.height=H;cv.style.width=`min(100vw,calc(100dvh * ${W/H}))`;
 const R=[0,19,25,32,41,50,61,73,86,101,116,132];   // circle radius per level (sprite = 2 x radius)
 const FONT='system-ui,-apple-system,"Segoe UI",sans-serif';
-const showRewardedAd=cb=>cb();              // TODO: connect the Google Play rewarded-ad SDK, call cb() when the video ends
 const base=n=>`Assets/level${n}/`,pad=n=>String(n).padStart(2,'0');
-const maxMerge=()=>Math.max(3,Math.min(11,MAX_MERGE_OVERRIDE[lv]||11));
+const LC=()=>LEVEL_CFG[lv]||{};                       // settings of the level being played
+const maxMerge=()=>Math.max(3,Math.min(11,LC().maxMerge||11));
+function applyCfg(){const c=LC();BH=Math.min(BH0,c.boxH||BH0);LINE=BY+(c.lineOffset??LINE_OFFSET);CY=BY+BH-BR;UY=BY+BH+50;GRAV=c.gravity||1500;FRIC=c.slip||.998}
 const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
 const fresh=()=>({gems:START_GEMS,coins:0,boosts:{bomb:START_BOOSTS,shake:START_BOOSTS,hammer:START_BOOSTS,undo:START_BOOSTS},dd:{day:-1,run:0,vids:0,last:-1,streak:0}});
+const P=window.Platform||{name:'web',rewarded:cb=>cb(),interstitial(){},gameplay(){},submitScore(){},leaderboard:null}; // platform.js (web / CrazyGames / Android) provides the real one
 const SPRITES={},ICON={},UI={};let A={},M=null,btns=[],ac=null,sfxNow=null;
 const loadImg=(src,cb)=>{const im=new Image();im.onload=()=>im.naturalWidth&&cb(im);im.src=src};
 
@@ -77,22 +73,24 @@ let muted=!!cfg.muted,musicOn=cfg.music!==false,lv=cfg.lv||1,lang=cfg.lang||(['f
 let {gems,coins,boosts,dd}=Object.assign(fresh(),store.get('md_eco',{}));
 let topScores=store.get('md_top',[]),unAll=store.get('md_un2',[]),owned=store.get('md_lvl',[]);
 let un=unAll[lv]||(unAll[lv]=[]),best=0,hasSave=!!store.get('md_save',null);
-let scene='menu',settings=false,shop=false,daily=false,lb=false,confirmDel=false,dailyShown=false;
-let target=null,snap=null,fx=null,parts=[],runGot=0,coinsGot=0,toast={t:0,text:''},mouseX=BX+BW/2,follow=false;const keys={l:0,r:0};
+let scene='menu',settings=false,shop=false,daily=false,lb=false,lbLevel=1,lbRows=null,lbErr=false,adCount=0,adDue=false,adPause=false,playingNow=false,confirmDel=false,dailyShown=false;
+let idxDone=store.get('md_idx',[]),idxLv=null,idxSp={},target=null,snap=null,fx=null,parts=[],runGot=0,coinsGot=0,toast={t:0,text:''},mouseX=BX+BW/2,follow=false;const keys={l:0,r:0};
 let balls,spawn,held,queue,hx,score,over,overT,overAge,cool,chainT,combo,maxL;
 const modalOpen=()=>settings||shop||daily||lb;
 function save(){topScores[lv]=Math.max(topScores[lv]||0,best);unAll[lv]=un;
-  store.set('md_top',topScores);store.set('md_un2',unAll);store.set('md_lvl',owned);
+  store.set('md_top',topScores);store.set('md_un2',unAll);store.set('md_lvl',owned);store.set('md_idx',idxDone);
   store.set('md_set',{muted,music:musicOn,lv,lang});store.set('md_eco',{gems,coins,boosts,dd})}
 function saveGame(){if(scene!=='play'||over)return;store.set('md_save',{lv,balls,held,queue,score,maxL,hx});hasSave=true}
 function clearSave(){store.del('md_save');hasSave=false}
-function dropMax(){return Math.min(DROP_MAX_LEVEL,2+Math.max(0,maxL-(DROP_FIRST_UNLOCK-1)))}
-function rnd(){const m=dropMax();let t=0,r;for(let l=1;l<=m;l++)t+=DROP_WEIGHTS[l-1];r=Math.random()*t;for(let l=1;l<=m;l++){r-=DROP_WEIGHTS[l-1];if(r<0)return l}return 1}
+function dropMax(){const c=LC();return Math.min(c.dropMax||DROP_MAX_LEVEL,maxMerge()-1,2+Math.max(0,maxL-((c.dropFirstUnlock||DROP_FIRST_UNLOCK)-1)))}
+function rnd(){const m=dropMax(),w=LC().weights||DROP_WEIGHTS;let t=0,r;for(let l=1;l<=m;l++)t+=w[l-1]||1;r=Math.random()*t;for(let l=1;l<=m;l++){r-=w[l-1]||1;if(r<0)return l}return 1}
 function reset(){maxL=1;fx=null;parts=[];runGot=coinsGot=0;target=null;snap=null;balls=[];spawn=[];held=rnd();queue=[rnd(),rnd(),rnd()];hx=BX+BW/2;score=0;over=false;overT=0;overAge=0;cool=.3;chainT=0;combo=1}
+applyCfg();
+function retry(){reset();if(adDue){adDue=false;P.interstitial()}}
 reset();
 
 // ---------- Drawing helpers ----------
-const col=l=>`hsl(${(l*30+(lv-1)*37)%360} 75% 62%)`;   // placeholder color when a circle png is missing
+const col=(l,n=lv)=>`hsl(${(l*30+(n-1)*37)%360} 75% 62%)`;   // placeholder color when a circle png is missing
 const dot=(x,y,r,c)=>{ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=c;ctx.fill()};
 const rrect=(x,y,w,h,r,fill,stroke,lw)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||2;ctx.stroke()}};
 function fit(im,s){ // shrinks any square image to s px in smooth steps (keeps edges clean)
@@ -106,11 +104,11 @@ function btn(s,x,y,w,h,fn,o={}){
   rrect(x-w/2,y-h/2,w,h,h/2,P[0],o.bd||P[1]);txt(s,x,y+(o.fs||24)*.35,o.fs||24,o.c);btns.push({x:x-w/2,y:y-h/2,w,h,fn});
 }
 function dim(x,y,w,h,edge,fill){btns=[];ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(0,0,W,H);rrect(x,y,w,h,32,fill||'#111',edge||'#444',3)} // dark overlay + panel (also clears old buttons)
-function ball(x,y,r,l,a=1){
-  ctx.save();ctx.globalAlpha=a;const img=SPRITES[l];
+function ball(x,y,r,l,a=1,S=SPRITES,n=lv){
+  ctx.save();ctx.globalAlpha=a;const img=S[l];
   if(img)ctx.drawImage(img,x-r,y-r,r*2,r*2);
   else{
-    dot(x,y,r,col(l));const g=ctx.createRadialGradient(x-r*.35,y-r*.4,r*.05,x,y,r);
+    dot(x,y,r,col(l,n));const g=ctx.createRadialGradient(x-r*.35,y-r*.4,r*.05,x,y,r);
     g.addColorStop(0,'rgba(255,255,255,.6)');g.addColorStop(.6,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.28)');ctx.fillStyle=g;ctx.fill();
     if(r>17){ctx.fillStyle='rgba(0,0,0,.55)';ctx.font=`700 ${Math.round(r*.7)}px ${FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(l,x,y+1)}
   }
@@ -132,19 +130,19 @@ function icon(k,x,y,s){ // Assets/UI/<k>.png if present, otherwise a simple draw
 
 // ---------- Button colors + translations ----------
 const PAL={g:['#2ecc5a','#0b6b2a'],b:['#3aa0ff','#0b3f7a'],o:['#ff9f2e','#7a4a00'],p:['#a45cff','#42207a'],r:['#ff5a5a','#7a1f1f'],t:['#2fd3c0','#0b6b60'],s:['#6b6b7a','#2a2a33']};
-const LBL={Start:'g',Continue:'b',Levels:'o',Settings:'p',Back:'s','Back to main menu':'s','Main menu':'s',Close:'s',Resume:'g',Music:'o',Sound:'t',Language:'b',Discord:'p','Join Discord':'p',Privacy:'t','Watch video':'g',Claim:'g','Daily reward':'o',Leaderboard:'t','Delete my data':'r','✕':'r','⚙':'p',Tomorrow:'s'};
+const LBL={Start:'g',Continue:'b',Levels:'o',Settings:'p',Back:'s','Back to main menu':'s','Main menu':'s',Close:'s',Resume:'g',Music:'o',Sound:'t',Language:'b',Discord:'p','Join Discord':'p',Privacy:'t','Watch video':'g',Claim:'g','Daily reward':'o',Leaderboard:'t',Index:'t','Delete my data':'r','✕':'r','⚙':'p',Tomorrow:'s'};
 const LANGS={en:'English',fr:'Français',es:'Español',ar:'العربية'};
-const KEYS=['Start','Continue','Levels','Settings','Back','Shop','Next','Score','Best','Top','Level','level','Game over','Highest circle','Tap or press Space to play again','Main menu','Resume','Close','Music','Sound','On','Off','Privacy','Delete my data','Tap again to confirm','Back to main menu','Language','Join Discord','Watch video','Tap a circle in the box','Not enough gems','Purchased!','Nothing to undo','Levels 4-9 unlocked','Your data was deleted','Bomb','Shake','Hammer','Undo','BUY','FREE','Gems','Merge to unlock new circles','Combo x','Daily reward','Claim','Day','Come back tomorrow','Leaderboard','Coming soon','Online rankings are on the way.','NEW!','Circle','gems','Tomorrow','Play reward','Coins','Not enough coins','Level unlocked!'];
+const KEYS=['Start','Continue','Levels','Settings','Back','Shop','Next','Score','Best','Top','Level','level','Game over','Highest circle','Tap or press Space to play again','Main menu','Resume','Close','Music','Sound','On','Off','Privacy','Delete my data','Tap again to confirm','Back to main menu','Language','Join Discord','Watch video','Tap a circle in the box','Not enough gems','Purchased!','Nothing to undo','Levels 4-9 unlocked','Your data was deleted','Bomb','Shake','Hammer','Undo','BUY','FREE','Gems','Merge to unlock new circles','Combo x','Daily reward','Claim','Day','Come back tomorrow','Leaderboard','Coming soon','Online rankings are on the way.','NEW!','Circle','gems','Tomorrow','Play reward','Coins','Not enough coins','Level unlocked!','Could not load. Check your connection.','Loading...','No scores yet. Be the first!','Change name','Your name','Ad not available','Index','Unlock all circles to earn gems','Claimed'];
 const TR={ // one translation per KEYS entry, same order
- fr:['Jouer','Continuer','Niveaux','Paramètres','Retour','Boutique','Suivant','Score','Record','Top','Niveau','niveau','Partie terminée','Plus grand cercle','Touchez ou appuyez sur Espace pour rejouer','Menu principal','Reprendre','Fermer','Musique','Son','Activé','Désactivé','Confidentialité','Supprimer mes données','Touchez pour confirmer','Retour au menu','Langue','Rejoindre Discord','Voir la vidéo','Touchez un cercle','Pas assez de gemmes','Acheté !','Rien à annuler','Niveaux 4-9 débloqués','Vos données ont été supprimées','Bombe','Secousse','Marteau','Annuler','ACHETER','GRATUIT','Gemmes','Fusionnez pour débloquer des cercles','Combo x','Cadeau du jour','Récupérer','Jour','Revenez demain','Classement','Bientôt disponible','Le classement en ligne arrive bientôt.','NOUVEAU !','Cercle','gemmes','Demain','Récompense de jeu','Pièces','Pas assez de pièces','Niveau débloqué !'],
- es:['Jugar','Continuar','Niveles','Ajustes','Atrás','Tienda','Siguiente','Puntos','Récord','Top','Nivel','nivel','Fin del juego','Círculo más grande','Toca o pulsa Espacio para jugar de nuevo','Menú principal','Reanudar','Cerrar','Música','Sonido','Activado','Desactivado','Privacidad','Borrar mis datos','Toca otra vez para confirmar','Volver al menú','Idioma','Unirse a Discord','Ver vídeo','Toca un círculo','No hay gemas suficientes','¡Comprado!','Nada que deshacer','Niveles 4-9 desbloqueados','Tus datos fueron borrados','Bomba','Sacudir','Martillo','Deshacer','COMPRAR','GRATIS','Gemas','Fusiona para desbloquear círculos','Combo x','Premio diario','Reclamar','Día','Vuelve mañana','Clasificación','Próximamente','La clasificación en línea llegará pronto.','¡NUEVO!','Círculo','gemas','Mañana','Premio de juego','Monedas','No hay monedas suficientes','¡Nivel desbloqueado!'],
- ar:['ابدأ','متابعة','المستويات','الإعدادات','رجوع','المتجر','التالي','النقاط','الأفضل','الأعلى','المستوى','مستوى','انتهت اللعبة','أكبر دائرة','المس أو اضغط مسافة للعب مجددًا','القائمة الرئيسية','استئناف','إغلاق','الموسيقى','الصوت','مفعّل','متوقف','الخصوصية','احذف بياناتي','المس مرة أخرى للتأكيد','العودة للقائمة','اللغة','انضم إلى ديسكورد','شاهد فيديو','المس دائرة','جواهر غير كافية','تم الشراء!','لا شيء للتراجع','تم فتح المستويات 4-9','تم حذف بياناتك','قنبلة','هزّ','مطرقة','تراجع','شراء','مجاني','جواهر','ادمج لفتح دوائر جديدة','كومبو x','مكافأة يومية','استلم','اليوم','عد غدًا','المتصدرون','قريبًا','التصنيف عبر الإنترنت قادم قريبًا.','جديد!','دائرة','جواهر','غدًا','مكافأة اللعب','عملات','عملات غير كافية','تم فتح المستوى!']};
+ fr:['Jouer','Continuer','Niveaux','Paramètres','Retour','Boutique','Suivant','Score','Record','Top','Niveau','niveau','Partie terminée','Plus grand cercle','Touchez ou appuyez sur Espace pour rejouer','Menu principal','Reprendre','Fermer','Musique','Son','Activé','Désactivé','Confidentialité','Supprimer mes données','Touchez pour confirmer','Retour au menu','Langue','Rejoindre Discord','Voir la vidéo','Touchez un cercle','Pas assez de gemmes','Acheté !','Rien à annuler','Niveaux 4-9 débloqués','Vos données ont été supprimées','Bombe','Secousse','Marteau','Annuler','ACHETER','GRATUIT','Gemmes','Fusionnez pour débloquer des cercles','Combo x','Cadeau du jour','Récupérer','Jour','Revenez demain','Classement','Bientôt disponible','Le classement en ligne arrive bientôt.','NOUVEAU !','Cercle','gemmes','Demain','Récompense de jeu','Pièces','Pas assez de pièces','Niveau débloqué !','Impossible de charger. Vérifiez votre connexion.','Chargement...','Aucun score. Soyez le premier !','Changer le nom','Votre nom','Publicité indisponible','Index','Débloquez tous les cercles pour gagner des gemmes','Récupéré'],
+ es:['Jugar','Continuar','Niveles','Ajustes','Atrás','Tienda','Siguiente','Puntos','Récord','Top','Nivel','nivel','Fin del juego','Círculo más grande','Toca o pulsa Espacio para jugar de nuevo','Menú principal','Reanudar','Cerrar','Música','Sonido','Activado','Desactivado','Privacidad','Borrar mis datos','Toca otra vez para confirmar','Volver al menú','Idioma','Unirse a Discord','Ver vídeo','Toca un círculo','No hay gemas suficientes','¡Comprado!','Nada que deshacer','Niveles 4-9 desbloqueados','Tus datos fueron borrados','Bomba','Sacudir','Martillo','Deshacer','COMPRAR','GRATIS','Gemas','Fusiona para desbloquear círculos','Combo x','Premio diario','Reclamar','Día','Vuelve mañana','Clasificación','Próximamente','La clasificación en línea llegará pronto.','¡NUEVO!','Círculo','gemas','Mañana','Premio de juego','Monedas','No hay monedas suficientes','¡Nivel desbloqueado!','No se pudo cargar. Revisa tu conexión.','Cargando...','Aún no hay puntuaciones. ¡Sé el primero!','Cambiar nombre','Tu nombre','Anuncio no disponible','Índice','Desbloquea todos los círculos para ganar gemas','Reclamado'],
+ ar:['ابدأ','متابعة','المستويات','الإعدادات','رجوع','المتجر','التالي','النقاط','الأفضل','الأعلى','المستوى','مستوى','انتهت اللعبة','أكبر دائرة','المس أو اضغط مسافة للعب مجددًا','القائمة الرئيسية','استئناف','إغلاق','الموسيقى','الصوت','مفعّل','متوقف','الخصوصية','احذف بياناتي','المس مرة أخرى للتأكيد','العودة للقائمة','اللغة','انضم إلى ديسكورد','شاهد فيديو','المس دائرة','جواهر غير كافية','تم الشراء!','لا شيء للتراجع','تم فتح المستويات 4-9','تم حذف بياناتك','قنبلة','هزّ','مطرقة','تراجع','شراء','مجاني','جواهر','ادمج لفتح دوائر جديدة','كومبو x','مكافأة يومية','استلم','اليوم','عد غدًا','المتصدرون','قريبًا','التصنيف عبر الإنترنت قادم قريبًا.','جديد!','دائرة','جواهر','غدًا','مكافأة اللعب','عملات','عملات غير كافية','تم فتح المستوى!','تعذر التحميل. تحقق من الاتصال.','جارٍ التحميل...','لا توجد نتائج بعد. كن الأول!','تغيير الاسم','اسمك','الإعلان غير متاح','الفهرس','افتح كل الدوائر لتربح جواهر','تم الاستلام']};
 const DICT={};for(const L in TR){DICT[L]=Object.create(null);KEYS.forEach((k,i)=>DICT[L][k]=TR[L][i])}
 function tr(s){s=String(s);const D=DICT[lang];if(!D)return s;if(D[s])return D[s];let m=s.match(/^(.+?): (.+)$/);if(m)return tr(m[1])+': '+tr(m[2]);m=s.match(/^([A-Za-z ]+?) ?(\d+)$/);return m&&D[m[1]]?D[m[1]]+' '+m[2]:s}
 
 // ---------- Audio (one file per circle level: sfx/merge_01 ... merge_11, plays on drop AND on merge; synth beep if missing) ----------
 function audioInit(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(ac&&ac.state==='suspended')ac.resume()}
-function tone(f,d,t0=0,v=.2,type='sine'){if(!ac||muted)return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+t0;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d)}
+function tone(f,d,t0=0,v=.2,type='sine'){if(!ac||muted||adPause)return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+t0;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d)}
 async function loadSfx(n,l){ // loads + auto-trims silence at the start/end of the file
   audioInit();if(!ac)return;
   for(const nm of(l===1?['merge_01','drop_01']:['merge_'+pad(l)]))for(const ext of['ogg','mp3']){
@@ -159,22 +157,23 @@ async function loadSfx(n,l){ // loads + auto-trims silence at the start/end of t
 }
 function sfx(l,cb){
   const s=A[l];
-  if(s){if(!muted&&ac){audioInit();const src=ac.createBufferSource(),g=ac.createGain();if(!SFX_OVERLAP&&sfxNow)try{sfxNow.stop()}catch(e){}sfxNow=src;src.buffer=s.b;g.gain.value=.9;src.connect(g).connect(ac.destination);src.start(0,s.o,s.d)}return}
+  if(s){if(!muted&&!adPause&&ac){audioInit();const src=ac.createBufferSource(),g=ac.createGain();if(!SFX_OVERLAP&&sfxNow)try{sfxNow.stop()}catch(e){}sfxNow=src;src.buffer=s.b;g.gain.value=.9;src.connect(g).connect(ac.destination);src.start(0,s.o,s.d)}return}
   console.warn(`Missing sfx for circle level ${l}: expected ${base(lv)}sfx/merge_${pad(l)}.ogg`);
   const f=260*2**((l-1)*.18);tone(f,.1+.03*l,0,.22);tone(f*2,.08,0,.07,'triangle');if(cb>1)tone(f*1.5,.12,.06,.1);
 }
-function applyMusic(){if(!M)return;if(musicOn&&scene==='play'&&!settings&&M.ok)M.play().catch(()=>{});else M.pause()}
+function applyMusic(){if(!M)return;if(musicOn&&scene==='play'&&!settings&&!adPause&&M.ok)M.play().catch(()=>{});else M.pause()}
+window.GameAPI={setAdPause:v=>{adPause=v;applyMusic()},toast:text=>{toast={t:2,text}}}; // used by platform.js
 
 // ---------- Levels, menus, settings ----------
 for(let n=1;n<=NL;n++)loadImg(base(n)+'icon.png',im=>ICON[n]=fit(im,144));
 ['bomb','shake','hammer','undo','gem','coin','discord'].forEach(k=>loadImg(`Assets/UI/${k}.png`,im=>UI[k]=fit(im,112)));
 function loadLevel(n){
   for(const k in SPRITES)delete SPRITES[k];A={};
-  for(let l=1;l<=11;l++){loadImg(`${base(n)}circle_${pad(l)}.png`,im=>{if(lv===n)SPRITES[l]=fit(im,R[l]*4)});loadSfx(n,l)}
+  for(let l=1;l<=11;l++){loadImg(`${base(n)}circle_${pad(l)}.png`,im=>{if(lv===n)SPRITES[l]=fit(im,Math.max(R[l]*4,FX_SIZE*4))});loadSfx(n,l)}
   if(M)M.pause();M=new Audio();M.loop=true;M.volume=.4;M.addEventListener('canplaythrough',()=>{M.ok=1;applyMusic()},{once:true});M.src=base(n)+'music.ogg';
 }
 function startLevel(n,resume){
-  save();lv=n;loadLevel(n);un=unAll[n]||(unAll[n]=[]);best=topScores[n]||0;reset();
+  save();lv=n;applyCfg();loadLevel(n);un=unAll[n]||(unAll[n]=[]);best=topScores[n]||0;reset();
   const s=resume&&store.get('md_save',null);
   if(s){balls=s.balls;held=s.held;queue=s.queue;score=s.score;maxL=s.maxL;hx=s.hx}else clearSave();
   scene='play';settings=false;audioInit();applyMusic();save();
@@ -182,8 +181,8 @@ function startLevel(n,resume){
 const continueGame=()=>{const s=store.get('md_save',null);if(s)startLevel(s.lv,true)};
 function toMenu(){saveGame();scene='menu';settings=false;applyMusic();save()}
 function wipe(){
-  ['md_top','md_un2','md_disc','md_rew','md_lvl','md_set','md_save','md_eco'].forEach(k=>store.del(k));
-  ({gems,coins,boosts,dd}=fresh());topScores=[];unAll=[];un=unAll[1]=[];owned=[];muted=false;musicOn=true;lv=1;best=0;hasSave=false;
+  ['md_top','md_un2','md_disc','md_rew','md_lvl','md_idx','md_set','md_save','md_eco'].forEach(k=>store.del(k));
+  ({gems,coins,boosts,dd}=fresh());topScores=[];unAll=[];un=unAll[1]=[];owned=[];idxDone=[];muted=false;musicOn=true;lv=1;applyCfg();best=0;hasSave=false;
   reset();scene='menu';settings=false;applyMusic();toast={t:2,text:'Your data was deleted'};
 }
 const openSettings=()=>{settings=true;confirmDel=false;applyMusic()};
@@ -192,16 +191,17 @@ const lockedLv=i=>LEVEL_COST[i]>0&&!owned[i];
 function buyLevel(i){if(coins<LEVEL_COST[i]){toast={t:2,text:'Not enough coins'};return}coins-=LEVEL_COST[i];owned[i]=true;toast={t:2,text:'Level unlocked!'};save()}
 function drawMenu(){
   if(!dailyShown){dailyShown=true;if(dailyReady())daily=true}
-  txt('Merge Lapatate',W/2,170,64,'#fff',null,800);
+  txt('Merge Drop',W/2,170,64,'#fff',null,800);
   for(let l=1;l<=4;l++)ball(170+(l-1)*100,245,R[l]*1.1,l);
   txt('Level '+lv,W/2,325,20,'#888',null,500);
-  btn('Start',W/2,395,300,60,()=>startLevel(lv,false));
-  btn('Continue',W/2,465,300,60,hasSave?continueGame:null,hasSave?{}:{bg:'#2a2a2a',c:'#666',bd:'#333'});
-  btn('Levels',W/2,535,300,60,()=>scene='levels');
-  btn('Settings',W/2,605,300,60,openSettings);
-  btn('Daily reward',W/2-110,685,200,52,()=>daily=true,{fs:17});
-  btn('Leaderboard',W/2+110,685,200,52,()=>lb=true,{fs:17});
-  if(dailyReady())dot(W/2-12,659,9,'#ff3b3b');
+  btn('Start',W/2,380,300,56,()=>startLevel(lv,false));
+  btn('Continue',W/2,446,300,56,hasSave?continueGame:null,hasSave?{}:{bg:'#2a2a2a',c:'#666',bd:'#333'});
+  btn('Levels',W/2,512,300,56,()=>scene='levels');
+  btn('Index',W/2,578,300,56,()=>{scene='index';idxLv=null});if(Array.from({length:LEVELS_READY},(_,i)=>i+1).some(idxReady))dot(W/2+138,554,9,'#ff3b3b');
+  btn('Settings',W/2,644,300,56,openSettings);
+  btn('Daily reward',W/2-110,715,200,48,()=>daily=true,{fs:17});
+  btn('Leaderboard',W/2+110,715,200,48,openLB,{fs:17});
+  if(dailyReady())dot(W/2-12,691,9,'#ff3b3b');
   txt('v'+GAME_VERSION,W/2,H-16,14,'#555',null,500);
 }
 function drawLevels(){
@@ -218,6 +218,7 @@ function drawLevels(){
     if(soon){rrect(cx-85,cy-90,170,190,24,'rgba(0,0,0,.55)');txt('Coming soon',cx,cy+62,18,'#ddd',null,700)}
     else if(lk){rrect(cx-85,cy-90,170,190,24,'rgba(0,0,0,.4)');btn(LEVEL_COST[i],cx+12,cy+62,112,38,()=>buyLevel(i),{bg:coins>=LEVEL_COST[i]?'#f5b82e':'#6b5a2a',bd:'#7a4a00',c:'#4a2a00',fs:20});icon('coin',cx-30,cy+62,22)}
     else txt('Top '+(topScores[n]||0),cx,cy+58,20,'#ffd23f',null,700);
+    if(!soon)for(let k=0;k<5;k++)dot(cx-24+k*12,cy+90,4,k<((LEVEL_CFG[n]||{}).diff||1)?'#ff9f2e':'#333'); // difficulty dots
   }
   btn('Back',W/2,740,200,52,()=>scene='menu');
 }
@@ -227,10 +228,46 @@ function drawSettings(){
   chip('Music',musicOn?'On':'Off',195,()=>{musicOn=!musicOn;applyMusic();save()},musicOn?'#6ee26e':'#888');
   chip('Sound',muted?'Off':'On',320,()=>{muted=!muted;save()},muted?'#888':'#6ee26e');
   chip('Language',lang.toUpperCase(),445,()=>{const k=Object.keys(LANGS);lang=k[(k.indexOf(lang)+1)%k.length];save()},'#fff');
-  btn('Discord',245,380,140,46,()=>openUrl(DISCORD),{fs:20});btn('Privacy',395,380,140,46,()=>openUrl(PRIVACY),{fs:20});
+  if(!P.noLinks){btn('Discord',245,380,140,46,()=>openUrl(DISCORD),{fs:20});btn('Privacy',395,380,140,46,()=>openUrl(PRIVACY),{fs:20});}
   btn(inPlay?'Resume':'Close',320,470,300,56,()=>{settings=false;applyMusic()});
   if(inPlay)btn('Back to main menu',320,540,300,46,toMenu,{fs:20});
   btn(confirmDel?'Tap again to confirm':'Delete my data',320,610,260,36,()=>{if(confirmDel)wipe();else confirmDel=true},{bg:confirmDel?'#7a1f1f':'#1a1a1a',bd:confirmDel?'#ff4d4d':'#5a2a2a',c:confirmDel?'#fff':'#ff8a8a',fs:16});
+}
+
+// ---------- Circle index: how far you got in each level (x/y). Unlock every circle of a level = gem reward ----------
+const idxTotal=n=>Math.max(3,Math.min(11,(LEVEL_CFG[n]||{}).maxMerge||11));
+const idxCount=n=>{const u=unAll[n]||[];let c=0;for(let l=1;l<=idxTotal(n);l++)if(u[l])c++;return c};
+const idxReward=n=>(LEVEL_CFG[n]||{}).indexReward||INDEX_REWARD;
+const idxReady=n=>idxCount(n)===idxTotal(n)&&!idxDone[n];
+function openIdx(n){idxLv=n;idxSp={};for(let l=1;l<=11;l++)loadImg(`${base(n)}circle_${pad(l)}.png`,im=>{if(idxLv===n)idxSp[l]=fit(im,96)})}
+function claimIdx(n){if(!idxReady(n))return;idxDone[n]=true;gems+=idxReward(n);toast={t:2,text:'+'+idxReward(n)+' '+tr('gems')};save()}
+function drawIndex(){
+  if(idxLv)return drawIndexLv(idxLv);
+  txt('Index',W/2,90,46,'#fff',null,800);
+  for(let i=0;i<NL;i++){
+    const n=i+1,cx=130+(i%3)*190,cy=215+Math.floor(i/3)*205,soon=n>LEVELS_READY,c=idxCount(n),tot=idxTotal(n),done=c===tot;
+    rrect(cx-85,cy-90,170,190,24,'#101010',done?'#6ee26e':'#333',3);txt('Level '+n,cx,cy-62,16,'#aaa',null,500);
+    ctx.save();if(soon&&'filter' in ctx)ctx.filter='blur(3px)';
+    if(ICON[n])ctx.drawImage(ICON[n],cx-36,cy-48,72,72);else{dot(cx,cy-12,36,`hsl(${(n-1)*40+30} 75% 62%)`);txt(n,cx,cy,34,'rgba(0,0,0,.55)',null,700)}
+    ctx.restore();
+    if(soon){rrect(cx-85,cy-90,170,190,24,'rgba(0,0,0,.55)');txt('Coming soon',cx,cy+62,18,'#ddd',null,700);continue}
+    btns.push({x:cx-85,y:cy-90,w:170,h:190,fn:()=>openIdx(n)});
+    txt(c+'/'+tot,cx,cy+62,26,done?'#6ee26e':'#ffd23f',null,800);
+    if(idxReady(n)){icon('gem',cx+62,cy-70,22);dot(cx+72,cy-82,6,'#ff3b3b')}else if(idxDone[n])txt('✓',cx+66,cy-66,22,'#6ee26e',null,800);
+  }
+  btn('Back',W/2,740,200,52,()=>scene='menu');
+}
+function drawIndexLv(n){
+  const tot=idxTotal(n),c=idxCount(n),done=c===tot,rw=idxReward(n),U=unAll[n]||[],f=tot<=6?1.3:1;
+  txt('Level '+n,W/2,68,36,'#fff',null,800);txt(c+'/'+tot,W/2,110,30,done?'#6ee26e':'#ffd23f',null,800);
+  for(let l=1;l<=tot;l++){
+    const i=l-1,cx=95+(i%4)*150,cy=235+Math.floor(i/4)*150,r=(22+(l-1)*2.2)*f;
+    if(U[l])ball(cx,cy,r,l,1,idxSp,n);else{dot(cx,cy,r,'#222');txt('?',cx,cy+r*.38,r*1.1,'#bbb')}
+    txt(l,cx,cy+r+20,15,'#777',null,600);
+  }
+  if(done){if(idxDone[n])txt('✓ '+tr('Claimed'),W/2,690,24,'#6ee26e',null,700);else btn(tr('Claim')+' +'+rw,W/2,684,280,54,()=>claimIdx(n),{bg:'#2ecc5a',bd:'#0b6b2a'})}
+  else{txt('Unlock all circles to earn gems',W/2,665,18,'#aaa',null,500);icon('gem',W/2-30,697,24);txt('+'+rw,W/2-12,705,24,'#fff','left',800)}
+  btn('Back',W/2,755,200,46,()=>idxLv=null);
 }
 
 // ---------- Gems, boosts, shop, rewards ----------
@@ -271,7 +308,7 @@ function drawShop(){
   [...BOOSTS,['gems',FREE_GEMS+' '+tr('Gems')]].forEach(([k,name],i)=>{
     const cx=160+(i%3)*160,cy=300+Math.floor(i/3)*220;
     rrect(cx-70,cy-100,140,200,20,'#f2ecff');txt(name,cx,cy-70,18,'#4a3a70',null,700);icon(k==='gems'?'gem':k,cx,cy-20,56);
-    if(k==='gems'){today();if(dd.vids<VIDEO_DAILY)btn('FREE',cx,cy+72,112,40,()=>showRewardedAd(()=>{today();dd.vids++;gems+=FREE_GEMS;toast={t:2,text:'+'+FREE_GEMS+' gems'};save()}),{bg:'#2ecc5a',bd:'#0b6b2a',fs:20});else btn('Tomorrow',cx,cy+72,112,40,null,{fs:18})}
+    if(k==='gems'){today();if(dd.vids<VIDEO_DAILY)btn('FREE',cx,cy+72,112,40,()=>P.rewarded(()=>{today();dd.vids++;gems+=FREE_GEMS;toast={t:2,text:'+'+FREE_GEMS+' gems'};save()}),{bg:'#2ecc5a',bd:'#0b6b2a',fs:20});else btn('Tomorrow',cx,cy+72,112,40,null,{fs:18})}
     else{txt(PRICES[k],cx-2,cy+32,18,'#4a3a70','right',700);icon('gem',cx+16,cy+26,18);btn('BUY',cx,cy+72,112,40,()=>buy(k),{bg:'#f5b82e',bd:'#7a4a00',c:'#4a2a00',fs:20})}
   });
   if(toast.t>0)txt(toast.text,W/2,665,20,'#ffd23f',null,700);
@@ -280,7 +317,7 @@ function today(){const d=Math.floor((Date.now()-new Date().getTimezoneOffset()*6
 const dailyReady=()=>dd.last!==today();
 function dayIdx(){const d=today();return dd.last===d?dd.streak:(dd.last===d-1?(dd.streak+1)%7:0)}
 function claimDaily(){const d=today();if(dd.last===d)return;const i=dayIdx();dd.streak=i;dd.last=d;gems+=DAILY[i];toast={t:2,text:'+'+DAILY[i]+' '+tr('gems')};save()}
-function runReward(){today();runGot=Math.max(0,Math.min(RUN_GEM_MAX,Math.floor(score/RUN_GEM_DIV),DAILY_PLAY_CAP-dd.run));dd.run+=runGot;gems+=runGot;coinsGot=Math.floor(score*COIN_RATE);coins+=coinsGot;save()}
+function runReward(){today();runGot=Math.max(0,Math.min(RUN_GEM_MAX,Math.floor(score/RUN_GEM_DIV),DAILY_PLAY_CAP-dd.run));dd.run+=runGot;gems+=runGot;coinsGot=Math.floor(score*COIN_RATE*(LC().coinMult||1));coins+=coinsGot;save()}
 function drawDaily(){
   dim(70,100,500,580,'#ff9f2e');txt('Daily reward',W/2,165,34,'#fff',null,800);btn('✕',530,150,44,44,()=>daily=false,{fs:20});
   const cur=dayIdx(),got=!dailyReady();
@@ -292,18 +329,25 @@ function drawDaily(){
   if(got)btn('Come back tomorrow',W/2,570,360,54,null,{bg:'#555',bd:'#333',fs:20});else btn('Claim',W/2,570,260,56,claimDaily);
   if(toast.t>0)txt(toast.text,W/2,640,22,'#ffd23f',null,700);
 }
+function openLB(){lb=true;lbLevel=lv;loadLB()}
+function loadLB(){if(!P.leaderboard)return;lbRows=null;lbErr=false;P.leaderboard(lbLevel).then(r=>lbRows=r).catch(()=>lbErr=true)}
 function drawLB(){
-  dim(100,230,440,340,'#2fd3c0');txt('Leaderboard',W/2,300,34,'#fff',null,800);txt('Coming soon',W/2,395,46,'#ffd23f',null,800);
-  txt('Online rankings are on the way.',W/2,440,17,'#aaa',null,500);btn('Close',W/2,510,200,50,()=>lb=false);
+  dim(70,100,500,580,'#2fd3c0');txt('Leaderboard',W/2,160,34,'#fff',null,800);btn('✕',530,150,44,44,()=>lb=false,{fs:20});
+  if(!P.leaderboard){txt('Coming soon',W/2,360,46,'#ffd23f',null,800);txt('Online rankings are on the way.',W/2,405,17,'#aaa',null,500);return}
+  btn('◀',150,215,50,44,()=>{lbLevel=lbLevel>1?lbLevel-1:LEVELS_READY;loadLB()},{fs:20});btn('▶',490,215,50,44,()=>{lbLevel=lbLevel<LEVELS_READY?lbLevel+1:1;loadLB()},{fs:20});
+  txt('Level '+lbLevel,W/2,224,24,'#fff',null,700);
+  if(lbErr)txt('Could not load. Check your connection.',W/2,400,18,'#ff8a8a');else if(!lbRows)txt('Loading...',W/2,400,20,'#aaa');else if(!lbRows.length)txt('No scores yet. Be the first!',W/2,400,20,'#aaa');
+  else lbRows.slice(0,10).forEach((r,i)=>{const y=275+i*38;txt(i+1,108,y,18,'#888','left',700);txt(r.name,150,y,18,r.me?'#ffd23f':'#fff','left',600);txt(r.score,532,y,18,'#fff','right',700)});
+  if(P.setName)btn('Change name',W/2,640,220,38,()=>{const n=prompt(tr('Your name'),P.getName());if(n)P.setName(n)},{fs:16});
 }
 
 // ---------- New-circle celebration (no pause, no popup) ----------
-function burst(){const C=['#ff5a5a','#ffd23f','#6ee26e','#3aa0ff','#ff6fb5','#a56bff'];for(let i=0;i<45;i++){const a=Math.random()*6.28,v=150+Math.random()*350;parts.push({x:BX+BW/2,y:BY+135,vx:Math.cos(a)*v,vy:Math.sin(a)*v-150,c:C[i%6],t:1.6+Math.random()*.6,r:Math.random()*6})}}
+function burst(){const C=['#ff5a5a','#ffd23f','#6ee26e','#3aa0ff','#ff6fb5','#a56bff'];for(let i=0;i<45;i++){const a=Math.random()*6.28,v=150+Math.random()*350;parts.push({x:BX+BW/2,y:BY+170,vx:Math.cos(a)*v,vy:Math.sin(a)*v-150,c:C[i%6],t:1.6+Math.random()*.6,r:Math.random()*6})}}
 function fxStep(dt){if(fx&&(fx.t-=dt)<=0)fx=null;parts=parts.filter(p=>(p.t-=dt)>0);for(const p of parts){p.vy+=700*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=dt*8}}
 function drawFx(){
   for(const p of parts){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.globalAlpha=Math.min(1,p.t);ctx.fillStyle=p.c;ctx.fillRect(-4,-2,8,4);ctx.restore()}
   if(!fx)return;
-  const e=2.4-fx.t,s=e<.2?e/.2*1.15:(e<.35?1.15-(e-.2)/.15*.15:1),x=BX+BW/2,y=BY+135,r=Math.min(R[fx.l],70)*s;
+  const e=2.4-fx.t,s=e<.2?e/.2*1.15:(e<.35?1.15-(e-.2)/.15*.15:1),x=BX+BW/2,y=BY+170,r=FX_SIZE*s;
   ctx.save();ctx.globalAlpha=Math.min(1,fx.t/.5);ball(x,y,r,fx.l);
   const o=(t,yy,sz,c)=>{ctx.font=`800 ${sz}px ${FONT}`;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=7;ctx.strokeStyle='#222';ctx.strokeText(t,x,yy);ctx.fillStyle=c;ctx.fillText(t,x,yy)};
   o(tr('NEW!'),y-r-14,30,'#ffd23f');o(tr('Circle')+' '+fx.l,y+r+34,26,'#fff');o('+'+GEM_REWARD+' '+tr('gems'),y+r+66,20,'#d9a8ff');
@@ -326,14 +370,14 @@ function merge(a,b){
 function walls(b){
   if(b.x-b.r<BX){b.x=BX+b.r;if(b.vx<0)b.vx*=-.2}
   if(b.x+b.r>BX+BW){b.x=BX+BW-b.r;if(b.vx>0)b.vx*=-.2}
-  if(b.y+b.r>BY+BH){b.y=BY+BH-b.r;if(b.vy>0)b.vy*=-.15;b.vx*=.998} // floor friction: closer to 1 = more slippery
+  if(b.y+b.r>BY+BH){b.y=BY+BH-b.r;if(b.vy>0)b.vy*=-.15;b.vx*=FRIC} // floor friction: closer to 1 = more slippery
   if(b.r<BR&&b.y>CY)for(const cx of[BX+BR,BX+BW-BR])if(cx<BX+BW/2?b.x<cx:b.x>cx){ // rounded bottom corners
     const dx=b.x-cx,dy=b.y-CY,d=Math.hypot(dx,dy)||1;
     if(d+b.r>BR){const k=(BR-b.r)/d;b.x=cx+dx*k;b.y=CY+dy*k;const vn=(b.vx*dx+b.vy*dy)/d;if(vn>0){b.vx-=1.15*vn*dx/d;b.vy-=1.15*vn*dy/d}}
   }
 }
 function phys(h){
-  for(const b of balls){b.vy+=1500*h;b.vx*=.9998;b.vy*=.9995;b.x+=b.vx*h;b.y+=b.vy*h;b.age+=h;b.pop+=(1-b.pop)*Math.min(1,h*12)}
+  for(const b of balls){b.vy+=GRAV*h;b.vx*=.9998;b.vy*=.9995;b.x+=b.vx*h;b.y+=b.vy*h;b.age+=h;b.pop+=(1-b.pop)*Math.min(1,h*12)}
   for(let it=0;it<2;it++){
     balls.forEach(walls);
     for(let i=0;i<balls.length;i++)for(let k=i+1;k<balls.length;k++){
@@ -357,7 +401,7 @@ function update(dt){
   for(let i=0;i<4;i++)phys(dt/4);
   const danger=balls.some(b=>b.age>1&&b.y-b.r<LINE);
   overT=danger?overT+dt:Math.max(0,overT-dt*2);
-  if(overT>.9){over=true;clearSave();overAge=0;runReward();tone(180,.6,0,.3,'sawtooth');tone(120,.8,.15,.3,'sawtooth')}
+  if(overT>.9){over=true;clearSave();overAge=0;runReward();P.submitScore(lv,score);if(++adCount%AD_EVERY_N_GAMES===0)adDue=true;tone(180,.6,0,.3,'sawtooth');tone(120,.8,.15,.3,'sawtooth')}
 }
 
 // ---------- Game screen ----------
@@ -366,7 +410,7 @@ function drawGame(){
   txt('Score',BX,40,16,'#888','left',500);txt(score,BX,78,36,'#fff','left',700);
   txt('Best',BX+BW,40,16,'#888','right',500);txt(best,BX+BW,78,36,'#fff','right',700);
   btn('⚙',W-34,40,40,40,openSettings,{fs:22});drawLeft();
-  dot(W-86,40,20,'#5865F2');icon('discord',W-86,40,26);btns.push({x:W-106,y:20,w:40,h:40,fn:()=>openUrl(DISCORD)}); // Discord button (logo: Assets/UI/discord.png)
+  if(!P.noLinks){dot(W-86,40,20,'#5865F2');icon('discord',W-86,40,26);btns.push({x:W-106,y:20,w:40,h:40,fn:()=>openUrl(DISCORD)});} // Discord button (logo: Assets/UI/discord.png)
   ctx.lineCap=ctx.lineJoin='round';boxPath();ctx.fillStyle='#101010';ctx.fill();
   ctx.save();boxPath();ctx.clip();for(const b of balls)ball(b.x,b.y,b.r*b.pop,b.l);ctx.restore();
   boxPath();ctx.strokeStyle='#9a9a9a';ctx.lineWidth=6;ctx.stroke();
@@ -378,9 +422,9 @@ function drawGame(){
   }
   rrect(505,150,125,300,28,'#101010','#333',3);txt('Next',567,184,18,'#aaa');   // next-circle queue
   queue.forEach((l,i)=>ball(567,250+i*85,R[l]*(1-i*.12),l,1-i*.22));
-  const MM=maxMerge(),sw=BW/MM;                                               // unlock row (? = not made yet)
+  const MM=maxMerge(),sw=BW/MM,rMax=Math.min(sw/2-2,28);   // row adapts: fewer circles = bigger, wider-spaced                                               // unlock row (? = not made yet)
   for(let l=1;l<=MM;l++){
-    const x=BX+sw*(l-.5),r=7+l*.9;
+    const x=BX+sw*(l-.5),r=rMax*(.5+.5*(l-1)/(MM-1));
     if(un[l])ball(x,UY,r,l);else{dot(x,UY,r,'#222');txt('?',x,UY+r*.38,r*1.1,'#bbb')}
   }
   txt('Merge to unlock new circles',BX+BW/2,UY+48,15,'#777',null,500);
@@ -397,7 +441,7 @@ function drawGame(){
 }
 function draw(){
   btns=[];ctx.clearRect(0,0,W,H);
-  if(scene==='menu')drawMenu();else if(scene==='levels')drawLevels();else{drawGame();drawFx()}
+  if(scene==='menu')drawMenu();else if(scene==='levels')drawLevels();else if(scene==='index')drawIndex();else{drawGame();drawFx()}
   if(scene!=='play'&&toast.t>0)txt(toast.text,W/2,135,20,'#ffd23f',null,700);
   if(settings)drawSettings();
   if(shop)drawShop();
@@ -414,7 +458,7 @@ cv.addEventListener('pointerup',e=>{
   for(let i=btns.length-1;i>=0;i--){const b=btns[i];if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){if(b.fn)b.fn();return}}
   if(scene!=='play'||modalOpen())return;
   if(target&&!over){useTarget(x,y);return}
-  if(over){if(overAge>.6)reset();return}
+  if(over){if(overAge>.6)retry();return}
   mouseX=x;drop();
 });
 addEventListener('keydown',e=>{
@@ -423,14 +467,14 @@ addEventListener('keydown',e=>{
   else if(c==='ArrowRight'||c==='KeyD')keys.r=1;
   else if(c==='KeyM')muted=!muted;
   else if(c==='Escape'&&scene==='play'){if(settings){settings=false;applyMusic()}else openSettings()}
-  else if(c==='Space'){e.preventDefault();if(e.repeat)return;if(over){if(overAge>.6)reset()}else drop()}
+  else if(c==='Space'){e.preventDefault();if(e.repeat)return;if(over){if(overAge>.6)retry()}else drop()}
 });
 addEventListener('keyup',e=>{if(e.code==='ArrowLeft'||e.code==='KeyA')keys.l=0;if(e.code==='ArrowRight'||e.code==='KeyD')keys.r=0});
 addEventListener('pagehide',()=>{saveGame();save()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){saveGame();save();if(M)M.pause()}else applyMusic()});
 setInterval(saveGame,3000);
 let last=performance.now();
-(function loop(t){const dt=Math.min(.033,(t-last)/1000);last=t;if(scene==='play'&&!modalOpen())update(dt);else toast.t-=dt;fxStep(dt);draw();requestAnimationFrame(loop)})(last);
+(function loop(t){const dt=Math.min(.033,(t-last)/1000);last=t;if(scene==='play'&&!modalOpen())update(dt);else toast.t-=dt;fxStep(dt);const pl=scene==='play'&&!modalOpen()&&!over&&!document.hidden;if(pl!==playingNow){playingNow=pl;P.gameplay(pl)}draw();requestAnimationFrame(loop)})(last);
 </script>
 </body>
 </html>
