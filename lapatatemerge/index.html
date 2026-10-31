@@ -25,12 +25,13 @@ const DROP_MAX_LEVEL=5;                     // highest level that can ever be dr
 const DROP_WEIGHTS=[60,30,15,8,4,2,1,1];    // spawn chance per level (Lv1, Lv2, Lv3...), only levels in the pool are used
 const START_GEMS=20,GEM_REWARD=5,FREE_GEMS=35,START_BOOSTS=1; // GEM_REWARD = gems for unlocking a new circle level
 const PRICES={bomb:100,shake:100,hammer:50,undo:50},BOMB_RADIUS=110;
+const MAX_MERGE_OVERRIDE={2:10,7:9}; // game level : highest circle. Any level not listed uses 11 const maxMerge=()=>Math.max(3,Math.min(11,MAX_MERGE_OVERRIDE[lv]||11)); const MAX_MERGE_OVERRIDE={4:10,7:9}; // game level : highest circle. Any level not listed uses 11 const maxMerge=()=>Math.max(3,Math.min(11,MAX_MERGE_OVERRIDE[lv]||11));
 const DAILY=[10,10,15,15,20,20,40];          // daily reward gems for day 1..7 (missing a day restarts at day 1)
 const RUN_GEM_DIV=400,RUN_GEM_MAX=5,DAILY_PLAY_CAP=30; // play reward at game over: 1 gem per 400 score, max 5 per game, max 30 per day
 const SFX_OVERLAP=false;  // true = sounds play on top of each other, false = a new sound cuts the previous one 
 let sfxNow=null;
 const VIDEO_DAILY=3;                         // free-gem videos allowed per day
-const GAME_VERSION='0.6.1';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
+const GAME_VERSION='0.6.2';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
 // ===============================================================
 const LINE=BY+LINE_OFFSET,CY=BY+BH-BR,UY=BY+BH+50,H=Math.max(800,BY+BH+130);
 cv.height=H;cv.style.width='min(100vw,calc(100dvh * '+(W/H)+'))';
@@ -321,7 +322,7 @@ function phys(h){
     for(let i=0;i<balls.length;i++)for(let k=i+1;k<balls.length;k++){
       const a=balls[i],b=balls[k];if(a.dead||b.dead)continue;
       const dx=b.x-a.x,dy=b.y-a.y,rr=a.r+b.r;if(dx*dx+dy*dy>=rr*rr)continue;
-      if(a.l===b.l&&a.l<11){merge(a,b);continue}
+      if(a.l===b.l&&a.l<maxMerge()){merge(a,b);continue}
       const d=Math.hypot(dx,dy)||.01,nx=dx/d,ny=dy/d,ma=a.r*a.r,mb=b.r*b.r,ov=rr-d,s=ma+mb;
       a.x-=nx*ov*mb/s;a.y-=ny*ov*mb/s;b.x+=nx*ov*ma/s;b.y+=ny*ov*ma/s;
       const vn=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
@@ -383,9 +384,9 @@ function drawGame(){
   txt('Next',567,184,18,'#aaa');
   queue.forEach((l,i)=>ball(567,250+i*85,R[l]*(1-i*.12),l,1-i*.22));
   // Unlock row
-  const sw=BW/11;
+  const MM=maxMerge(),sw=BW/MM;
   for(let l=1;l<=11;l++){
-    const x=BX+sw*(l-.5),r=7+l*.9;
+    if(l>MM)break;const x=BX+sw*(l-.5),r=7+l*.9;
     if(un[l])ball(x,UY,r,l);
     else{ctx.beginPath();ctx.arc(x,UY,r,0,7);ctx.fillStyle='#222';ctx.fill();txt('?',x,UY+r*.38,r*1.1,'#bbb');}
   }
