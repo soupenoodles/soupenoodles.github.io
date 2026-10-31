@@ -27,8 +27,10 @@ const START_GEMS=20,GEM_REWARD=5,FREE_GEMS=35,START_BOOSTS=1; // GEM_REWARD = ge
 const PRICES={bomb:100,shake:100,hammer:50,undo:50},BOMB_RADIUS=110;
 const DAILY=[10,10,15,15,20,20,40];          // daily reward gems for day 1..7 (missing a day restarts at day 1)
 const RUN_GEM_DIV=400,RUN_GEM_MAX=5,DAILY_PLAY_CAP=30; // play reward at game over: 1 gem per 400 score, max 5 per game, max 30 per day
-const SFX_OVERLAP=true;  // true = sounds play on top of each other, false = a new sound cuts the previous one let sfxNow=null; const VIDEO_DAILY=3;                         // free-gem videos allowed per day
-const GAME_VERSION='0.6.0';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
+const SFX_OVERLAP=true;  // true = sounds play on top of each other, false = a new sound cuts the previous one 
+let sfxNow=null;
+const VIDEO_DAILY=3;                         // free-gem videos allowed per day
+const GAME_VERSION='0.6.1';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
 // ===============================================================
 const LINE=BY+LINE_OFFSET,CY=BY+BH-BR,UY=BY+BH+50,H=Math.max(800,BY+BH+130);
 cv.height=H;cv.style.width='min(100vw,calc(100dvh * '+(W/H)+'))';
