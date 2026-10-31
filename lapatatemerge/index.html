@@ -47,6 +47,7 @@ topScores=L2('md_top',[]);unAll=L2('md_un2',[]);disc=L2('md_disc',false);rew=L2(
 {const s=L2('md_set',{});muted=!!s.muted;musicOn=s.music!==false;lv=s.lv||1;const nl=(navigator.language||'').slice(0,2);lang=s.lang||(['fr','es','ar'].includes(nl)?nl:'en')}
 un=unAll[lv]||(unAll[lv]=[]);hasSave=!!L2('md_save',null);
 let gems=START_GEMS,boosts={bomb:START_BOOSTS,shake:START_BOOSTS,hammer:START_BOOSTS,undo:START_BOOSTS},target=null,shop=false,snap=null,newC=0,daily=false,lb=false,dailyShown=false,runGot=0,dd={day:-1,run:0,vids:0,last:-1,streak:0};
+{const e=L2('md_eco',null);if(e){gems=e.gems;boosts=e.boosts;if(e.dd)dd=e.dd}}
 function dropMax(){return Math.min(DROP_MAX_LEVEL,2+Math.max(0,maxL-(DROP_FIRST_UNLOCK-1)))}
 const rnd=()=>{const m=dropMax();let t=0;for(let l=1;l<=m;l++)t+=DROP_WEIGHTS[l-1];let r=Math.random()*t;for(let l=1;l<=m;l++){r-=DROP_WEIGHTS[l-1];if(r<0)return l}return 1};
 function save(){topScores[lv]=Math.max(topScores[lv]||0,best);unAll[lv]=un;try{localStorage.setItem('md_top',JSON.stringify(topScores));localStorage.setItem('md_un2',JSON.stringify(unAll));localStorage.setItem('md_disc',JSON.stringify(disc));localStorage.setItem('md_rew',JSON.stringify(rew));localStorage.setItem('md_set',JSON.stringify({muted,music:musicOn,lv,lang}));localStorage.setItem('md_eco',JSON.stringify({gems,boosts,dd}))}catch(e){}}
