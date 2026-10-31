@@ -14,6 +14,10 @@ canvas{display:block;width:min(100vw,calc(100dvh * 640 / 800));height:auto;backg
 <body>
 <canvas id="c" width="640" height="800"></canvas>
 <script>
+
+const GAME_VERSION='0.1.0';
+console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
+
 // ---------- Config (reference size 640x800; sprite size = 2 x radius, export @2x) ----------
 const W=640,cv=document.getElementById('c'),ctx=cv.getContext('2d');
 // ===================== TWEAK THE GAME HERE =====================
