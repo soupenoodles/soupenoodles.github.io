@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Merge Drop</title>
+<title>Merge Lapatate</title>
 <link rel="icon" href="data:,">
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <style>
@@ -22,7 +22,7 @@ const LINE_OFFSET=50;                       // red game-over line: distance belo
 const DROP_FIRST_UNLOCK=6;                  // reaching this circle level adds Lv3 to the dropped circles (next level adds Lv4...)
 const DROP_MAX_LEVEL=5;                     // highest level that can ever be dropped
 const DROP_WEIGHTS=[60,30,15,8,4,2,1,1];    // spawn chance per level (Lv1, Lv2, Lv3...)
-const MAX_MERGE_OVERRIDE={2:10,7:9};        // game level : highest circle. Any level not listed uses 11
+const MAX_MERGE_OVERRIDE={1:9,2:10,7:9};        // game level : highest circle. Any level not listed uses 11
 const COIN_RATE=0.1;                         // coins earned at game over = score x COIN_RATE
 const LEVEL_COST=[0,0,0,500,800,1200,0,0,0]; // coins needed to unlock game Level 1..9 (0 = free)
 const LEVELS_READY=6;                        // levels above this number show "Coming soon"
@@ -31,8 +31,8 @@ const PRICES={bomb:100,shake:100,hammer:50,undo:50},BOMB_RADIUS=110;
 const DAILY=[10,10,15,15,20,20,40];         // daily reward gems, day 1..7 (missing a day restarts at day 1)
 const RUN_GEM_DIV=400,RUN_GEM_MAX=5,DAILY_PLAY_CAP=30; // play reward: 1 gem / 400 score, max 5 per game, max 30 per day
 const SFX_OVERLAP=false;                    // true = sounds layer on each other, false = a new sound cuts the previous one
-const DISCORD='https://discord.gg/YOUR_INVITE',PRIVACY='https://YOUR_SITE/privacy.html';
-const GAME_VERSION='0.6.3';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
+const DISCORD='https://discord.gg/V7f9ea4EN',PRIVACY='https://soupenoodles.com/lapatatemerge/privacy.html';
+const GAME_VERSION='0.6.4';console.log('%cMerge Drop v'+GAME_VERSION,'color:#ffd23f;font-weight:bold');
 // ===============================================================
 
 // ================CRAZYGAMES SDK INITIALIZATION=====================
