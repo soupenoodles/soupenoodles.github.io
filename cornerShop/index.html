@@ -51,7 +51,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <div id="mobileAd" aria-label="Mobile banner advertisement preview"><div class="adBox"><span class="adTag">ADVERTISEMENT</span><span>320 × 50 BANNER PLACEHOLDER</span></div></div>
 <script>
-const VERSION='1.8.2 PLAYTEST';
+const VERSION='1.9.2 PLAYTEST';
 const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:14},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:Array.from({length:14},()=>({counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}))};
 
 /* ================ TRACKER: playtest telemetry (defined first so every section can log) ================ */
@@ -96,9 +96,10 @@ const Tracker=(()=>{
   reset(){if(confirm('Clear all tracker data?')){L.ev=[];L.snap=[];L.ms={};L.active=0;L.idle=0;L.cheats=0;L.start=Date.now();Object.keys(L.tot).forEach(k=>L.tot[k]=0);save()}},
   panel(lbl,mkBtn){lbl('TRACKER');statusEl=document.createElement('div');statusEl.style.cssText='font-size:6px;color:#9f9;padding:2px 0';DV.appendChild(statusEl);
    mkBtn('Mark this moment',()=>Tracker.mark());mkBtn('Report (view + copy)',()=>show());mkBtn('Download raw log',download);mkBtn('Reset tracker',()=>Tracker.reset())},
-  install(){UPGRADES.forEach(u=>{const b=u.buy;u.buy=function(){let c=0,pr=null;try{c=u.cost();if(u.n==='Merge')pr=findMergePair()}catch(e){}const r=b.apply(this,arguments);let lv=0;try{lv=u.lv()}catch(e){}ev('buy',{n:u.n,c,lv,shop:currentShop,t:pr?pr[2]:undefined});if(!L.ms['buy_'+u.n])L.ms['buy_'+u.n]=now();if(u.n==='New shop')ev('shop_unlock',{shop:shops.length-1});return r}});
+  install(){UPGRADES.forEach(u=>{const b=u.buy;u.buy=function(){let c=0,pr=null;try{c=u.cost();if(u.n==='Merge')pr=findMergePair()}catch(e){}const r=b.apply(this,arguments);let lv=0;try{lv=u.lv()}catch(e){}ev('buy',{n:u.n,c,lv,shop:currentShop,t:pr?pr[2]:undefined});if(u.n==='Buy TV'&&currentShop>0&&shops[currentShop].bought===1){toast='SHOP BONUS: ALL INCOME +25%';toastT=4;ev('shop_bonus',{shop:currentShop})}if(!L.ms['buy_'+u.n])L.ms['buy_'+u.n]=now();if(u.n==='New shop')ev('shop_unlock',{shop:shops.length-1});return r}});
    const g=goShop;goShop=function(k){if(k!==currentShop)ev('view_shop',{to:k});return g.apply(this,arguments)}}}
 })();
+const GS=(()=>{let o={taps:0,notices:0,x2:0};try{const d=JSON.parse(localStorage.getItem('cornerShopP2Goals')||'null');if(d&&d.gs)o=d.gs}catch(e){}return o})();
 const C=document.getElementById('c'),canvasCtx=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 /* ================ 1. DATA: TV TYPES AND SHOPS ================ */
 const TV_TYPES=[
@@ -169,7 +170,7 @@ const SHOPS=[
 /* tv = shop unlock/economy scale; firstTV = first TV purchase price. k = income multiplier. */
 /* Price model: apply the same proportional adjustment to every shop. Shop 1 targets: Buy TV 50,000; New Shop 1,000. */
 {n:'ANTENNA DAYS',bg:'#15151a',shelf:'#8a5a2b',k:1,tv:2,firstTV:2,eraMax:2,sh:[76,110,145],sx:100.2,cx:99,cy:201},
-{n:'PORTABLE',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:75,firstTV:19,eraMax:3,sh:[77,109,141],sx:97.0,cx:87,cy:198},
+{n:'PORTABLE',bg:'#102321',shelf:'#4aa59a',k:1.5,tv:75,firstTV:7.6,eraMax:3,sh:[77,109,141],sx:97.0,cx:87,cy:198},
 {n:'REMOTE',bg:'#241a10',shelf:'#c8861a',k:2.3,tv:900,firstTV:152,eraMax:4,sh:[74,107,142],sx:98.7,cx:92,cy:203},
 {n:'STEREO',bg:'#0b0f2a',shelf:'#2aa0ff',k:3.5,tv:10800,firstTV:1216,eraMax:5,sh:[70,112,151],sx:99.8,cx:96,cy:214},
 {n:'CABLE',bg:'#241e1a',shelf:'#b77a42',k:5.3,tv:129600,firstTV:9728,eraMax:6,sh:[76,110,145],sx:100,cx:95,cy:205},
@@ -217,7 +218,7 @@ function localUpgradeLevel(key,shopIndex=currentShop){const shop=shops[shopIndex
 function upgradeOffset(key,shopIndex=currentShop){return 0}
 function upgradePriceLevel(key,shopIndex=currentShop){if(key==='start'){let offset=0;for(let i=0;i<Math.max(0,shopIndex);i++)offset+=upgradeMax('start',i);return offset+localUpgradeLevel(key,shopIndex)}return Math.max(0,shopIndex)*Math.max(0,(UPGRADE_MAX[key]||1)-1)+localUpgradeLevel(key,shopIndex)}
 function shopMergeCount(shopIndex=currentShop){return Math.max(0,Number(shops[shopIndex]&&shops[shopIndex].merges)||0)}
-function milestoneUnlocked(i,shopIndex=currentShop){const sh=shops[shopIndex];if(!sh)return false;const bought=Math.max(0,Number(sh.bought)||0),merges=shopMergeCount(shopIndex);switch(i){case 0:return bought>=1;case 1:return true;case 2:return merges>=1;case 3:return bought>=2;case 4:case 5:return merges>=2;case 6:return merges>=1;case 7:return merges>=4;case 8:case 9:return merges>=4;case 10:return merges>=6;case 11:case 12:return merges>=8;default:return false}}
+function milestoneUnlocked(i,shopIndex=currentShop){const sh=shops[shopIndex];if(!sh)return false;const bought=Math.max(0,Number(sh.bought)||0),merges=shopMergeCount(shopIndex);switch(i){case 0:return bought>=1;case 1:return true;case 2:return merges>=1;case 3:return bought>=2;case 4:case 5:return merges>=2;case 6:return merges>=1;case 7:return merges>=1&&shopIndex===shops.length-1;case 8:case 9:return merges>=4;case 10:return merges>=6;case 11:case 12:return merges>=8;default:return false}}
 function cornerZoneValue(level){return .1+.7*(1-Math.exp(-Math.max(0,level)/30))}
 function luckyChance(level){return Math.min(.10,Math.max(0,level)*.01)}
 function stopChance(shopIndex=currentShop){return Math.min(.10,.04+.01*localUpgradeLevel('stopC',shopIndex))}
@@ -237,13 +238,13 @@ const highestShop=()=>Math.max(0,shops.length-1),prestigeScore=()=>Math.max(0,(p
 /* ================ 2. UPGRADES AND PRICING ================ */
 const UPGRADES=[
 {ic:'⚡',n:'Speed',s:'Logos go faster',d:'Logos move faster: more bounces, more coins.',max:20,lv:()=>localUpgradeLevel('speed'),cost:()=>roundPrice(UPGRADE_BASE.speed*1.55**upgradePriceLevel('speed')),buy(){shopState.speed++},eff:()=>`+${10*shopState.speed}% > +${10*(shopState.speed+1)}%`},
-{ic:'📺',n:'Buy TV',s:'Add a TV here',d:'Adds a TV to a free slot.',max:()=>slots(),lv:()=>currentTVs.length,cost:()=>currentShop===0&&shops[currentShop].bought===0&&currentTVs.length===0?0:roundPrice(SHOPS[currentShop].firstTV*1.7**shops[currentShop].bought*(1-restockDiscount())*eraPriceMult(currentShop,Math.min(TV_TYPES.length-1,shopState.start))),can:()=>currentTVs.length<slots()?'':'No free slot',buy(){const t=Math.min(TV_TYPES.length-1,shopState.start);currentTVs.push(makeTV(t));shops[currentShop].bought++;shops[currentShop].tvs=currentTVs;if(!shopState.un[t]){shopState.un[t]=true;toast='NEW TV: '+TV_TYPES[t].n+'!';toastT=3}},eff:()=>`${currentTVs.length} > ${currentTVs.length+1} TVs`},
+{ic:'📺',n:'Buy TV',s:'Add a TV here',d:'Adds a TV to a free slot.',max:()=>slots(),lv:()=>currentTVs.length,cost:()=>currentShop===0&&shops[currentShop].bought===0&&currentTVs.length===0?0:roundPrice(SHOPS[currentShop].firstTV*(currentShop>0?1.4:1.7)**shops[currentShop].bought*(1-restockDiscount())*eraPriceMult(currentShop,Math.min(TV_TYPES.length-1,shopState.start))),can:()=>currentTVs.length<slots()?'':'No free slot',buy(){const t=firstTVTier();currentTVs.push(makeTV(t));shops[currentShop].bought++;shops[currentShop].tvs=currentTVs;if(!shopState.un[t]){shopState.un[t]=true;toast='NEW TV: '+TV_TYPES[t].n+'!';toastT=3}},eff:()=>`${currentTVs.length} > ${currentTVs.length+1} TVs`},
 {ic:'◎',n:'Corner zone',s:'Easier corners',d:'A controlled corner radius; later shops improve it without making every bounce a corner.',max:10,lv:()=>localUpgradeLevel('corner'),cost:()=>roundPrice(UPGRADE_BASE.corner*1.65**upgradePriceLevel('corner')),buy(){shopState.corner++},eff:()=>`${cornerZoneValue(shopState.corner).toFixed(2)}px > ${cornerZoneValue(shopState.corner+1).toFixed(2)}px`},
-{ic:'⇄',n:'Merge',s:'Fuse a pair',d:'Fuse two matching TVs into the next tier.',lv:()=>shopMergeCount(),cost:()=>{const highestOwnedTier=currentTVs.reduce((highest,v)=>Math.max(highest,Number(v.t)||0),0);return roundPrice(mergeBasePrice(currentShop)*1.5**shopMergeCount(currentShop)*eraPriceMult(currentShop,highestOwnedTier+1)*Math.max(.6,1-.08*skillLevel('merge')))},can:()=>findMergePair()?'':'Need 2 same TVs',buy(){const[a,b,t]=findMergePair();currentTVs=currentTVs.filter((_,i)=>i!==a&&i!==b);currentTVs.splice(a,0,makeTV(t+1));selectedTV=null;shops[currentShop].tvs=currentTVs;shopState.merges++;shops[currentShop].merges=(shops[currentShop].merges||0)+1;if(!shopState.un[t+1]){shopState.un[t+1]=true;toast='NEW TV: '+TV_TYPES[t+1].n+'!';toastT=3}},eff:()=>{const p=findMergePair();return p?TV_TYPES[p[2]].n+' > '+TV_TYPES[p[2]+1].n:'-'}},
+{ic:'⇄',n:'Merge discount',s:'Cheaper merges',d:'Each level takes 10% off merge prices in this shop. Merge from a TV card.',max:5,lv:()=>shopState.mergeDisc||0,cost:()=>roundPrice(mergeBasePrice(currentShop)*3.5**(shopState.mergeDisc||0)),can:()=>'',buy(){shopState.mergeDisc=(shopState.mergeDisc||0)+1},eff:()=>'-'+10*(shopState.mergeDisc||0)+'% > -'+10*Math.min(5,(shopState.mergeDisc||0)+1)+'%'},
 {ic:'👥',n:'Crowd',s:'More people',d:'Each shop starts with 1 passerby. Crowd upgrades are local to this shop and never carry over.',max:10,lv:()=>localUpgradeLevel('crowd'),cost:()=>roundPrice(UPGRADE_BASE.crowd*1.65**upgradePriceLevel('crowd')),buy(){shopState.crowd++},eff:()=>`${crowdN()} > ${Math.min(12,crowdN()+1)} passersby`},
 {ic:'👀',n:'Attention',s:'Notice TVs on the counter',d:'Passersby keep walking, but may notice the TV on the counter and give a small bonus. Maximum notice chance is 10%.',max:6,lv:()=>localUpgradeLevel('stopC'),cost:()=>roundPrice(UPGRADE_BASE.attention*1.7**(upgradePriceLevel('stopC')+(currentShop===1?1:0))),buy(){shopState.stopC++},eff:()=>`${Math.round(stopChance()*100)}% > ${Math.round(Math.min(.10,.04+.01*(localUpgradeLevel('stopC')+1))*100)}% chance`},
 {ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier. Max levels increase by one with each new shop.',max:()=>upgradeMax('start'),lv:()=>localUpgradeLevel('start'),cost:()=>roundPrice(UPGRADE_BASE.start*TV_GRADE_PRICE_MULT**upgradePriceLevel('start')),buy(){shopState.start++},eff:()=>`${TV_TYPES[Math.min(TV_TYPES.length-1,shopState.start)].n} > ${TV_TYPES[Math.min(TV_TYPES.length-1,shopState.start+1)].n}`},
-{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:13,lv:()=>shops.length-1,cost:()=>roundPrice((shops.length===1?250:(SHOPS[shops.length]?.tv||0))*Math.max(.05,1-priceTagDiscount())),can:()=>shops.length>=SHOPS.length?'All shops unlocked':'',buy(){shops.push(newShopRecord());prestigeData.bestShop=Math.max(prestigeData.bestShop,shops.length-1);goShop(shops.length-1)},eff:()=>shops.length<SHOPS.length?`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`:'All shops unlocked'},
+{ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:13,lv:()=>shops.length-1,cost:()=>roundPrice((shops.length===1?2500:(SHOPS[shops.length]?SHOPS[shops.length].firstTV/8:0))*Math.max(.05,1-priceTagDiscount())),can:()=>shops.length>=SHOPS.length?'All shops unlocked':'',buy(){shops.push(newShopRecord());prestigeData.bestShop=Math.max(prestigeData.bestShop,shops.length-1);goShop(shops.length-1)},eff:()=>shops.length<SHOPS.length?`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`:'All shops unlocked'},
 {ic:'🍀',n:'Lucky',s:'Chance for a double corner payout',d:'A small, separate chance to double a corner payout. It does not make corners easier to hit.',max:10,lv:()=>localUpgradeLevel('lucky'),cost:()=>roundPrice(UPGRADE_BASE.lucky*1.8**upgradePriceLevel('lucky')),buy(){shopState.lucky=(shopState.lucky||0)+1},eff:()=>`${Math.round(luckyChance(shopState.lucky)*100)}% > ${Math.round(luckyChance(shopState.lucky+1)*100)}% double chance`},
 {ic:'🧲',n:'Magnet',s:'Stronger passerby bonuses',d:'Increases the coin bonus from a passerby who notices the counter TV. It does not increase notice chance.',max:15,lv:()=>localUpgradeLevel('magnet'),cost:()=>roundPrice(UPGRADE_BASE.magnet*1.6**upgradePriceLevel('magnet')),buy(){shopState.magnet=(shopState.magnet||0)+1},eff:()=>`x${(1+Math.min(1.5,(shopState.magnet||0)*.1)).toFixed(1)} > x${(1+Math.min(1.5,((shopState.magnet||0)+1)*.1)).toFixed(1)} notice bonus`},
 {ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Extra showroom % per level, stacks with tier variety.',max:20,lv:()=>localUpgradeLevel('showroom'),cost:()=>roundPrice(UPGRADE_BASE.showroom*1.7**upgradePriceLevel('showroom')),buy(){shopState.showroom=(shopState.showroom||0)+1},eff:()=>`+${(shopState.showroom||0)*5}% > +${((shopState.showroom||0)+1)*5}% showroom`},
@@ -288,7 +289,7 @@ const cn=document.getElementById('cn'),cd=document.getElementById('cd'),ce=docum
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,SC=.62,slotXY=i=>SHOPS[currentShop].slots[i];
 function bounce(tv,hx,hy,i){
  const LW=tv.w,LH=tv.h,own=tv.isTwin?tv.partner:tv;window.__b=(window.__b||0)+1;
- const T0=TV_TYPES[tv.t],qs=1/(T0.split||1),m=mult()*(1+showB())*T0.c*SHOPS[shopI].k*(1+.1*skillLevel('income'));tv.since++;tv.hueTarget+=47;tv.a=.4+Math.random()*.75;
+ const T0=TV_TYPES[tv.t],qs=1/(T0.split||1),m=mult()*shopBonus()*(1+showB())*T0.c*SHOPS[shopI].k*(1+.1*skillLevel('income'));tv.since++;tv.hueTarget+=47;tv.a=.4+Math.random()*.75;
  const g=Math.min((T0.bp||.1)*m*(tv.t===3?.75:1)*qs,Math.max(SHOPS[shopI].tv*.5,10));gainCoins(g);lastBounceVal=g;Tracker.bounce(g);   
 
  let win=(cornerZoneValue(shopState.corner)*(tv===selectedTV?1-.12*tapBoost:1)+tv.since*.003)*(tv.t===3?1.5:1),d=99;
@@ -301,7 +302,7 @@ function bounce(tv,hx,hy,i){
   if(Math.random()<luckyChance(shopState.lucky||0)){pay*=2;tag+='LUCKY ';}
   const now=performance.now()/1000;
   if(tv.t===4&&tv.partner.ct&&now-tv.partner.ct<5){pay*=3;tag='DOUBLE ';tv.partner.ct=0}else tv.ct=now;
-  pay=Math.min(pay,Math.max(SHOPS[shopI].tv*2,50));gainCoins(pay);lastCornerVal=pay;Tracker.corner(pay,(typeof tag!=='undefined'&&tag)||'',tv.t,shopI);corners++;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===currentShop)shake=3;
+  pay=Math.min(pay,Math.max(SHOPS[shopI].tv*2,50));gainCoins(pay);lastCornerVal=pay;Tracker.corner(pay,(typeof tag!=='undefined'&&tag)||'',tv.t,shopI);if(String((typeof tag!=='undefined'&&tag)||'').includes('NOTICE'))GS.x2++;corners++;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===currentShop)shake=3;
   if(tv.t===2){const n=nbrs(i).filter(j=>j>=0&&j<currentTVs.length).length;if(n){gainCoins(.5*pay*n);tag='CHAIN x'+n+' '}}
   toast=(shopI!==currentShop?SHOPS[shopI].n+': ':'')+tag+'CORNER! +'+formatNumber(pay);toastT=2.2;if(shopI!==currentShop)badge[shopI]=true;else if(selectedTV===own){if(CFG.nums){const p=focusXY(own.t,tv.x+LW/2,tv.y+LH/2);floats.push({x:p.x,y:p.y,t:1.6,fv:1,big:1,s:'+'+formatNumber(pay)})}}else{const s=slotXY(i);floats.push({x:s.x+44*s.s,y:s.y+8,t:2.2,g:1,s:'+'+formatNumber(pay)})} 
 	}
@@ -326,7 +327,7 @@ function update(dt){
   tv.flash=Math.max(0,tv.flash-dt*.4);tv.hue+=(tv.hueTarget-tv.hue)*hk;
  });});});currentTVs=cs;people=shops[currentShop].people||(shops[currentShop].people=makePeople());
  const counterX=slotXY(0).x+44*.7;
- people.forEach((p,k)=>{const prevX=p.x;const wasStopped=p.stop>0;if(wasStopped)p.stop=Math.max(0,p.stop-dt);else{p.x+=p.d*p.v*DEBUG.pedSpeed*dt;p.fr=(p.fr+dt*DEBUG.pedFps)%4;}const crossed=p.d>0?(prevX<counterX&&p.x>=counterX):(prevX>counterX&&p.x<=counterX);if(p.noticed&&((p.d>0&&p.x>counterX+24)||(p.d<0&&p.x<counterX-24)))p.noticed=false;if(currentTVs.length>0&&k<crowdN()&&!p.noticed&&p.stop<=0&&crossed&&Math.random()<stopChance()){p.stop=1.1;p.noticed=true;const bonus=passerbyBonus();gainCoins(bonus);Tracker.notice(bonus,shopI);toast='NOTICE +'+formatNumber(bonus);toastT=1.1;}if(p.x>W+10){p.x=-10;p.c=pedRoll();p.noticed=false}if(p.x<-10){p.x=W+10;p.c=pedRoll();p.noticed=false}});
+ people.forEach((p,k)=>{const prevX=p.x;const wasStopped=p.stop>0;if(wasStopped)p.stop=Math.max(0,p.stop-dt);else{p.x+=p.d*p.v*DEBUG.pedSpeed*dt;p.fr=(p.fr+dt*DEBUG.pedFps)%4;}const crossed=p.d>0?(prevX<counterX&&p.x>=counterX):(prevX>counterX&&p.x<=counterX);if(p.noticed&&((p.d>0&&p.x>counterX+24)||(p.d<0&&p.x<counterX-24)))p.noticed=false;if(currentTVs.length>0&&k<crowdN()&&!p.noticed&&p.stop<=0&&crossed&&Math.random()<stopChance()){p.stop=1.1;p.noticed=true;const bonus=passerbyBonus();gainCoins(bonus);Tracker.notice(bonus,shopI);GS.notices++;toast='NOTICE +'+formatNumber(bonus);toastT=1.1;}if(p.x>W+10){p.x=-10;p.c=pedRoll();p.noticed=false}if(p.x<-10){p.x=W+10;p.c=pedRoll();p.noticed=false}});
  floats.forEach(f=>{f.t-=dt;f.y-=12*dt});floats=floats.filter(f=>f.t>0);
  toastT=Math.max(0,toastT-dt);slideT=Math.max(0,slideT-dt);sellArm=Math.max(0,sellArm-dt);shake=Math.max(0,shake-dt*20);if(cardTimer>0&&(cardTimer-=dt)<=0)closeCard();
 }
@@ -400,8 +401,9 @@ function render(){
   floats.forEach(f=>{if(!f.fv)return;const a=Math.min(1,f.t*2);if(f.big){drawText(f.s,f.x+1,f.y+1,'rgba(0,0,0,'+a+')',9,'center');drawText(f.s,f.x,f.y,'rgba(80,230,110,'+a+')',9,'center')}else drawText(f.s,f.x,f.y,'rgba(255,212,0,'+a+')',6,'center')});
   drawRect('#222',20,240,160,10);drawRect('#ff7a1a',20,240,160*Math.min(1,tapBoost/2),10);drawText('SPEED x'+(1+tapBoost).toFixed(1),100,268,'#fff',6,'center');
   drawText('no corner for '+selectedTV.since+' bounces',100,82,'#888',6,'center');{const last=shops.reduce((a,s)=>a+s.tvs.length,0)<=1,on=currentTVs[0]===selectedTV;drawRect(last?'#444':sellArm>0?'#e03c3c':'#8a3a3a',104,280,82,16);drawText(last?'LAST TV':sellArm>0?'TAP AGAIN':'SELL +'+formatNumber(sellVal(selectedTV)),145,292,'#fff',6,'center');drawRect(on?'#444':'#2f6fb0',14,280,82,16);drawText(on?'ON COUNTER':swapLabel(),55,292,'#fff',6,'center')}
+  {const k=currentTVs.indexOf(selectedTV),can=selectedTV.t<TV_TYPES.length-1&&currentTVs.some((v,i)=>i!==k&&v.t===selectedTV.t),c=mergeCostNow();drawRect(!can?'#444':coins>=c?'#2f9f4f':'#6a6a2a',14,300,172,16);drawText(!can?'NO MATCH TO MERGE':'MERGE +1 TIER  '+formatNumber(c),100,312,'#fff',6,'center')}
   drawRect('#ffd400',172,6,22,18);drawText('X',183,19,'#000',9,'center');
- }else drawText('TAP A TV TO SELECT',100,226,'#ffd400',6,'center');
+ }else{drawText(mergePick?'TAP THE TV TO MERGE WITH':'TAP A TV TO SELECT',100,226,'#ffd400',6,'center');if(mergePick){canvasCtx.strokeStyle=(Date.now()/250|0)%2?'#ffd400':'#fff';canvasCtx.lineWidth=2;mergePick.partners.concat([mergePick.src]).forEach(j=>{const q=slotXY(j);if(q)canvasCtx.strokeRect(q.x,q.y,88*q.s,64*q.s)})}}
  if(dex)drawDex();
  {const st2='Shop +'+Math.round((SHOPS[currentShop].k-1)*100)+'%  Showroom +'+Math.round(showB()*100)+'%  Corners: '+corners;drawText(st2,5,259,'#000',5);drawText(st2,4,258,'#fff',5)}
  floats.forEach(f=>{if(f.g){const a=Math.min(1,f.t);drawText(f.s,f.x+1,f.y+1,'rgba(0,0,0,'+a+')',9,'center');drawText(f.s,f.x,f.y,'rgba(80,230,110,'+a+')',9,'center')}});
@@ -412,10 +414,12 @@ function render(){
 C.addEventListener('pointerdown',e=>{
  const r=C.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
  if(dex){if(++dexPage>=Math.ceil(TV_TYPES.length/5)){dex=false;dexPage=0}return}
+ if(mergePick){let hit=-1;for(let i=0;i<currentTVs.length;i++){const s=slotXY(i);if(x>=s.x&&x<=s.x+88*s.s&&y>=s.y&&y<=s.y+64*s.s){hit=i;break}}if(hit>=0&&mergePick.partners.includes(hit))mergeTVs(mergePick.src,hit);else mergePick=null;return}
  if(selectedTV){
   if(x>168&&y<28){selectedTV=null}
-  else if(x>10&&x<190&&y>88&&y<222){Tracker.tap();if(saleActive()&&selectedTV===currentTVs[0])saleTap=Math.min(3,saleTap+.6);else tapBoost=Math.min(2,tapBoost+.4);selectedTV.flash=selectedTV.flash||0}
+  else if(x>10&&x<190&&y>88&&y<222){Tracker.tap();GS.taps++;if(saleActive()&&selectedTV===currentTVs[0])saleTap=Math.min(3,saleTap+.6);else tapBoost=Math.min(2,tapBoost+.4);selectedTV.flash=selectedTV.flash||0}
   else if(x>=104&&x<=186&&y>=280&&y<=296){doSell()}
+  else if(x>=14&&x<=186&&y>=300&&y<=316){tryMerge()}
   else if(x>=14&&x<=96&&y>=280&&y<=296){const k=currentTVs.indexOf(selectedTV);if(k>0){trySwap(k)}}
   else selectedTV=null;return}
  if(slideT>0&&y<320)return;
@@ -442,7 +446,7 @@ const acts=[
 ['Fill all tiers',()=>{shops.forEach(s=>{s.tvs=TV_TYPES.map((_,t)=>makeTV(t))});currentTVs=shops[currentShop].tvs;selectedTV=null}],
 ['Fill current shop',()=>{shops[currentShop].tvs=TV_TYPES.map((_,t)=>makeTV(t));currentTVs=shops[currentShop].tvs;selectedTV=null}],
 ['Reset all costs',()=>DEBUG.resetAllCosts()],
-['Reset game',()=>{if(confirm('Reset all Corner Shop progress?')){resetting=true;try{localStorage.removeItem('cornerShopP1Test')}catch(e){}location.reload()}}]
+['Reset game',()=>{if(confirm('Reset all Corner Shop progress?')){resetting=true;try{localStorage.removeItem('cornerShopP2Test')}catch(e){}location.reload()}}]
 ];
 acts.splice(0,acts.length,...acts.filter(([l])=>!['Prep merge test (2 B/W TVs)','Fill all tiers','Reset all costs'].includes(l)));
 const lbl=t=>{const d=document.createElement('div');d.textContent=t;d.style.cssText='font-size:6px;color:#666;margin:4px 0 2px;border-top:1px solid #333;padding-top:4px';DV.appendChild(d)};
@@ -586,7 +590,7 @@ const cfgSync={};
 [['slide','Shop slide effect'],['nums','Numbers'],['flashes','Flashes'],['labels','Upgrade labels'],['dev','Dev button'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};cfgSync[k]=f;f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg();if(k==='sound'&&CFG.sound)audioInit()};box.appendChild(b)});
 sndEl.onclick=e=>{e.stopPropagation();CFG.sound=!CFG.sound;cfgSync.sound();applyCfg();if(CFG.sound)audioInit()};
 const verEl=document.createElement('div');verEl.textContent='v'+VERSION;verEl.style.cssText='font-size:6px;color:#666;text-align:center;padding:2px';box.appendChild(verEl);   
- const rb=document.createElement('button');let ra=0;rb.textContent='Reset game';rb.onclick=()=>{if(ra){resetting=true;try{localStorage.removeItem('cornerShopP1Test')}catch(e){}location.reload()}else{ra=1;rb.textContent='Tap again to reset';setTimeout(()=>{ra=0;rb.textContent='Reset game'},3000)}};box.appendChild(rb);
+ const rb=document.createElement('button');let ra=0;rb.textContent='Reset game';rb.onclick=()=>{if(ra){resetting=true;try{localStorage.removeItem('cornerShopP2Test')}catch(e){}location.reload()}else{ra=1;rb.textContent='Tap again to reset';setTimeout(()=>{ra=0;rb.textContent='Reset game'},3000)}};box.appendChild(rb);
 const DISCORD_URL='https://discord.gg/PLACEHOLDER';
 const dcb=document.createElement('button');dcb.textContent='🎮 Join Discord';dcb.onclick=()=>{window.open(DISCORD_URL,'_blank','noopener')};box.appendChild(dcb);
 const cb=document.createElement('button');cb.textContent='Close';cb.onclick=()=>{SP.style.display='none'};box.appendChild(cb);
@@ -651,10 +655,10 @@ function sfx(k){
  if(!CFG.sound||!AU.ctx||!AU.buf[k])return;const c=SFX[k];if(c.max&&(AU.n[k]||0)>=c.max)return;
  try{const s=AU.ctx.createBufferSource(),g=AU.ctx.createGain();s.buffer=AU.buf[k];g.gain.value=c.vol;s.connect(g);g.connect(AU.ctx.destination);AU.n[k]=(AU.n[k]||0)+1;s.onended=()=>{AU.n[k]=Math.max(0,(AU.n[k]||1)-1)};s.start()}catch(e){}}
 /* ================ 9. SAVE AND LOAD ================ */
-/* TEST BUILD SAVE / LOAD: isolated localStorage key "cornerShopP1Test"; production save is untouched. */
-function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShopP1Test',JSON.stringify({v:VERSION,coins,corners,sc:currentShop,S:shopState,P:prestigeData,badge,seen:UPGRADES.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,merges:s.merges||0,fit:s.fit,upgrades:s.upgrades||{}}))}))}catch(e){}}
+/* TEST BUILD SAVE / LOAD: isolated localStorage key "cornerShopP2Test"; production save is untouched. */
+function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShopP2Test',JSON.stringify({v:VERSION,coins,corners,sc:currentShop,S:shopState,P:prestigeData,badge,seen:UPGRADES.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,merges:s.merges||0,fit:s.fit,upgrades:s.upgrades||{}}))}))}catch(e){}}
 function loadGame(){
- let d=null;try{d=JSON.parse(localStorage.getItem('cornerShopP1Test')||'null')}catch(e){}
+ let d=null;try{d=JSON.parse(localStorage.getItem('cornerShopP2Test')||'null')}catch(e){}
  if(!d||typeof d!=='object')return;
  try{
   const ns=Array.isArray(d.shops)?d.shops.slice(0,SHOPS.length).map((s,shopIndex)=>({people:makePeople(),tvs:(Array.isArray(s.tvs)?s.tvs:[]).slice(0,slots()).map(t=>makeTV(Math.max(0,Math.min(TV_TYPES.length-1,t|0)))),bought:+s.bought||0,merges:+s.merges||0,fit:+s.fit||0,upgrades:s.upgrades&&typeof s.upgrades==='object'?Object.fromEntries(Object.keys(UPGRADE_MAX).map(k=>[k,Math.max(0,Math.min(upgradeMax(k,shopIndex),Number(s.upgrades[k])||0))])):{}})):[];
@@ -677,6 +681,57 @@ let dex=false,dexPage=0,coins=0,displayCoins=0,cps=0,cpsTimer=0,lastCoins=0,last
 let savedT=0,resetting=false;
 let tabT=0,tapBoost=0,selectedTV=null,corners=0,shake=0,pulseT=0,pulseOn=false,floats=[],toast='',toastT=0;
 /* ================ 10. PHASE 1 FEATURES: counter swap, Sale boost, era marks ================ */
+
+/* ================ 11. GOALS AND OFFLINE EARNINGS (v1.9.0) ================ */
+const GOALS=[
+ {t:'Tap the TV 10 times',p:()=>[GS.taps,10]},
+ {t:'Buy your second TV',p:()=>[shops[0].bought,2],r:1},
+ {t:'Hit your first corner',p:()=>[corners,1]},
+ {t:'Merge two TVs into a Color set',p:()=>[shopMergeCount(0),1],r:1},
+ {t:'Own 3 TVs',p:()=>[shops[0].tvs.length,3]},
+ {t:'Get your first notice',p:()=>[GS.notices,1]},
+ {t:'Reach Speed level 8',p:()=>[localUpgradeLevel('speed',0),8]},
+ {t:'Hit 5 corners',p:()=>[corners,5],r:1},
+ {t:'Earn 2,500 coins in total',p:()=>[prestigeData.runEarned,2500],n:1},
+ {t:'Buy TV Grade',p:()=>[localUpgradeLevel('start',0),1]},
+ {t:'Own 3 different TV tiers',p:()=>[new Set(shops[0].tvs.map(v=>v.t)).size,3]},
+ {t:'Hit a corner during a notice (x2)',p:()=>[GS.x2,1],r:1},
+ {t:'Own a Console TV',p:()=>[shops[0].tvs.some(v=>v.t>=2)?1:0,1],r:1},
+ {t:'Buy the first TV of shop 1',p:()=>[shops.length>1&&shops[1].bought>0?1:0,1],wall:1}
+];
+function shopBonus(){let n=0;for(let i=1;i<shops.length;i++)if(shops[i].bought>0)n++;return 1+.25*n}
+function firstTVTier(){const b=Math.min(TV_TYPES.length-1,shopState.start);return(currentShop>0&&shops[currentShop].bought===0)?Math.min(TV_TYPES.length-1,Math.max(b,SHOPS[currentShop].eraMax-1)):b}
+let mergePick=null;
+function mergeCostNow(){const hi=currentTVs.reduce((h,v)=>Math.max(h,Number(v.t)||0),0),L=shopState.mergeDisc||0;return roundPrice(mergeBasePrice(currentShop)*1.5**shopMergeCount(currentShop)*eraPriceMult(currentShop,hi+1)*Math.max(.4,(1-.1*L)*Math.max(.6,1-.08*skillLevel('merge'))))}
+function tryMerge(){if(!selectedTV)return;const k=currentTVs.indexOf(selectedTV),t=selectedTV.t,pt=[];currentTVs.forEach((v,i)=>{if(i!==k&&v.t===t)pt.push(i)});
+ if(!pt.length||t>=TV_TYPES.length-1){toast='NO MATCH TO MERGE';toastT=1.5;return}
+ const c=mergeCostNow();if(coins<c){toast='NEED '+formatNumber(c)+' TO MERGE';toastT=1.5;return}
+ if(pt.length===1){mergeTVs(k,pt[0]);return}
+ mergePick={src:k,partners:pt};selectedTV=null;toast='TAP THE TV TO MERGE WITH';toastT=2.5}
+function mergeTVs(i,j){const a=Math.min(i,j),b=Math.max(i,j),t=currentTVs[a].t,c=mergeCostNow();if(coins<c)return;coins-=c;
+ currentTVs=currentTVs.filter((_,x)=>x!==a&&x!==b);currentTVs.splice(a,0,makeTV(t+1));selectedTV=null;mergePick=null;shops[currentShop].tvs=currentTVs;shopState.merges++;shops[currentShop].merges=(shops[currentShop].merges||0)+1;
+ if(!shopState.un[t+1]){shopState.un[t+1]=true;toast='NEW TV: '+TV_TYPES[t+1].n+'!';toastT=3}Tracker.ev('merge',{t,c:Math.round(c),shop:currentShop})}
+let goalIdx=0;try{const d=JSON.parse(localStorage.getItem('cornerShopP2Goals')||'null');if(d)goalIdx=d.i||0}catch(e){}
+let idleRate=0,lastRE=0,lastIn2=Date.now(),hiddenAt=0;
+['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>{lastIn2=Date.now()},true));
+const gEl=document.createElement('div');gEl.style.cssText='position:fixed;top:6px;left:50%;transform:translateX(-50%);width:min(340px,62vw);padding:6px 8px;background:rgba(10,10,14,.92);border:2px solid #f4d35e;color:#fff;font:7px "Press Start 2P",monospace;z-index:9000;cursor:pointer;text-align:center';document.body.appendChild(gEl);
+function goalInfo(){const g=GOALS[goalIdx];if(!g)return null;let [c,m]=g.p();if(g.wall&&!(shops.length>1&&shops[1].bought>0)){m=SHOPS[1].firstTV;c=Math.min(coins,m)}return{g,c,m,done:g.wall?(shops.length>1&&shops[1].bought>0):c>=m}}
+function claimGoal(){const i=goalInfo();if(!i||!i.done)return;let x=0;if(i.g.r){x=Math.max(5,20*Math.max(idleRate,.1));gainCoins(x);lastRE+=x;toast='GOAL +'+formatNumber(x);toastT=1.5}Tracker.ev('goal',{n:goalIdx+1,name:i.g.t,reward:Math.round(x)});goalIdx++;saveGoals()}
+gEl.onclick=claimGoal;
+function saveGoals(){try{localStorage.setItem('cornerShopP2Goals',JSON.stringify({i:goalIdx,gs:GS}))}catch(e){}}
+function showOffline(sec,gain){let d=document.getElementById('offv');if(d)d.remove();d=document.createElement('div');d.id='offv';d.style.cssText='position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center';
+ const b=document.createElement('div');b.style.cssText='background:#14141c;border:3px solid #f4d35e;padding:18px;color:#fff;font:9px "Press Start 2P",monospace;text-align:center;line-height:1.8;max-width:80vw';
+ const m=Math.round(sec/60);b.innerHTML='WELCOME BACK<br>Away '+(m>=60?(m/60).toFixed(1)+' h':m+' min')+'<br>Your shops earned<br><span style="color:#f4d35e;font-size:12px">+'+formatNumber(gain)+'</span><br><span style="font-size:6px;color:#aaa">30% of idle income, up to 3 hours</span><br><br>';
+ const k=document.createElement('button');k.textContent='OK';k.style.cssText='font:9px "Press Start 2P",monospace;padding:8px 18px;background:#f4d35e;border:2px solid #000;cursor:pointer';k.onclick=()=>d.remove();b.appendChild(k);d.appendChild(b);document.body.appendChild(d)}
+function applyOffline(sec){if(!(sec>=30))return;sec=Math.min(sec,10800);if(!(idleRate>0))return;const gain=.3*idleRate*sec;gainCoins(gain);lastRE+=gain;Tracker.ev('offline',{sec:Math.round(sec),gain:Math.round(gain)});showOffline(sec,gain)}
+function saveSeen(){try{localStorage.setItem('cornerShopP2Off',JSON.stringify({t:Date.now(),rate:idleRate}))}catch(e){}}
+try{const o=JSON.parse(localStorage.getItem('cornerShopP2Off')||'null');if(o){idleRate=o.rate||0;setTimeout(()=>applyOffline((Date.now()-o.t)/1000),500)}}catch(e){}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();saveSeen()}else if(hiddenAt){const s=(Date.now()-hiddenAt)/1000;hiddenAt=0;applyOffline(s);saveSeen()}});
+addEventListener('pagehide',()=>{saveSeen();saveGoals()});
+let gt=0;setInterval(()=>{gt++;try{gEl.style.display=selectedTV?'none':'';const d=prestigeData.runEarned-lastRE;lastRE=prestigeData.runEarned;if(!document.hidden&&Date.now()-lastIn2>10000&&d>=0)idleRate=idleRate?idleRate*.9+d*.1:d;
+ const i=goalInfo();if(!i){gEl.innerHTML='GOALS COMPLETE<br><span style="color:#aaa">More goals soon</span>'}else{const pct=Math.min(100,100*i.c/Math.max(1e-9,i.m));gEl.innerHTML='GOAL '+(goalIdx+1)+'/'+GOALS.length+'<br>'+i.g.t+'<br><div style="height:5px;background:#333;margin:4px 0"><div style="height:5px;width:'+pct+'%;background:'+(i.done?'#6f6':'#f4d35e')+'"></div></div>'+(i.done?'<span style="color:#6f6">TAP TO CLAIM'+(i.g.r?' +COINS':'')+'</span>':formatNumber(i.c)+' / '+formatNumber(i.m))}
+ if(gt%5===0){saveSeen();saveGoals()}}catch(e){}},1000);
+
 Tracker.install();
 /* PHASE 1 TEST: counter swap cooldown, Sale boost, era marks (simple shapes) */
 let swapFree=3,swapN=0,swapReady=0,swapLast=0;
