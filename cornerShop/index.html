@@ -51,8 +51,9 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <div id="mobileAd" aria-label="Mobile banner advertisement preview"><div class="adBox"><span class="adTag">ADVERTISEMENT</span><span>320 × 50 BANNER PLACEHOLDER</span></div></div>
 <script>
-const VERSION='1.9.2 PLAYTEST';
-const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:14},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:Array.from({length:14},()=>({counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}))};
+const VERSION='1.9.5 PLAYTEST';
+let calcShop=-1,gameT=0;/* calcShop: shop whose TVs update() is processing (upgrade levels follow it, not the viewed shop). gameT: visible game clock for combos */
+const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.from({length:14},(_,i)=>'assets/shop'+i+'.png'),pedPool:['assets/walk_female_4f.png','assets/walk_man_4f.png','assets/walk_teen_4f.png','assets/walk_child_4f.png','assets/walk_oldwoman_4f.png','assets/walk_oldman_4f.png'],lookPool:['assets/look_female.png','assets/look_man.png','assets/look_teen.png','assets/look_child.png','assets/look_oldwoman.png','assets/look_oldman.png'],pedScale:.5,pedSpeed:1.7,pedFps:2,pedFeetY:298,upgradeReveal:.3,upgradeCosts:[],cps:0,shopOffsets:[{"counterY":2,"shelfY":[10,0,-9],"shelfX":[0,0,0]},{"counterY":15,"shelfY":[22,12,5],"shelfX":[3,3,3]},{"counterY":0,"shelfY":[13,10,8],"shelfX":[3,3,3]},{"counterY":-10,"shelfY":[10,11,16],"shelfX":[3,3,3]},{"counterY":-2,"shelfY":[10,8,6],"shelfX":[3,3,3]},{"counterY":-2,"shelfY":[10,7,4],"shelfX":[3,3,3]},{"counterY":-2,"shelfY":[10,0,-9],"shelfX":[3,3,3]},{"counterY":0,"shelfY":[0,0,0],"shelfX":[0,0,0]},{"counterY":0,"shelfY":[0,0,0],"shelfX":[0,0,0]},{"counterY":0,"shelfY":[0,0,0],"shelfX":[0,0,0]},{"counterY":0,"shelfY":[0,0,0],"shelfX":[0,0,0]},{"counterY":0,"shelfY":[0,0,0],"shelfX":[0,0,0]},{"counterY":0,"shelfY":[0,0,0],"shelfX":[0,0,0]},{"counterY":0,"shelfY":[0,0,0],"shelfX":[0,0,0]}]};
 
 /* ================ TRACKER: playtest telemetry (defined first so every section can log) ================ */
 const Tracker=(()=>{
@@ -158,7 +159,7 @@ function tvTint(i,sp,color){/* 'color' blend keeps the sprite's shading, destina
  const c=document.createElement('canvas');c.width=sp.width;c.height=sp.height;const g=c.getContext('2d');
  g.drawImage(sp,0,0);g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(sp,0,0);return TVT[k]=c}
 /* Upgrade levels are shop-local. Prices inherit the previous shop's maximum price independently of level. */
-const UPGRADE_MAX={speed:20,corner:10,crowd:10,stopC:6,start:20,lucky:10,magnet:15,showroom:20,pricetag:10,restock:15};
+const UPGRADE_MAX={speed:20,corner:10,crowd:10,stopC:6,start:20,lucky:10,magnet:15,showroom:20,pricetag:10,restock:15,mergeDisc:5};
 const shopState=new Proxy({speed:0,corner:0,crowd:0,floors:0,bought:1,merges:0,start:0,stopC:0,lucky:0,magnet:0,showroom:0,pricetag:0,restock:0,un:[true]}, {
  get(target,key){if(typeof key==='string'&&Object.prototype.hasOwnProperty.call(UPGRADE_MAX,key)&&typeof shops!=='undefined'&&typeof currentShop!=='undefined'&&shops[currentShop])return localUpgradeLevel(key);return target[key]},
  set(target,key,value){if(typeof key==='string'&&Object.prototype.hasOwnProperty.call(UPGRADE_MAX,key)&&typeof shops!=='undefined'&&typeof currentShop!=='undefined'&&shops[currentShop]){shops[currentShop].upgrades=shops[currentShop].upgrades||{};shops[currentShop].upgrades[key]=Math.max(0,Math.min(upgradeMax(key),Number(value)));return true}target[key]=value;return true}
@@ -214,15 +215,26 @@ const makeTV=t=>{const o=mk1(t);if(t===4){o.twin=mk1(4);o.twin.partner=o;o.partn
  if(t===6){o.cl=[mk1(6),mk1(6)];o.cl.forEach((c,k)=>{c.isTwin=true;c.partner=o;c.x=Math.min(SW-c.w,o.x+4*(k+1));c.y=Math.min(SH-c.h,o.y+4*(k+1))})}return o};
 let currentTVs=[];const shops=[{tvs:currentTVs,fit:0,bought:0,merges:0,upgrades:{}}],badge=SHOPS.map(()=>false);let currentShop=0,shopI=0,slideFrom=0,slideDir=1,slideT=0;const SLIDE=.35;let sellArm=0;
 function upgradeMax(key,shopIndex=currentShop){return key==='start'?Math.min(20,2+Math.max(0,shopIndex)):(UPGRADE_MAX[key]||0)}
-function localUpgradeLevel(key,shopIndex=currentShop){const shop=shops[shopIndex];return Math.max(0,Math.min(upgradeMax(key,shopIndex),Number(shop&&shop.upgrades&&shop.upgrades[key])||0))}
+function localUpgradeLevel(key,shopIndex=(calcShop>=0?calcShop:currentShop)){const shop=shops[shopIndex];return Math.max(0,Math.min(upgradeMax(key,shopIndex),Number(shop&&shop.upgrades&&shop.upgrades[key])||0))}
 function upgradeOffset(key,shopIndex=currentShop){return 0}
 function upgradePriceLevel(key,shopIndex=currentShop){if(key==='start'){let offset=0;for(let i=0;i<Math.max(0,shopIndex);i++)offset+=upgradeMax('start',i);return offset+localUpgradeLevel(key,shopIndex)}return Math.max(0,shopIndex)*Math.max(0,(UPGRADE_MAX[key]||1)-1)+localUpgradeLevel(key,shopIndex)}
 function shopMergeCount(shopIndex=currentShop){return Math.max(0,Number(shops[shopIndex]&&shops[shopIndex].merges)||0)}
-function milestoneUnlocked(i,shopIndex=currentShop){const sh=shops[shopIndex];if(!sh)return false;const bought=Math.max(0,Number(sh.bought)||0),merges=shopMergeCount(shopIndex);switch(i){case 0:return bought>=1;case 1:return true;case 2:return merges>=1;case 3:return bought>=2;case 4:case 5:return merges>=2;case 6:return merges>=1;case 7:return merges>=1&&shopIndex===shops.length-1;case 8:case 9:return merges>=4;case 10:return merges>=6;case 11:case 12:return merges>=8;default:return false}}
+function milestoneUnlocked(i,shopIndex=currentShop){const sh=shops[shopIndex];if(!sh)return false;if(!upgradeInShop(i,shopIndex))return false;const bought=Math.max(0,Number(sh.bought)||0),merges=shopMergeCount(shopIndex);switch(i){case 0:return bought>=1;case 1:return true;case 2:return merges>=1;case 3:return bought>=2;case 4:case 5:return merges>=2;case 6:return merges>=1;case 7:return merges>=1&&shopIndex===shops.length-1;case 8:case 9:case 10:case 11:case 12:return true;default:return false}}
 function cornerZoneValue(level){return .1+.7*(1-Math.exp(-Math.max(0,level)/30))}
 function luckyChance(level){return Math.min(.10,Math.max(0,level)*.01)}
 function stopChance(shopIndex=currentShop){return Math.min(.10,.04+.01*localUpgradeLevel('stopC',shopIndex))}
 function passerbyBonus(){return Math.max(1,SHOPS[currentShop].tv*.02)*(1+Math.min(1.5,Math.max(0,shopState.magnet||0)*.1))}
+/* ---- corner combo (v1.9.3): window = 1.25 x average of the last 10 gaps between corners in this shop, clamped 1.5s..20s ---- */
+const COMBO_RATIO=1.25,COMBO_MIN=1.5,COMBO_MAX=20,COMBO_STEP=.25,COMBO_CAP_STEPS=16;
+function comboWindow(c){const g=c.gaps,avg=g.length?g.reduce((a,b)=>a+b,0)/g.length:8;return 3}
+function comboHit(si){const sh=shops[si],c=sh.combo||(sh.combo={gaps:[],last:-1,expire:0,win:0,streak:0});
+ if(c.last>=0){const g=gameT-c.last;c.streak=gameT<=c.expire?Math.min(c.streak+1,COMBO_CAP_STEPS):0;c.gaps.push(Math.min(g,40));if(c.gaps.length>10)c.gaps.shift()}else c.streak=0;
+ c.last=gameT;c.win=comboWindow(c);c.expire=gameT+c.win;return c.streak}
+/* ---- shop upgrade availability (GDD 5.5): shop 0 = 8 defaults; shop 1 adds Jackpot + Tip Jar; shop 2 Showroom; shop 3 Price tag + Restock ---- */
+function upgradeInShop(i,shopIndex){switch(i){case 8:case 9:return shopIndex>=1;case 10:return shopIndex>=2;case 11:case 12:return shopIndex>=3;default:return true}}
+/* ---- merge prices (GDD 3.5, Proposed numbers): per-shop base, x4.2 per tier, +30% per merge of that tier, x3 per tier above era max ---- */
+const MERGE_TIER_GROWTH=4.2,MERGE_REPEAT=1.3,MERGE_STEP_ABOVE_ERA=3;
+function mergeTierBase(shopIndex,t){const first=shopIndex<=0?0:Math.max(0,SHOPS[shopIndex].eraMax-1);return mergeBasePrice(shopIndex)*Math.pow(MERGE_TIER_GROWTH,t-first)}
 function mergeBasePrice(shopIndex=currentShop){if(shopIndex<=0)return 12;if(shopIndex===1)return 2500;let base=2500;for(let i=2;i<=shopIndex;i++){const ratio=SHOPS[i].tv/Math.max(1,SHOPS[i-1].tv);base*=Math.min(1.8,Math.max(1.25,Math.pow(ratio,.2)));}return base}
 function priceTagDiscount(){return Math.min(.95,Math.max(0,shopState.pricetag)/(Math.max(0,shopState.pricetag)+10))}
 function restockDiscount(){return .75*(1-Math.exp(-Math.max(0,shopState.restock)/25))}
@@ -245,8 +257,8 @@ const UPGRADES=[
 {ic:'👀',n:'Attention',s:'Notice TVs on the counter',d:'Passersby keep walking, but may notice the TV on the counter and give a small bonus. Maximum notice chance is 10%.',max:6,lv:()=>localUpgradeLevel('stopC'),cost:()=>roundPrice(UPGRADE_BASE.attention*1.7**(upgradePriceLevel('stopC')+(currentShop===1?1:0))),buy(){shopState.stopC++},eff:()=>`${Math.round(stopChance()*100)}% > ${Math.round(Math.min(.10,.04+.01*(localUpgradeLevel('stopC')+1))*100)}% chance`},
 {ic:'⭐',n:'TV grade',s:'Better new TVs',d:'Bought TVs start at a higher tier. Max levels increase by one with each new shop.',max:()=>upgradeMax('start'),lv:()=>localUpgradeLevel('start'),cost:()=>roundPrice(UPGRADE_BASE.start*TV_GRADE_PRICE_MULT**upgradePriceLevel('start')),buy(){shopState.start++},eff:()=>`${TV_TYPES[Math.min(TV_TYPES.length-1,shopState.start)].n} > ${TV_TYPES[Math.min(TV_TYPES.length-1,shopState.start+1)].n}`},
 {ic:'🏪',n:'New shop',s:'Opens a new tab',d:'Open another shop with a fixed coin bonus.',max:13,lv:()=>shops.length-1,cost:()=>roundPrice((shops.length===1?2500:(SHOPS[shops.length]?SHOPS[shops.length].firstTV/8:0))*Math.max(.05,1-priceTagDiscount())),can:()=>shops.length>=SHOPS.length?'All shops unlocked':'',buy(){shops.push(newShopRecord());prestigeData.bestShop=Math.max(prestigeData.bestShop,shops.length-1);goShop(shops.length-1)},eff:()=>shops.length<SHOPS.length?`+${Math.round((SHOPS[shops.length].k-1)*100)}% coins`:'All shops unlocked'},
-{ic:'🍀',n:'Lucky',s:'Chance for a double corner payout',d:'A small, separate chance to double a corner payout. It does not make corners easier to hit.',max:10,lv:()=>localUpgradeLevel('lucky'),cost:()=>roundPrice(UPGRADE_BASE.lucky*1.8**upgradePriceLevel('lucky')),buy(){shopState.lucky=(shopState.lucky||0)+1},eff:()=>`${Math.round(luckyChance(shopState.lucky)*100)}% > ${Math.round(luckyChance(shopState.lucky+1)*100)}% double chance`},
-{ic:'🧲',n:'Magnet',s:'Stronger passerby bonuses',d:'Increases the coin bonus from a passerby who notices the counter TV. It does not increase notice chance.',max:15,lv:()=>localUpgradeLevel('magnet'),cost:()=>roundPrice(UPGRADE_BASE.magnet*1.6**upgradePriceLevel('magnet')),buy(){shopState.magnet=(shopState.magnet||0)+1},eff:()=>`x${(1+Math.min(1.5,(shopState.magnet||0)*.1)).toFixed(1)} > x${(1+Math.min(1.5,((shopState.magnet||0)+1)*.1)).toFixed(1)} notice bonus`},
+{ic:'🍀',n:'Jackpot',s:'Chance for a double corner payout',d:'A small, separate chance to double a corner payout. It does not make corners easier to hit.',max:10,lv:()=>localUpgradeLevel('lucky'),cost:()=>roundPrice(UPGRADE_BASE.lucky*1.8**upgradePriceLevel('lucky')),buy(){shopState.lucky=(shopState.lucky||0)+1},eff:()=>`${Math.round(luckyChance(shopState.lucky)*100)}% > ${Math.round(luckyChance(shopState.lucky+1)*100)}% double chance`},
+{ic:'🧲',n:'Tip Jar',s:'Stronger passerby bonuses',d:'Increases the coin bonus from a passerby who notices the counter TV. It does not increase notice chance.',max:15,lv:()=>localUpgradeLevel('magnet'),cost:()=>roundPrice(UPGRADE_BASE.magnet*1.6**upgradePriceLevel('magnet')),buy(){shopState.magnet=(shopState.magnet||0)+1},eff:()=>`x${(1+Math.min(1.5,(shopState.magnet||0)*.1)).toFixed(1)} > x${(1+Math.min(1.5,((shopState.magnet||0)+1)*.1)).toFixed(1)} notice bonus`},
 {ic:'✨',n:'Showroom',s:'Boost showroom bonus',d:'Extra showroom % per level, stacks with tier variety.',max:20,lv:()=>localUpgradeLevel('showroom'),cost:()=>roundPrice(UPGRADE_BASE.showroom*1.7**upgradePriceLevel('showroom')),buy(){shopState.showroom=(shopState.showroom||0)+1},eff:()=>`+${(shopState.showroom||0)*5}% > +${((shopState.showroom||0)+1)*5}% showroom`},
 {ic:'🏷️',n:'Price tag',s:'Shops cost less to open',d:'Increasing discount with diminishing returns; later shops can improve it further.',max:10,lv:()=>localUpgradeLevel('pricetag'),cost:()=>roundPrice(UPGRADE_BASE.pricetag*2**upgradePriceLevel('pricetag')),buy(){shopState.pricetag=(shopState.pricetag||0)+1},eff:()=>`${Math.round(priceTagDiscount()*100)}% > ${Math.round(Math.min(.95,(shopState.pricetag+1)/(shopState.pricetag+11))*100)}% discount`},
 {ic:'📦',n:'Restock',s:'Discount new TVs',d:'Discounts TV purchases with diminishing returns across shops.',max:15,lv:()=>localUpgradeLevel('restock'),cost:()=>roundPrice(UPGRADE_BASE.restock*1.8**upgradePriceLevel('restock')),buy(){shopState.restock=(shopState.restock||0)+1},eff:()=>`${Math.round(restockDiscount()*100)}% > ${Math.round(.75*(1-Math.exp(-(shopState.restock+1)/25))*100)}% TV discount`}
@@ -294,15 +306,18 @@ function bounce(tv,hx,hy,i){
 
  let win=(cornerZoneValue(shopState.corner)*(tv===selectedTV?1-.12*tapBoost:1)+tv.since*.003)*(tv.t===3?1.5:1),d=99;
  if(hx&&hy)d=0;else if(hx)d=Math.min(tv.y,SH-LH-tv.y);else d=Math.min(tv.x,SW-LW-tv.x);
- if(d<=win)sfx('corner');else if(shopI===currentShop)sfx('bounce');
+ const combo=d<=win?comboHit(shopI):0;
+ if(d<=win)sfx('corner',1+Math.min(combo,12)*.04);else if(shopI===currentShop)sfx('bounce');
  if(d<=win){
   const cx=tv.x<(SW-LW)/2,cy=tv.y<(SH-LH)/2;tv.x=cx?0:SW-LW;tv.y=cy?0:SH-LH;tv.dx=cx?1:-1;tv.dy=cy?1:-1;
-  let pay=1*m*(tv.t===1?1.25:1)*(T0.cm||1)*qs,tag='';
-  if(hx&&hy&&people.some(p=>p.stop>0)){pay*=2;tag='NOTICE x2 ';}
-  if(Math.random()<luckyChance(shopState.lucky||0)){pay*=2;tag+='LUCKY ';}
+  let pay=1*m*(tv.t===1?1.25:1)*(T0.cm||1)*qs,tag='',cmul=1;
+  if(hx&&hy&&people.some(p=>p.stop>0)){cmul+=1;tag='NOTICE x2 ';}
+  if(combo>0){cmul+=.25*combo;tag+='COMBO x'+combo+' '}
+  pay*=cmul;
+  if(Math.random()<luckyChance(shopState.lucky||0)){pay*=2;tag+='JACKPOT ';}
   const now=performance.now()/1000;
   if(tv.t===4&&tv.partner.ct&&now-tv.partner.ct<5){pay*=3;tag='DOUBLE ';tv.partner.ct=0}else tv.ct=now;
-  pay=Math.min(pay,Math.max(SHOPS[shopI].tv*2,50));gainCoins(pay);lastCornerVal=pay;Tracker.corner(pay,(typeof tag!=='undefined'&&tag)||'',tv.t,shopI);if(String((typeof tag!=='undefined'&&tag)||'').includes('NOTICE'))GS.x2++;corners++;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===currentShop)shake=3;
+  pay=Math.min(pay,Math.max(SHOPS[shopI].tv*2,50));gainCoins(pay);lastCornerVal=pay;Tracker.corner(pay,(typeof tag!=='undefined'&&tag)||'',tv.t,shopI);if(String((typeof tag!=='undefined'&&tag)||'').includes('NOTICE'))GS.x2++;corners++;tv.since=0;if(CFG.flashes)own.flash=1;if(shopI===currentShop)shake=(combo===5||combo===10)?8:3;
   if(tv.t===2){const n=nbrs(i).filter(j=>j>=0&&j<currentTVs.length).length;if(n){gainCoins(.5*pay*n);tag='CHAIN x'+n+' '}}
   toast=(shopI!==currentShop?SHOPS[shopI].n+': ':'')+tag+'CORNER! +'+formatNumber(pay);toastT=2.2;if(shopI!==currentShop)badge[shopI]=true;else if(selectedTV===own){if(CFG.nums){const p=focusXY(own.t,tv.x+LW/2,tv.y+LH/2);floats.push({x:p.x,y:p.y,t:1.6,fv:1,big:1,s:'+'+formatNumber(pay)})}}else{const s=slotXY(i);floats.push({x:s.x+44*s.s,y:s.y+8,t:2.2,g:1,s:'+'+formatNumber(pay)})} 
 	}
@@ -311,13 +326,14 @@ function bounce(tv,hx,hy,i){
 }   
 /* ================ 3. SIMULATION: BOUNCES, CORNERS, PEOPLE ================ */
 function update(dt){
+ gameT+=dt;shops.forEach(sh=>{const c=sh.combo;if(c&&c.streak>0&&gameT>c.expire){if(c.streak>=2&&sh===shops[currentShop]){toast='COMBO LOST';toastT=1.2}c.streak=0}});
  const hk=Math.min(1,.15*dt*60);
  const pd=displayCoins;displayCoins+=(coins-displayCoins)*Math.min(1,.1*dt*60);if(Math.abs(coins-displayCoins)<.005)displayCoins=coins;coinsHud();savedT=Math.max(0,savedT-dt);tabT=Math.max(0,tabT-dt);
  if(!CFG.flashes)pulseT=0;else if(pulseT<=0&&pd>0&&displayCoins-pd>pd*.1)pulseT=.15;
  if(pulseT>0){pulseT=Math.max(0,pulseT-dt);coinsBox.style.transform='scale('+(1+.05*Math.sin(Math.PI*(1-pulseT/.15))).toFixed(3)+')';pulseOn=true}else if(pulseOn){coinsBox.style.transform='';pulseOn=false}
  cpsTimer+=dt;if(cpsTimer>=1){cps=Math.max(0,coins-lastCoins);DEBUG.cps=cps;lastCoins=coins;cpsTimer=0}   
  tapBoost=Math.max(0,tapBoost-(selectedTV&&TV_TYPES[selectedTV.t].keep?0:.8)*dt);saleTap=Math.max(0,saleTap-1.2*dt);
- const cs=currentTVs;shops.forEach((sh,si)=>{currentTVs=sh.tvs;people=sh.people||(sh.people=makePeople());shopI=si;currentTVs.forEach((par,i)=>{const nbB=Math.max(0,...nbrs(i).filter(j=>j>=0&&j<currentTVs.length).map(j=>TV_TYPES[currentTVs[j].t].nb||0));[par,par.twin,...(par.cl||[])].forEach(tv=>{if(!tv)return;const LW=tv.w,LH=tv.h;
+ const cs=currentTVs;shops.forEach((sh,si)=>{currentTVs=sh.tvs;people=sh.people||(sh.people=makePeople());shopI=si;calcShop=si;currentTVs.forEach((par,i)=>{const nbB=Math.max(0,...nbrs(i).filter(j=>j>=0&&j<currentTVs.length).map(j=>TV_TYPES[currentTVs[j].t].nb||0));[par,par.twin,...(par.cl||[])].forEach(tv=>{if(!tv)return;const LW=tv.w,LH=tv.h;
   const sp=30*(1+.1*shopState.speed)*TV_TYPES[tv.t].sp*(1+nbB)*(saleActive()&&shops[currentShop].tvs[0]===par?2+saleTap:(par===selectedTV?1+tapBoost:1));
   tv.x+=tv.dx*Math.cos(tv.a)*sp*dt;tv.y+=tv.dy*Math.sin(tv.a)*sp*dt;
   let hx=0,hy=0;
@@ -325,7 +341,7 @@ function update(dt){
   if(tv.y<0){tv.y=0;tv.dy=1;hy=1}else if(tv.y>SH-LH){tv.y=SH-LH;tv.dy=-1;hy=1}
   if(hx||hy)bounce(tv,hx,hy,i);
   tv.flash=Math.max(0,tv.flash-dt*.4);tv.hue+=(tv.hueTarget-tv.hue)*hk;
- });});});currentTVs=cs;people=shops[currentShop].people||(shops[currentShop].people=makePeople());
+ });});});calcShop=-1;currentTVs=cs;people=shops[currentShop].people||(shops[currentShop].people=makePeople());
  const counterX=slotXY(0).x+44*.7;
  people.forEach((p,k)=>{const prevX=p.x;const wasStopped=p.stop>0;if(wasStopped)p.stop=Math.max(0,p.stop-dt);else{p.x+=p.d*p.v*DEBUG.pedSpeed*dt;p.fr=(p.fr+dt*DEBUG.pedFps)%4;}const crossed=p.d>0?(prevX<counterX&&p.x>=counterX):(prevX>counterX&&p.x<=counterX);if(p.noticed&&((p.d>0&&p.x>counterX+24)||(p.d<0&&p.x<counterX-24)))p.noticed=false;if(currentTVs.length>0&&k<crowdN()&&!p.noticed&&p.stop<=0&&crossed&&Math.random()<stopChance()){p.stop=1.1;p.noticed=true;const bonus=passerbyBonus();gainCoins(bonus);Tracker.notice(bonus,shopI);GS.notices++;toast='NOTICE +'+formatNumber(bonus);toastT=1.1;}if(p.x>W+10){p.x=-10;p.c=pedRoll();p.noticed=false}if(p.x<-10){p.x=W+10;p.c=pedRoll();p.noticed=false}});
  floats.forEach(f=>{f.t-=dt;f.y-=12*dt});floats=floats.filter(f=>f.t>0);
@@ -338,6 +354,8 @@ function focusXY(t,x,y){const sp=tvSprite(t);let lx,ly;if(sp){const r=DEBUG.tvRe
 const CF0={shelf:{x:0,y:0,scale:1},counter:{x:0,y:0,scale:1},color:null,alpha:1,screenColor:null},OFF0={x:0,y:0,scale:1};
 /* ================ 4. RENDERING ================ */
 /* slot: 0 = counter, 1-9 = shelf, -1 = no slot (focus view, TV Index): position/scale offsets skipped */
+/* v1.9.5: on-screen box of the TV in slot i, using the same offsets and scale as drawTV */
+function tvBox(i){const s=slotXY(i);if(!s)return null;const tv=currentTVs[i],cf=(tv&&DEBUG.tvConfig[tv.t])||CF0,o=i===0?cf.counter:cf.shelf,so=DEBUG.shopOffsets[currentShop]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},sr=i>=1&&i<=9?Math.floor((i-1)/3):-1,k=s.s*o.scale,cx=s.x+44*s.s+o.x+(sr>=0?so.shelfX[sr]:0),cy=s.y+32*s.s+o.y+(i===0?so.counterY:sr>=0?so.shelfY[sr]:0);return{x:cx-44*k,y:cy-32*k,w:88*k,h:64*k}}
 function drawTV(tv,ox,oy,s,hl,slot=-1){
  const cf=DEBUG.tvConfig[tv.t]||CF0,o=slot<0?OFF0:slot===0?cf.counter:cf.shelf;
 canvasCtx.save();canvasCtx.globalAlpha=cf.alpha;const so=slot>=0?(DEBUG.shopOffsets[currentShop]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}):{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]};const sr=slot>=1&&slot<=9?Math.floor((slot-1)/3):-1;canvasCtx.translate(ox+44*s+o.x+(sr>=0?so.shelfX[sr]:0),oy+32*s+o.y+(slot===0?so.counterY:sr>=0?so.shelfY[sr]:0));canvasCtx.scale(s*o.scale,s*o.scale);canvasCtx.translate(-44,-32);if(slot===0&&saleActive()){drawRect('#e03c3c',22,-9,44,10);drawRect('#ffd400',22,-9,44,2);drawText('SALE',44,-1,'#fff',6,'center')}const T0=TV_TYPES[tv.t],sp=tvSprite(tv.t),LW0=tv.w||14,LH0=tv.h||8,scr=cf.screenColor||T0.scr;const col=tv.t===0?'hsl(0,0%,'+(60+30*Math.sin(tv.hue/20))+'%)':'hsl('+tv.hue+',90%,60%)';const lg=(dx,dy)=>[tv,tv.twin,...(tv.cl||[])].forEach(o=>{if(!o)return;const c=tv.t===0?col:'hsl('+o.hue+',90%,60%)';eraMark(c,dx+o.x,dy+o.y,LW0,LH0)});
@@ -401,11 +419,12 @@ function render(){
   floats.forEach(f=>{if(!f.fv)return;const a=Math.min(1,f.t*2);if(f.big){drawText(f.s,f.x+1,f.y+1,'rgba(0,0,0,'+a+')',9,'center');drawText(f.s,f.x,f.y,'rgba(80,230,110,'+a+')',9,'center')}else drawText(f.s,f.x,f.y,'rgba(255,212,0,'+a+')',6,'center')});
   drawRect('#222',20,240,160,10);drawRect('#ff7a1a',20,240,160*Math.min(1,tapBoost/2),10);drawText('SPEED x'+(1+tapBoost).toFixed(1),100,268,'#fff',6,'center');
   drawText('no corner for '+selectedTV.since+' bounces',100,82,'#888',6,'center');{const last=shops.reduce((a,s)=>a+s.tvs.length,0)<=1,on=currentTVs[0]===selectedTV;drawRect(last?'#444':sellArm>0?'#e03c3c':'#8a3a3a',104,280,82,16);drawText(last?'LAST TV':sellArm>0?'TAP AGAIN':'SELL +'+formatNumber(sellVal(selectedTV)),145,292,'#fff',6,'center');drawRect(on?'#444':'#2f6fb0',14,280,82,16);drawText(on?'ON COUNTER':swapLabel(),55,292,'#fff',6,'center')}
-  {const k=currentTVs.indexOf(selectedTV),can=selectedTV.t<TV_TYPES.length-1&&currentTVs.some((v,i)=>i!==k&&v.t===selectedTV.t),c=mergeCostNow();drawRect(!can?'#444':coins>=c?'#2f9f4f':'#6a6a2a',14,300,172,16);drawText(!can?'NO MATCH TO MERGE':'MERGE +1 TIER  '+formatNumber(c),100,312,'#fff',6,'center')}
+  {const k=currentTVs.indexOf(selectedTV),can=selectedTV.t<TV_TYPES.length-1&&currentTVs.some((v,i)=>i!==k&&v.t===selectedTV.t),c=mergeCostNow(selectedTV.t);drawRect(!can?'#444':coins>=c?'#2f9f4f':'#6a6a2a',14,300,172,16);drawText(!can?'NO MATCH TO MERGE':'MERGE +1 TIER  '+formatNumber(c),100,312,'#fff',6,'center')}
   drawRect('#ffd400',172,6,22,18);drawText('X',183,19,'#000',9,'center');
- }else{drawText(mergePick?'TAP THE TV TO MERGE WITH':'TAP A TV TO SELECT',100,226,'#ffd400',6,'center');if(mergePick){canvasCtx.strokeStyle=(Date.now()/250|0)%2?'#ffd400':'#fff';canvasCtx.lineWidth=2;mergePick.partners.concat([mergePick.src]).forEach(j=>{const q=slotXY(j);if(q)canvasCtx.strokeRect(q.x,q.y,88*q.s,64*q.s)})}}
+ }else{drawText(mergePick?'TAP THE TV TO MERGE WITH':'TAP A TV TO SELECT',100,226,'#ffd400',6,'center');if(mergePick){canvasCtx.strokeStyle=(Date.now()/250|0)%2?'#ffd400':'#fff';canvasCtx.lineWidth=2;mergePick.partners.concat([mergePick.src]).forEach(j=>{const q=tvBox(j);if(q)canvasCtx.strokeRect(q.x,q.y,q.w,q.h)})}}
  if(dex)drawDex();
  {const st2='Shop +'+Math.round((SHOPS[currentShop].k-1)*100)+'%  Showroom +'+Math.round(showB()*100)+'%  Corners: '+corners;drawText(st2,5,259,'#000',5);drawText(st2,4,258,'#fff',5)}
+ {const c=shops[currentShop].combo;if(c&&c.streak>0){const f=Math.max(0,Math.min(1,(c.expire-gameT)/Math.max(.1,c.win))),lab='COMBO x'+c.streak+' (x'+Math.min(5,1+COMBO_STEP*c.streak).toFixed(2)+')';drawText(lab,6,276,'#000',5);drawText(lab,5,275,f<.25?'#ff5a3a':'#6f6',5);drawRect('#222',100,271,95,4);drawRect(f<.25?'#ff5a3a':'#6f6',100,271,95*f,4)}}
  floats.forEach(f=>{if(f.g){const a=Math.min(1,f.t);drawText(f.s,f.x+1,f.y+1,'rgba(0,0,0,'+a+')',9,'center');drawText(f.s,f.x,f.y,'rgba(80,230,110,'+a+')',9,'center')}});
  if(toastT>0){drawRect('rgba(0,0,0,.75)',0,30,W,14);drawText(toast,100,41,'#ffd400',toast.length>28?5:7,'center')}
  if(savedT>0)drawText('SAVED',5,12,'rgba(90,230,110,'+Math.min(1,savedT*2)+')',6);
@@ -651,17 +670,17 @@ function audioInit(){
  try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;AU.ctx=new AC();if(AU.ctx.state==='suspended')AU.ctx.resume();
   Object.keys(SFX).forEach(k=>{fetch(SFX[k].src).then(r=>r.ok?r.arrayBuffer():null).then(b=>b?AU.ctx.decodeAudioData(b):null).then(d=>{if(d)AU.buf[k]=d}).catch(()=>{})})}catch(e){}}
 ['pointerdown','keydown'].forEach(ev=>addEventListener(ev,audioInit,true));
-function sfx(k){
+function sfx(k,rate){
  if(!CFG.sound||!AU.ctx||!AU.buf[k])return;const c=SFX[k];if(c.max&&(AU.n[k]||0)>=c.max)return;
- try{const s=AU.ctx.createBufferSource(),g=AU.ctx.createGain();s.buffer=AU.buf[k];g.gain.value=c.vol;s.connect(g);g.connect(AU.ctx.destination);AU.n[k]=(AU.n[k]||0)+1;s.onended=()=>{AU.n[k]=Math.max(0,(AU.n[k]||1)-1)};s.start()}catch(e){}}
+ try{const s=AU.ctx.createBufferSource(),g=AU.ctx.createGain();s.buffer=AU.buf[k];if(rate)s.playbackRate.value=rate;g.gain.value=c.vol;s.connect(g);g.connect(AU.ctx.destination);AU.n[k]=(AU.n[k]||0)+1;s.onended=()=>{AU.n[k]=Math.max(0,(AU.n[k]||1)-1)};s.start()}catch(e){}}
 /* ================ 9. SAVE AND LOAD ================ */
 /* TEST BUILD SAVE / LOAD: isolated localStorage key "cornerShopP2Test"; production save is untouched. */
-function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShopP2Test',JSON.stringify({v:VERSION,coins,corners,sc:currentShop,S:shopState,P:prestigeData,badge,seen:UPGRADES.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,merges:s.merges||0,fit:s.fit,upgrades:s.upgrades||{}}))}))}catch(e){}}
+function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShopP2Test',JSON.stringify({v:VERSION,coins,corners,sc:currentShop,S:shopState,P:prestigeData,badge,seen:UPGRADES.map(u=>!!u.seen),shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,merges:s.merges||0,tm:s.tierMerges||{},fit:s.fit,upgrades:s.upgrades||{}}))}))}catch(e){}}
 function loadGame(){
  let d=null;try{d=JSON.parse(localStorage.getItem('cornerShopP2Test')||'null')}catch(e){}
  if(!d||typeof d!=='object')return;
  try{
-  const ns=Array.isArray(d.shops)?d.shops.slice(0,SHOPS.length).map((s,shopIndex)=>({people:makePeople(),tvs:(Array.isArray(s.tvs)?s.tvs:[]).slice(0,slots()).map(t=>makeTV(Math.max(0,Math.min(TV_TYPES.length-1,t|0)))),bought:+s.bought||0,merges:+s.merges||0,fit:+s.fit||0,upgrades:s.upgrades&&typeof s.upgrades==='object'?Object.fromEntries(Object.keys(UPGRADE_MAX).map(k=>[k,Math.max(0,Math.min(upgradeMax(k,shopIndex),Number(s.upgrades[k])||0))])):{}})):[];
+  const ns=Array.isArray(d.shops)?d.shops.slice(0,SHOPS.length).map((s,shopIndex)=>({people:makePeople(),tvs:(Array.isArray(s.tvs)?s.tvs:[]).slice(0,slots()).map(t=>makeTV(Math.max(0,Math.min(TV_TYPES.length-1,t|0)))),bought:+s.bought||0,merges:+s.merges||0,tierMerges:(s.tm&&typeof s.tm==='object')?s.tm:{},fit:+s.fit||0,upgrades:s.upgrades&&typeof s.upgrades==='object'?Object.fromEntries(Object.keys(UPGRADE_MAX).map(k=>[k,Math.max(0,Math.min(upgradeMax(k,shopIndex),Number(s.upgrades[k])||0))])):{}})):[];
   if(ns.length){shops.length=0;ns.forEach(s=>shops.push(s))}
   coins=+d.coins||0;corners=+d.corners||0;
   if(d.P&&typeof d.P==='object'){['points','spent','claimedScore','lifetimeEarned','runEarned','prestiges','bestShop'].forEach(k=>{if(Number.isFinite(+d.P[k]))prestigeData[k]=Math.max(0,+d.P[k])});if(d.P.skills&&typeof d.P.skills==='object')SKILLS.forEach(sk=>{prestigeData.skills[sk.id]=Math.max(0,Math.min(sk.max,+d.P.skills[sk.id]||0))})}else prestigeData.bestShop=Math.max(prestigeData.bestShop,shops.length-1);
@@ -702,21 +721,22 @@ const GOALS=[
 function shopBonus(){let n=0;for(let i=1;i<shops.length;i++)if(shops[i].bought>0)n++;return 1+.25*n}
 function firstTVTier(){const b=Math.min(TV_TYPES.length-1,shopState.start);return(currentShop>0&&shops[currentShop].bought===0)?Math.min(TV_TYPES.length-1,Math.max(b,SHOPS[currentShop].eraMax-1)):b}
 let mergePick=null;
-function mergeCostNow(){const hi=currentTVs.reduce((h,v)=>Math.max(h,Number(v.t)||0),0),L=shopState.mergeDisc||0;return roundPrice(mergeBasePrice(currentShop)*1.5**shopMergeCount(currentShop)*eraPriceMult(currentShop,hi+1)*Math.max(.4,(1-.1*L)*Math.max(.6,1-.08*skillLevel('merge'))))}
+function mergeCostNow(t){const sh=shops[currentShop],L=shopState.mergeDisc||0,rep=(sh.tierMerges&&sh.tierMerges[t])||0;return roundPrice(mergeTierBase(currentShop,t)*MERGE_REPEAT**rep*Math.pow(MERGE_STEP_ABOVE_ERA,Math.max(0,t+1-SHOPS[currentShop].eraMax))*Math.max(.4,(1-.1*L)*Math.max(.6,1-.08*skillLevel('merge'))))}
 function tryMerge(){if(!selectedTV)return;const k=currentTVs.indexOf(selectedTV),t=selectedTV.t,pt=[];currentTVs.forEach((v,i)=>{if(i!==k&&v.t===t)pt.push(i)});
  if(!pt.length||t>=TV_TYPES.length-1){toast='NO MATCH TO MERGE';toastT=1.5;return}
- const c=mergeCostNow();if(coins<c){toast='NEED '+formatNumber(c)+' TO MERGE';toastT=1.5;return}
+ const c=mergeCostNow(t);if(coins<c){toast='NEED '+formatNumber(c)+' TO MERGE';toastT=1.5;return}
  if(pt.length===1){mergeTVs(k,pt[0]);return}
  mergePick={src:k,partners:pt};selectedTV=null;toast='TAP THE TV TO MERGE WITH';toastT=2.5}
-function mergeTVs(i,j){const a=Math.min(i,j),b=Math.max(i,j),t=currentTVs[a].t,c=mergeCostNow();if(coins<c)return;coins-=c;
- currentTVs=currentTVs.filter((_,x)=>x!==a&&x!==b);currentTVs.splice(a,0,makeTV(t+1));selectedTV=null;mergePick=null;shops[currentShop].tvs=currentTVs;shopState.merges++;shops[currentShop].merges=(shops[currentShop].merges||0)+1;
+function mergeTVs(i,j){const a=Math.min(i,j),b=Math.max(i,j),t=currentTVs[a].t,c=mergeCostNow(t);if(coins<c)return;coins-=c;
+ currentTVs=currentTVs.filter((_,x)=>x!==a&&x!==b);currentTVs.splice(a,0,makeTV(t+1));selectedTV=null;mergePick=null;shops[currentShop].tvs=currentTVs;shopState.merges++;shops[currentShop].merges=(shops[currentShop].merges||0)+1;{const tm=shops[currentShop].tierMerges||(shops[currentShop].tierMerges={});tm[t]=(tm[t]||0)+1}
  if(!shopState.un[t+1]){shopState.un[t+1]=true;toast='NEW TV: '+TV_TYPES[t+1].n+'!';toastT=3}Tracker.ev('merge',{t,c:Math.round(c),shop:currentShop})}
 let goalIdx=0;try{const d=JSON.parse(localStorage.getItem('cornerShopP2Goals')||'null');if(d)goalIdx=d.i||0}catch(e){}
 let idleRate=0,lastRE=0,lastIn2=Date.now(),hiddenAt=0;
 ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>{lastIn2=Date.now()},true));
 const gEl=document.createElement('div');gEl.style.cssText='position:fixed;top:6px;left:50%;transform:translateX(-50%);width:min(340px,62vw);padding:6px 8px;background:rgba(10,10,14,.92);border:2px solid #f4d35e;color:#fff;font:7px "Press Start 2P",monospace;z-index:9000;cursor:pointer;text-align:center';document.body.appendChild(gEl);
 function goalInfo(){const g=GOALS[goalIdx];if(!g)return null;let [c,m]=g.p();if(g.wall&&!(shops.length>1&&shops[1].bought>0)){m=SHOPS[1].firstTV;c=Math.min(coins,m)}return{g,c,m,done:g.wall?(shops.length>1&&shops[1].bought>0):c>=m}}
-function claimGoal(){const i=goalInfo();if(!i||!i.done)return;let x=0;if(i.g.r){x=Math.max(5,20*Math.max(idleRate,.1));gainCoins(x);lastRE+=x;toast='GOAL +'+formatNumber(x);toastT=1.5}Tracker.ev('goal',{n:goalIdx+1,name:i.g.t,reward:Math.round(x)});goalIdx++;saveGoals()}
+function goalReward(){return Math.max(5,20*Math.max(idleRate,.1))}
+function claimGoal(){const i=goalInfo();if(!i||!i.done)return;let x=0;if(i.g.r){x=goalReward();gainCoins(x);lastRE+=x;toast='GOAL +'+formatNumber(x);toastT=1.5}Tracker.ev('goal',{n:goalIdx+1,name:i.g.t,reward:Math.round(x)});goalIdx++;saveGoals()}
 gEl.onclick=claimGoal;
 function saveGoals(){try{localStorage.setItem('cornerShopP2Goals',JSON.stringify({i:goalIdx,gs:GS}))}catch(e){}}
 function showOffline(sec,gain){let d=document.getElementById('offv');if(d)d.remove();d=document.createElement('div');d.id='offv';d.style.cssText='position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center';
@@ -729,7 +749,7 @@ try{const o=JSON.parse(localStorage.getItem('cornerShopP2Off')||'null');if(o){id
 document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();saveSeen()}else if(hiddenAt){const s=(Date.now()-hiddenAt)/1000;hiddenAt=0;applyOffline(s);saveSeen()}});
 addEventListener('pagehide',()=>{saveSeen();saveGoals()});
 let gt=0;setInterval(()=>{gt++;try{gEl.style.display=selectedTV?'none':'';const d=prestigeData.runEarned-lastRE;lastRE=prestigeData.runEarned;if(!document.hidden&&Date.now()-lastIn2>10000&&d>=0)idleRate=idleRate?idleRate*.9+d*.1:d;
- const i=goalInfo();if(!i){gEl.innerHTML='GOALS COMPLETE<br><span style="color:#aaa">More goals soon</span>'}else{const pct=Math.min(100,100*i.c/Math.max(1e-9,i.m));gEl.innerHTML='GOAL '+(goalIdx+1)+'/'+GOALS.length+'<br>'+i.g.t+'<br><div style="height:5px;background:#333;margin:4px 0"><div style="height:5px;width:'+pct+'%;background:'+(i.done?'#6f6':'#f4d35e')+'"></div></div>'+(i.done?'<span style="color:#6f6">TAP TO CLAIM'+(i.g.r?' +COINS':'')+'</span>':formatNumber(i.c)+' / '+formatNumber(i.m))}
+ const i=goalInfo();if(!i){gEl.innerHTML='GOALS COMPLETE<br><span style="color:#aaa">More goals soon</span>'}else{const pct=Math.min(100,100*i.c/Math.max(1e-9,i.m));gEl.innerHTML='GOAL '+(goalIdx+1)+'/'+GOALS.length+'<br>'+i.g.t+'<br><div style="height:5px;background:#333;margin:4px 0"><div style="height:5px;width:'+pct+'%;background:'+(i.done?'#6f6':'#f4d35e')+'"></div></div>'+(i.done?'<span style="color:#6f6">TAP TO CLAIM'+(i.g.r?' +'+formatNumber(goalReward()):'')+'</span>':formatNumber(i.c)+' / '+formatNumber(i.m)+(i.g.r?'<br><span style="color:#aaa;font-size:6px">REWARD +'+formatNumber(goalReward())+'</span>':''))}
  if(gt%5===0){saveSeen();saveGoals()}}catch(e){}},1000);
 
 Tracker.install();
