@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <title>Corner Shop: Idle TV Window</title>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
+@font-face{font-family:"Press Start 2P";src:url(assets/fonts/PressStart2P-Regular.woff2) format("woff2"),url(assets/fonts/PressStart2P-Regular.ttf) format("truetype");font-display:swap}
 :root{color-scheme:dark;--bg:#000;--or:#ff7a1a;--ye:#ffd400;--ink:#000;--dim:#8a7a2a;--gr:#5ac85a;--pu:#8e44ad;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:"Press Start 2P",ui-monospace,monospace;overflow:hidden;touch-action:manipulation;user-select:none}
 #g{position:relative;display:flex;gap:6px;height:100%;padding:6px;justify-content:center}
 canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rendering:auto;border:3px solid var(--or);background:#000}
 #col{display:flex;flex-direction:column;gap:6px;width:76px;z-index:6;position:relative;transition:transform .2s,opacity .2s}
+/* v1.9.9.8: the upgrade cards sit in #ulist. Cards never get smaller than 58 px (76 px in the wide layout); when they do not fit, the list scrolls (mouse wheel, touch swipe, thin scrollbar). The margin and padding keep the cards exactly where they were. */
+#ulist{display:flex;flex-direction:column;gap:6px;flex:1 1 0;min-height:0;margin:-3px;padding:3px;overflow-y:auto;overflow-x:hidden;position:relative;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--ye) #000}
 #col.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
 #colTog{position:fixed;right:6px;top:50%;transform:translateY(-50%);z-index:7;font:inherit;font-size:10px;padding:8px 4px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer}     
 #coins{border:3px solid var(--ye);color:var(--ye);font-size:8px;padding:3px 2px 10px;text-align:center;background:#000;flex:1 1 100%;min-width:0}
 #top{display:flex;gap:4px;flex-wrap:wrap}#idx,#setb{flex:1;height:26px;font:inherit;font-size:12px;background:var(--ye);border:3px solid #000;outline:2px solid var(--ye);cursor:pointer;padding:0}
-.u{position:relative;flex:1 1 0;min-height:0;max-height:70px;background:var(--ye);color:var(--ink);border:3px solid #000;outline:2px solid var(--ye);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3px 2px 5px;font:inherit;cursor:pointer;overflow:hidden}
+.u{position:relative;flex:1 1 0;min-height:58px;max-height:70px;background:var(--ye);color:var(--ink);border:3px solid #000;outline:2px solid var(--ye);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3px 2px 5px;font:inherit;cursor:pointer;overflow:hidden}
 .u .ic{font-size:18px;line-height:1.1}.u .level{position:absolute;top:1px;left:2px;z-index:2;min-width:12px;padding:2px 2px 1px;background:#000;color:#fff;border:1px solid rgba(255,255,255,.55);font-size:6px;line-height:1;text-align:center;pointer-events:none}
 .u .pips{display:flex;gap:2px;min-height:5px;font-size:6px}
 .u .pip{width:5px;height:5px;background:#000}.u .pip.e{background:rgba(0,0,0,.25)}
@@ -32,9 +35,11 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 #buy{grid-column:2;grid-row:1/4;width:auto;margin:0;padding:10px 6px;font:inherit;font-size:8px;background:var(--gr);border:3px solid #000;cursor:pointer;color:#000}
 #buy:disabled{background:#999;cursor:default}#card.info #buy,#card.info #buy:disabled{pointer-events:none;background:none;border:0;padding:0;font-size:8px}
 @keyframes idxglow{0%,100%{box-shadow:0 0 0 0 rgba(255,212,0,.9),0 0 6px 2px #ffd400;transform:scale(1)}50%{box-shadow:0 0 0 7px rgba(255,212,0,0),0 0 18px 7px #fff;transform:scale(1.14)}}@keyframes idxpop{0%{transform:scale(1)}40%{transform:scale(1.45)}100%{transform:scale(1)}}#idx.idxglow{animation:idxglow .9s infinite;outline:3px solid #fff;position:relative;z-index:8}#idx.idxpop{animation:idxpop .6s}
+@keyframes goalglow{0%,100%{box-shadow:0 0 0 0 rgba(255,212,0,.9),0 0 8px 2px #ffd400;transform:translateX(-50%) scale(1)}50%{box-shadow:0 0 0 7px rgba(255,212,0,0),0 0 20px 7px #fff;transform:translateX(-50%) scale(1.06)}}.goalglow{animation:goalglow .9s infinite;border-color:#fff!important}
+#setbox button.disc{background:#5865F2;color:#fff;border-color:#3b45b5}#setbox button.closeb{background:#e03c3c;color:#fff;border-color:#8a1c1c}#setbox button.ready{background:#35c759;color:#001800;border-color:#16752b}
 #dev{position:fixed;left:6px;bottom:34px;z-index:20;display:none;background:rgba(0,0,0,.92);border:2px solid var(--ye);padding:6px;max-width:230px;max-height:80vh;overflow-y:auto;font-size:7px;line-height:1.6}   
 #set{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}
-#prestige{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.88);padding:12px}#pbox{background:#111;border:3px solid var(--ye);padding:12px;width:min(94vw,420px);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:9px;font-size:8px;line-height:1.6}#pbox h2{font-size:10px;color:var(--ye);margin:0}#pbox p{font-size:7px;line-height:1.8;margin:0;color:#ddd}#pbox button{font:inherit;font-size:7px;padding:9px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer;text-align:left}#pbox button:disabled{background:#555;color:#aaa}#pbox .skill{border:1px solid #665a20;padding:7px;display:flex;flex-direction:column;gap:5px}#pbox .skill button{background:#080808;color:#eee;border-color:#333}#pbox button.unavailable:disabled{background:#080808;color:#777;border-color:#333;cursor:default}#pbox button.available:not(:disabled){background:#35c759;color:#001800;border-color:#16752b}#pbox button.available:not(:disabled):hover{background:#54e875}#pbox .prestige-progress{display:flex;flex-direction:column;gap:4px}#pbox .prestige-progress-label{font-size:7px;color:#ddd}#pbox .prestige-track{height:12px;background:#050505;border:1px solid #555;overflow:hidden}#pbox .prestige-fill{height:100%;background:#777;transition:width .2s}#pbox .prestige-progress-caption{font-size:6px;color:#999}#pbox .muted{color:#999;font-size:6px}#setbox{background:#111;border:3px solid var(--ye);padding:12px;display:flex;flex-direction:column;gap:8px;width:min(86vw,300px)}#setbox button{font:inherit;font-size:8px;padding:10px 8px;background:var(--ye);color:#000;border:3px solid #000;cursor:pointer;text-align:left}.u .nm{display:none;font-size:5px;order:1}.u .ic{order:0}.u .pips{order:2}.u .cost{order:3}body.lab .u .nm{display:block}body.lab .u .ic{font-size:14px}
+#prestige{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.88);padding:12px}#pbox{background:#111;border:3px solid var(--ye);padding:12px;width:min(94vw,420px);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:9px;font-size:8px;line-height:1.6}#pbox h2{font-size:10px;color:var(--ye);margin:0}#pbox p{font-size:7px;line-height:1.8;margin:0;color:#ddd}#pbox button{font:inherit;font-size:7px;padding:9px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer;text-align:left}#pbox button:disabled{background:#555;color:#aaa}#pbox .skill{border:1px solid #665a20;padding:7px;display:flex;flex-direction:column;gap:5px}#pbox .skill button{background:#080808;color:#eee;border-color:#333}#pbox button.unavailable:disabled{background:#080808;color:#777;border-color:#333;cursor:default}#pbox button.available:not(:disabled){background:#35c759;color:#001800;border-color:#16752b}#pbox button.available:not(:disabled):hover{background:#54e875}#pbox .prestige-progress{display:flex;flex-direction:column;gap:4px}#pbox .prestige-progress-label{font-size:7px;color:#ddd}#pbox .prestige-track{height:12px;background:#050505;border:1px solid #555;overflow:hidden}#pbox .prestige-fill{height:100%;background:#777;transition:width .2s}#pbox .prestige-progress-caption{font-size:6px;color:#999}#pbox .muted{color:#999;font-size:6px}#setbox{background:#111;border:3px solid var(--ye);padding:12px;display:flex;flex-direction:column;gap:8px;width:min(86vw,300px)}#setbox button{font:inherit;font-size:8px;padding:10px 8px;background:var(--ye);color:#000;border:3px solid #000;cursor:pointer;text-align:left}.u .nm{display:none!important;font-size:5px;order:1}/* v1.9.9.9: no label under the icon in any layout; the name shows inside the card */.u .ic{order:0}.u .pips{order:2}.u .cost{order:3}body.lab .u .nm{display:block}body.lab .u .ic{font-size:14px}
 .bar{display:block;width:46px;height:5px;background:rgba(0,0,0,.25)}.bar b{display:block;height:5px;background:#000}.pips.t{gap:1px}.pips.t .pip{width:4px;height:4px}
 /* Mobile ad-space preview: reserve room without changing the shop canvas or sprite layout. */
 #mobileAd{display:none}
@@ -45,14 +50,66 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
   #mobileAd .adBox{width:min(100%,320px);height:50px;border:1px dashed #777;background:#202020;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:1px;}
   #mobileAd .adTag{font-size:8px;color:#ff7a1a;letter-spacing:2px;}
 }
+/* v1.9.9.7 desktop layout: wide windows (900 px or more, at least 1.3 times wider than tall) get a wider column with a full card per upgrade. Phones and narrow windows keep the compact view unchanged. */
+.u>.w{display:none}
+@media (min-width:900px) and (min-aspect-ratio:13/10){
+ canvas{max-width:calc(100vw - 372px)}
+ #col{width:340px}
+ #coins{font-size:14px;padding:8px 6px 14px}#coins #snd{font-size:12px}#coins span:last-child{font-size:8px!important;margin-top:4px!important}
+ #top{gap:6px}#idx,#setb{height:40px;font-size:18px}
+ .u{min-height:76px;max-height:88px;padding:6px 10px;align-items:stretch;justify-content:center;text-align:left}
+ .u>.level,.u>.pips,.u>.cost,.u>.nm{display:none}
+ .u>.w{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;width:100%}
+ .wi{font-size:28px;text-align:center;line-height:1}.wn{font-size:11px;line-height:1.3}.ws{font-size:8px;opacity:.8;margin-top:3px;line-height:1.3}.wp{display:flex;align-items:center;gap:6px;font-size:8px;margin-top:5px;min-height:6px}.wc{font-size:12px;text-align:right;white-space:nowrap}
+ #card{width:300px}
+}
 @media (prefers-reduced-motion:reduce){.u.best{animation:none}#card{transition:none}}
+#cfm{position:fixed;inset:0;z-index:100002;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}#cfm .cb{background:#111;border:3px solid var(--ye);padding:14px;width:min(86vw,300px);display:flex;flex-direction:column;gap:12px;font-size:8px;line-height:1.6;color:#fff;text-align:center}#cfm .rw{display:flex;gap:10px}#cfm button{flex:1;font:inherit;font-size:9px;padding:12px 4px;border:2px solid #000;cursor:pointer;touch-action:manipulation}#cfm .y{background:#5ac85a;color:#000}#cfm .n{background:#e03c3c;color:#fff}
 </style></head><body>
 <div id="g"><canvas id="c" width="600" height="1020"></canvas>
-<div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div></div>
+<div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div><div id="ulist"></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <div id="mobileAd" aria-label="Mobile banner advertisement preview"><div class="adBox"><span class="adTag">ADVERTISEMENT</span><span>320 × 50 BANNER PLACEHOLDER</span></div></div>
 <script>
-const VERSION='1.9.9 PLAYTEST';
+const VERSION='1.10.4',RELEASE=true;
+/* ===== v1.9.9.2 platform layer: CrazyGames SDK (https://docs.crazygames.com/sdk/intro/#html5). Every call is guarded, so the game also runs where the SDK is missing or disabled (other domains, offline). CG.ready is true only on crazygames.* or local (localhost) environments. ===== */
+
+/* ===== 1.10.2: save keys, save version, migration, in-game confirm ===== */
+const SAVE_VERSION=1,KEY_SAVE='cornerShopSave',KEY_GOALS='cornerShopGoals',KEY_OFF='cornerShopOff',KEY_MIG='cornerShopMigrated';
+const OLD_KEYS={[KEY_SAVE]:'cornerShopP2Test',[KEY_GOALS]:'cornerShopP2Goals',[KEY_OFF]:'cornerShopP2Off'};
+/* A save with no version (sv missing) is version 0. Add one step per version here. Version 0 to 1 changes no fields. */
+function upgradeSave(d){if(!d||typeof d!=='object')return d;let v=+d.sv||0;if(v<1){v=1}d.sv=v;return d}
+function migrateStore(st){/* st = {get,set}. Copies old-key data to the final keys once. Old keys are never changed. */
+ const r={copied:[],kept:[],bad:[]};
+ try{if(st.get(KEY_MIG)!==null&&st.get(KEY_MIG)!==undefined)return r}catch(e){return r}
+ for(const nk of Object.keys(OLD_KEYS)){let nv=null,ov=null;try{nv=st.get(nk);ov=st.get(OLD_KEYS[nk])}catch(e){}
+  if(nv!==null&&nv!==undefined){r.kept.push(nk);continue}/* a final save already exists: never overwrite */
+  if(ov===null||ov===undefined)continue;
+  let d=null;try{d=JSON.parse(ov)}catch(e){}
+  if(!d||typeof d!=='object'){r.bad.push(nk);continue}/* cannot parse: leave the old key, start fresh */
+  try{st.set(nk,JSON.stringify(upgradeSave(d)));r.copied.push(nk)}catch(e){}}
+ try{st.set(KEY_MIG,JSON.stringify({sv:SAVE_VERSION,at:Date.now(),copied:r.copied,bad:r.bad}))}catch(e){}
+ return r}
+function migrateAll(){const out={};try{out.local=migrateStore({get:k=>localStorage.getItem(k),set:(k,v)=>localStorage.setItem(k,v)})}catch(e){}
+ try{if(CG.ready){const D=cgSDK().data;out.sdk=migrateStore({get:k=>D.getItem(k),set:(k,v)=>D.setItem(k,v)})}}catch(e){}
+ window.__mig=out;return out}
+function askConfirm(msg,onYes){if(document.getElementById('cfm'))return;const o=document.createElement('div');o.id='cfm';const b=document.createElement('div');b.className='cb';const t=document.createElement('div');t.textContent=msg;const row=document.createElement('div');row.className='rw';
+ const done=()=>{o.remove();removeEventListener('keydown',kd,true)};const kd=e=>{if(e.key==='Escape'){e.stopPropagation();done()}};
+ const y=document.createElement('button');y.className='y';y.textContent='YES';y.onclick=()=>{done();onYes()};const n=document.createElement('button');n.className='n';n.textContent='NO';n.onclick=done;
+ row.append(y,n);b.append(t,row);o.appendChild(b);o.addEventListener('pointerdown',e=>e.stopPropagation());document.body.appendChild(o);addEventListener('keydown',kd,true)}
+try{document.fonts.load('8px "Press Start 2P"').catch(()=>{})}catch(e){}
+const CG={ready:false,env:'none'};let booted=false,cgPlaying=false;
+const cgSDK=()=>{try{return window.CrazyGames&&window.CrazyGames.SDK}catch(e){return null}};
+async function cgInit(){const S=cgSDK();if(!S)return;try{await Promise.race([S.init(),new Promise((_,r)=>setTimeout(()=>r(new Error('cg init timeout')),4000))]);CG.env=S.environment;CG.ready=(CG.env==='local'||CG.env==='crazygames')}catch(e){CG.ready=false}}
+const cgDo=f=>{if(!CG.ready)return;try{f(cgSDK())}catch(e){}};
+/* saves: the SDK data module (guest saves live in localStorage, signed-in saves follow the account) when the SDK is ready, otherwise localStorage. Reads fall back to localStorage so a save from before the SDK is migrated on its first write. */
+const PS={get(k){try{if(CG.ready){const v=cgSDK().data.getItem(k);if(v!==null&&v!==undefined)return v}}catch(e){}try{return localStorage.getItem(k)}catch(e){return null}},
+ set(k,v){let done=false;try{if(CG.ready){cgSDK().data.setItem(k,v);done=true}}catch(e){}if(!done)try{localStorage.setItem(k,v)}catch(e){}},
+ del(k){try{if(CG.ready)cgSDK().data.removeItem(k)}catch(e){}try{localStorage.removeItem(k)}catch(e){}}};
+/* gameplay start/stop: playing = no menu, settings, prestige, TV index or end screen open. Tab focus changes do not count (SDK rule). */
+function cgPlayTick(){const menu=(typeof SP!=='undefined'&&SP.style.display==='flex')||(typeof PM!=='undefined'&&PM.style.display==='flex')||dex||!!document.getElementById('s1end'),p=booted&&!menu;if(p===cgPlaying)return;cgPlaying=p;cgDo(S=>p?S.game.gameplayStart():S.game.gameplayStop())}
+/* rewarded ad: not used by the game yet (CrazyGames has no ads at launch, see GDD 14). onReward runs only when the ad finished; sound is muted during the ad. */
+function showRewardedAd(onReward,onFail){if(!CG.ready){if(onFail)onFail('no sdk');return}const snd=CFG.sound;try{cgSDK().ad.requestAd('rewarded',{adStarted:()=>{CFG.sound=false;applyCfg()},adFinished:()=>{CFG.sound=snd;applyCfg();if(onReward)onReward()},adError:e=>{CFG.sound=snd;applyCfg();if(onFail)onFail(e)}})}catch(e){if(onFail)onFail(e)}}
 /* v1.9.6 Season 1 end. SEASON1_LAST_SHOP: shop whose New shop card ends Season 1. SEASON2_RELEASED=true brings the card back. NEWSHOP_LAST=false restores the old "card needs 1 merge" reveal. */
 const SEASON1_LAST_SHOP=6,SEASON1_TOP_TIER=8/* SMART 4K */,SEASON2_RELEASED=false,NEWSHOP_LAST=true,SEASON1_SHOP_COUNT=7;
 /* v1.9.8.3 hard cap: shops.length never exceeds SHOP_CAP(). SHOPS[7..13] stay as Season 2 data, unreachable while SEASON2_RELEASED is false. */
@@ -67,13 +124,13 @@ const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.fro
 
 /* ================ TRACKER: playtest telemetry (defined first so every section can log) ================ */
 const Tracker=(()=>{
- const KEY='cornerShopP1Log',MAXEV=40000;let L=null,lastIn=Date.now(),statusEl=null;
- try{L=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+ const KEY='cornerShopP1Log',MAXEV=RELEASE?0:40000;let L=null,lastIn=Date.now(),statusEl=null;
+ if(!RELEASE)try{L=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
  if(!L||L.ver!==VERSION)L={ver:VERSION,start:Date.now(),ev:[],snap:[],ms:{},active:0,idle:0,cheats:0,tot:{bounces:0,corners:0,taps:0,notices:0,bouncePay:0,cornerPay:0}};
  const now=()=>Math.round((Date.now()-L.start)/100)/10,MS_EV=['corner','notice','swap','sale_start','shop_unlock','season1_end'];
  const ev=(type,data)=>{if(L.ev.length<MAXEV)L.ev.push([now(),type,data||{}]);if(MS_EV.includes(type)&&!L.ms['first_'+type])L.ms['first_'+type]=now()};
- const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(L))}catch(e){}};
- const snapshot=()=>{try{const t=L.tot;L.snap.push([now(),Math.round(coins*100)/100,Math.round(cps*100)/100,Math.round(prestigeData.runEarned),currentShop,shops.length,currentTVs.map(v=>v.t).join(''),UPGRADES.map(u=>u.lv()).join(','),Math.round(L.active),Math.round(L.idle),[t.bounces,t.corners,t.taps,t.notices]]);save()}catch(e){}};
+ const save=()=>{if(RELEASE)return;try{localStorage.setItem(KEY,JSON.stringify(L))}catch(e){}};
+ const snapshot=()=>{if(RELEASE)return;try{const t=L.tot;L.snap.push([now(),Math.round(coins*100)/100,Math.round(cps*100)/100,Math.round(prestigeData.runEarned),currentShop,shops.length,currentTVs.map(v=>v.t).join(''),UPGRADES.map(u=>u.lv()).join(','),Math.round(L.active),Math.round(L.idle),[t.bounces,t.corners,t.taps,t.notices]]);save()}catch(e){}};
  ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>{lastIn=Date.now()},true));
  document.addEventListener('visibilitychange',()=>{ev(document.hidden?'hidden':'visible');save()});addEventListener('pagehide',save);
  const BANK=[250,1e3,1e4,5e4,1e5,1e6,1e7,1e8,1e9,1e10,1e12],EARN=[100,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e10,1e12,1e15];
@@ -103,14 +160,14 @@ const Tracker=(()=>{
  return{ev,report,show,download,snapshot,
   bounce(g){L.tot.bounces++;L.tot.bouncePay+=g},corner(p,tag,tier,shop){L.tot.corners++;L.tot.cornerPay+=p;ev('corner',{p:Math.round(p),tag,tier,shop})},notice(b,shop){L.tot.notices++;ev('notice',{b:Math.round(b),shop})},tap(){L.tot.taps++},
   dev(label){ev('dev',{btn:label});if(!/Report|Test|Total|Mark|Download|tracker/i.test(label))L.cheats++},
-  mark(){const note=prompt('Note for this moment (optional):','')||'';ev('mark',{note,coins:Math.round(coins)});save()},
-  reset(){if(confirm('Clear all tracker data?')){L.ev=[];L.snap=[];L.ms={};L.active=0;L.idle=0;L.cheats=0;L.start=Date.now();Object.keys(L.tot).forEach(k=>L.tot[k]=0);save()}},
+  mark(){const note='';ev('mark',{note,coins:Math.round(coins)});save()},
+  reset(){if(!RELEASE){L.ev=[];L.snap=[];L.ms={};L.active=0;L.idle=0;L.cheats=0;L.start=Date.now();Object.keys(L.tot).forEach(k=>L.tot[k]=0);save()}},
   panel(lbl,mkBtn){lbl('TRACKER');statusEl=document.createElement('div');statusEl.style.cssText='font-size:6px;color:#9f9;padding:2px 0';DV.appendChild(statusEl);
    mkBtn('Mark this moment',()=>Tracker.mark());mkBtn('Report (view + copy)',()=>show());mkBtn('Download raw log',download);mkBtn('Reset tracker',()=>Tracker.reset())},
   install(){UPGRADES.forEach(u=>{const b=u.buy;u.buy=function(){let c=0,pr=null;try{c=u.cost();if(u.n==='Merge')pr=findMergePair()}catch(e){}const r=b.apply(this,arguments);let lv=0;try{lv=u.lv()}catch(e){}ev('buy',{n:u.n,c,lv,shop:currentShop,t:pr?pr[2]:undefined});if(u.n==='Buy TV'&&currentShop>0&&shops[currentShop].bought===1){toast='SHOP BONUS: ALL INCOME +25%';toastT=4;ev('shop_bonus',{shop:currentShop})}if(!L.ms['buy_'+u.n])L.ms['buy_'+u.n]=now();if(u.n==='New shop')ev('shop_unlock',{shop:shops.length-1});return r}});
    const g=goShop;goShop=function(k){if(k!==currentShop)ev('view_shop',{to:k});return g.apply(this,arguments)}}}
 })();
-const GS=(()=>{let o={taps:0,notices:0,x2:0};try{const d=JSON.parse(localStorage.getItem('cornerShopP2Goals')||'null');if(d&&d.gs)o=d.gs}catch(e){}return o})();
+const GS={taps:0,notices:0,x2:0};/* filled by loadAux() at boot */
 const C=document.getElementById('c'),canvasCtx=C.getContext('2d'),W=200,H=340,SW=70,SH=46,LW=14,LH=8,GY=300;
 /* ================ 1. DATA: TV TYPES AND SHOPS ================ */
 const TV_TYPES=[
@@ -125,7 +182,7 @@ const TV_TYPES=[
 {n:'XENO',sp:32,c:150000,body:'#2a1a3a',scr:'#0a001a',bp:5},
 {n:'OMNI',sp:50,c:400000,body:'#ffffff',scr:'#000',bp:10}   
 ];
-const TVI=TV_TYPES.map((t,i)=>{const im=new Image();im.src='assets/tv'+i+'.png';return im}),TVC=[];/* missing tvN.png falls back to the code-drawn TV */
+const TVI=TV_TYPES.map((t,i)=>{const im=new Image();if(i<=SEASON1_TOP_TIER)im.src='assets/tv'+i+'.png';return im}),TVC=[];/* missing tvN.png falls back to the code-drawn TV */
 DEBUG.tvRect=[
  [82,107,246,189],/* tv0: measured from assets/tv0.png in 1.9.8.5 */
  [85,44,310,216],/* tv1: measured from assets/tv1.png in 1.9.8.5 */
@@ -293,17 +350,19 @@ UPGRADES.forEach((u,i)=>{DEBUG.upgradeCosts[i]={override:null};const f=u.cost;u.
 DEBUG.setCost=(i,val)=>{DEBUG.upgradeCosts[i].override=val;refresh()};
 DEBUG.resetCost=i=>{DEBUG.upgradeCosts[i].override=null;refresh()};
 DEBUG.resetAllCosts=()=>{UPGRADES.forEach((_,i)=>{DEBUG.upgradeCosts[i].override=null});refresh()};
-const col=document.getElementById('col'),coinsEl=document.getElementById('coinsTxt'),coinsBox=document.getElementById('coins'),sndEl=document.getElementById('snd');let coinsStr='';
-let cpsEl=null;function coinsHud(){const s=formatNumber(displayCoins);if(s!==coinsStr){coinsStr=s;coinsEl.textContent=s}if(!cpsEl){cpsEl=document.createElement('span');cpsEl.style.cssText='display:block;font-size:5px;color:#888;margin-top:2px';coinsBox.appendChild(cpsEl)}cpsEl.textContent=formatNumber(cps)+'/s'}   UPGRADES.forEach((u,i)=>{const b=document.createElement('button');b.className='u';b.innerHTML='<span class="level">'+u.lv()+'</span><div class="ic">'+u.ic+'</div><div class="pips"></div><div class="cost"></div><div class="nm">'+u.n+'</div>';b.onclick=()=>{if(lastPT==='mouse'||lastPT==='pen'){const u=UPGRADES[i];if(upgradeStatus(u)==='aff'){coins-=u.cost();u.buy();refresh()}}else if(cur===i&&!hov)closeCard();else openCard(i)};b.onpointerenter=e=>{if(e.pointerType==='mouse')openCard(i,true)};b.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};u.el=b;col.appendChild(b)});
-{const ns=UPGRADES[7];if(NEWSHOP_LAST&&ns&&ns.el)col.appendChild(ns.el)}/* v1.9.6: New shop card sits at the bottom of the list */
+const col=document.getElementById('col'),ulist=document.getElementById('ulist'),coinsEl=document.getElementById('coinsTxt'),coinsBox=document.getElementById('coins'),sndEl=document.getElementById('snd');let coinsStr='';
+let cpsEl=null;function coinsHud(){const s=formatNumber(displayCoins);if(s!==coinsStr){coinsStr=s;coinsEl.textContent=s}if(!cpsEl){cpsEl=document.createElement('span');cpsEl.style.cssText='display:block;font-size:5px;color:#888;margin-top:2px';coinsBox.appendChild(cpsEl)}cpsEl.textContent=formatNumber(cps)+'/s'}   UPGRADES.forEach((u,i)=>{const b=document.createElement('button');b.className='u';b.innerHTML='<span class="level">'+u.lv()+'</span><div class="ic">'+u.ic+'</div><div class="pips"></div><div class="cost"></div><div class="nm">'+u.n+'</div><div class="w"><div class="wi">'+u.ic+'</div><div><div class="wn">'+u.n+'</div><div class="ws">'+(u.s||'')+'</div><div class="wp"></div></div><div class="wc"></div></div>';b.onclick=()=>{if(lastPT==='mouse'||lastPT==='pen'){const u=UPGRADES[i];if(upgradeStatus(u)==='aff'){coins-=u.cost();u.buy();refresh()}}else if(cur===i&&!hov)closeCard();else openCard(i)};b.onpointerenter=e=>{if(e.pointerType==='mouse'&&!WIDE.matches)openCard(i,true)};b.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};u.el=b;ulist.appendChild(b)});
+{const ns=UPGRADES[7];if(NEWSHOP_LAST&&ns&&ns.el)ulist.appendChild(ns.el)}/* v1.9.6: New shop card sits at the bottom of the list */
 const colTog=document.createElement('button');
-colTog.id='colTog';colTog.textContent='⇄';colTog.onclick=()=>{col.classList.toggle('hidden');colTog.textContent=col.classList.contains('hidden')?'⇐':'⇄'};document.body.appendChild(colTog);
+colTog.id='colTog';colTog.textContent='⇄';colTog.onclick=()=>{col.classList.toggle('hidden');colTog.textContent=col.classList.contains('hidden')?'⇐':'⇄'};/* v1.9.9.5: colTog (hide upgrades) not added to the page */
 
+ const WIDE=matchMedia('(min-width:900px) and (min-aspect-ratio:13/10)');/* v1.9.9.7: wide layout shows the effect inside the card, so no hover popup */
  let cur=-1,cardTimer=0,hov=false,lastPT='mouse',firstR=true;addEventListener('pointerdown',e=>{lastPT=e.pointerType},true);
 const card=document.getElementById('card'),buyB=document.getElementById('buy');col.appendChild(card);
 card.onpointerenter=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=999};card.onpointerleave=e=>{if(e.pointerType==='mouse'&&hov)cardTimer=.3};
 function upgradeStatus(u){const i=UPGRADES.indexOf(u);if(!milestoneUnlocked(i))return'locked';const mx=typeof u.max==='function'?u.max():u.max;if(u.max&&u.lv()>=mx&&u.n!=='Buy TV')return'max';if(u.can&&u.can())return'blocked';return coins>=u.cost()?'aff':'no'}
-function openCard(i,h){if(!milestoneUnlocked(i))return;cur=i;hov=!!h;card.classList.add('open');card.classList.toggle('info',hov);cardTimer=h?999:5;card.style.height=UPGRADES[i].el.offsetHeight+'px';card.style.top=UPGRADES[i].el.offsetTop+'px';refresh()}
+function openCard(i,h){if(!milestoneUnlocked(i))return;cur=i;hov=!!h;card.classList.add('open');card.classList.toggle('info',hov);cardTimer=h?999:5;card.style.height=UPGRADES[i].el.offsetHeight+'px';card.style.top=(ulist.offsetTop+UPGRADES[i].el.offsetTop-ulist.scrollTop)+'px';refresh()}
+ulist.addEventListener('scroll',()=>{if(cur>=0)closeCard()},{passive:true});
 function closeCard(){cur=-1;card.classList.remove('open');refresh()}
 buyB.onclick=()=>{const u=UPGRADES[cur];if(!u)return;const s=upgradeStatus(u);if(s!=='aff')return;if(u.n==='New shop'&&season1Ends(currentShop)){season1EndClick();return}coins-=u.cost();u.buy();cardTimer=5;refresh()};
 /* v1.9.6: Season 1 end. No coins are taken (the purchase never starts). Popup first; the removal is saved when it is closed. */
@@ -311,7 +370,7 @@ function season1Stats(){const own=Math.max(0,...shops.flatMap(x=>x.tvs.map(v=>v.
 /* onClose runs when the player closes the screen; null = reopened from settings (no flag, poof or tracker event) */
 function season1EndScreen(onClose){if(document.getElementById('s1end'))return;const ov=document.createElement('div'),bx=document.createElement('div'),ok=document.createElement('button'),F='font-family:"Press Start 2P",monospace;';ov.id='s1end';ov.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;background:#000;z-index:9998;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .8s';bx.style.cssText='width:min(300px,86vw);color:#fff;text-align:center;'+F;const h=document.createElement('div');h.textContent=SEASON1_END.head;h.style.cssText='font-size:10px;color:#f4d35e;margin-bottom:14px';bx.appendChild(h);season1Stats().forEach(([k,v])=>{const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;font-size:7px;line-height:2.2;color:#bbb';const a=document.createElement('span'),b=document.createElement('span');a.textContent=k;b.textContent=v;b.style.color='#fff';row.appendChild(a);row.appendChild(b);bx.appendChild(row)});const t=document.createElement('div');t.textContent=SEASON1_END.title;t.style.cssText='margin-top:18px;font-size:9px;color:#fff;opacity:0;transition:opacity 1.5s';bx.appendChild(t);if(SEASON1_END.discord){const d=document.createElement('div'),l=document.createElement('div'),cp=document.createElement('button');d.style.cssText='margin-top:12px';l.textContent=SEASON1_END.discord;l.style.cssText='font-size:6px;color:#8ab4ff;word-break:break-all;user-select:all';cp.textContent='COPY';cp.style.cssText='margin-top:6px;padding:4px 10px;background:#2b3a55;color:#fff;border:0;font-size:6px;cursor:pointer;'+F;cp.onclick=()=>{const done=()=>{cp.textContent='COPIED'};try{navigator.clipboard.writeText(SEASON1_END.discord).then(done,()=>{})}catch(e){}};d.appendChild(l);d.appendChild(cp);bx.appendChild(d)}ok.textContent=SEASON1_END.btn;ok.style.cssText='display:block;margin:16px auto 0;padding:6px 14px;background:#f4d35e;color:#111;border:0;font-size:8px;cursor:pointer;'+F;ok.onclick=()=>{ov.remove();if(onClose)onClose()};bx.appendChild(ok);ov.appendChild(bx);document.body.appendChild(ov);ok.focus();setTimeout(()=>{ov.style.opacity='1'},20);setTimeout(()=>{t.style.opacity='1'},1600)}
 function season1EndClick(){if(document.getElementById('s1end'))return;const r=UPGRADES[7].el.getBoundingClientRect();season1EndScreen(()=>season1EndDone(r))}
-function season1EndDone(r){season1End=true;closeCard();Tracker.ev('season1_end',{coins:Math.round(coins),life:{...LIFE,act:Math.round(LIFE.act),earned:Math.round(LIFE.earned)},taps:GS.taps,shops:shops.length,tvs:shops.map(x=>x.tvs.length)});saveGame();poof(r);refresh()}
+function season1EndDone(r){season1End=true;cgDo(S=>S.game.happytime());closeCard();Tracker.ev('season1_end',{coins:Math.round(coins),life:{...LIFE,act:Math.round(LIFE.act),earned:Math.round(LIFE.earned)},taps:GS.taps,shops:shops.length,tvs:shops.map(x=>x.tvs.length)});saveGame();poof(r);refresh()}
 function poof(r){for(let k=0;k<8;k++){const d=document.createElement('div'),a=k/8*6.283;d.style.cssText='position:fixed;z-index:9999;width:10px;height:10px;background:#ddd;pointer-events:none;transition:transform .5s ease-out,opacity .5s;left:'+(r.left+r.width/2-5)+'px;top:'+(r.top+r.height/2-5)+'px';document.body.appendChild(d);requestAnimationFrame(()=>requestAnimationFrame(()=>{d.style.transform='translate('+Math.round(Math.cos(a)*30)+'px,'+Math.round(Math.sin(a)*30)+'px) scale(.3)';d.style.opacity='0'}));setTimeout(()=>d.remove(),700)}}
 function refresh(){
  try{eb.style.display=season1End?'':'none'}catch(e){}
@@ -325,7 +384,7 @@ function refresh(){
   u.el.children[0].textContent=u.lv();
   u.el.style.setProperty('--p',Math.min(100,coins/u.cost()*100)+'%');
   let p='';if(mx>10){p='<i class="bar"><b style="width:'+Math.min(100,u.lv()/mx*100)+'%"></b></i>'}else if(mx){for(let k=0;k<mx;k++)p+='<i class="pip'+(k<u.lv()?'':' e')+'"></i>'}else p=findMergePair()?'ready':'';
-  u.el.children[1].className='pips'+(mx>8?' t':'');u.el.children[1].innerHTML=p;u.el.children[2].textContent=s==='max'?'MAX':u.cost()===0?'FREE':formatNumber(u.cost())});
+  u.el.children[1].className='pips'+(mx>8?' t':'');u.el.children[1].innerHTML=p;u.el.children[2].textContent=s==='max'?'MAX':u.cost()===0?'FREE':formatNumber(u.cost());{const w=u.el.lastElementChild;w.querySelector('.wp').innerHTML='<span>Lv '+u.lv()+(mx?'/'+mx:'')+'</span>'+p;w.querySelector('.wc').textContent=u.el.children[2].textContent;let ef='';try{if(s==='aff'||s==='no')ef=u.eff()}catch(e){}w.querySelector('.ws').textContent=(u.s||'')+(ef?' - '+ef:'')}});
  if(cur>=0){const u=UPGRADES[cur],s=upgradeStatus(u);
   cn.textContent=u.n;cd.textContent=u.s||'';ce.textContent=s==='locked'?'Unlock by progressing in this shop':s==='max'?'Maxed out':s==='blocked'?u.can():u.eff();
   cl.textContent=s==='locked'?'':s==='blocked'?u.can():(u.max?'Level '+u.lv()+' / '+(typeof u.max==='function'?u.max():u.max):'');
@@ -392,7 +451,7 @@ const CF0={shelf:{x:0,y:0,scale:1},counter:{x:0,y:0,scale:1},color:null,alpha:1,
 function tvBox(i){const s=slotXY(i);if(!s)return null;const tv=currentTVs[i],cf=(tv&&DEBUG.tvConfig[tv.t])||CF0,o=i===0?cf.counter:cf.shelf,so=DEBUG.shopOffsets[currentShop]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]},sr=i>=1&&i<=9?Math.floor((i-1)/3):-1,k=s.s*o.scale,cx=s.x+44*s.s+o.x+(sr>=0?so.shelfX[sr]:0),cy=s.y+32*s.s+o.y+(i===0?so.counterY:sr>=0?so.shelfY[sr]:0);return{x:cx-44*k,y:cy-32*k,w:88*k,h:64*k}}
 function drawTV(tv,ox,oy,s,hl,slot=-1){
  const cf=DEBUG.tvConfig[tv.t]||CF0,o=slot<0?OFF0:slot===0?cf.counter:cf.shelf;
-canvasCtx.save();canvasCtx.globalAlpha=cf.alpha;const so=slot>=0?(DEBUG.shopOffsets[currentShop]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}):{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]};const sr=slot>=1&&slot<=9?Math.floor((slot-1)/3):-1;canvasCtx.translate(ox+44*s+o.x+(sr>=0?so.shelfX[sr]:0),oy+32*s+o.y+(slot===0?so.counterY:sr>=0?so.shelfY[sr]:0));canvasCtx.scale(s*o.scale,s*o.scale);canvasCtx.translate(-44,-32);if(slot===0&&saleActive()){drawRect('#e03c3c',22,-9,44,10);drawRect('#ffd400',22,-9,44,2);drawText('SALE',44,-1,'#fff',6,'center')}const T0=TV_TYPES[tv.t],sp=tvSprite(tv.t),LW0=tv.w||14,LH0=tv.h||8,scr=cf.screenColor||T0.scr;const col=tv.t===0?'hsl(0,0%,'+(60+30*Math.sin(tv.hue/20))+'%)':'hsl('+tv.hue+',90%,60%)';const lg=(dx,dy)=>[tv,tv.twin,...(tv.cl||[])].forEach(o=>{if(!o)return;const c=(DEBUG.logoCfg[tv.t]||{}).color||(tv.t===0?col:'hsl('+o.hue+',90%,60%)');eraMark(c,dx+o.x,dy+o.y,LW0,LH0)});
+canvasCtx.save();canvasCtx.globalAlpha=cf.alpha;const so=slot>=0?(DEBUG.shopOffsets[currentShop]||{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]}):{counterY:0,shelfY:[0,0,0],shelfX:[0,0,0]};const sr=slot>=1&&slot<=9?Math.floor((slot-1)/3):-1;canvasCtx.translate(ox+44*s+o.x+(sr>=0?so.shelfX[sr]:0),oy+32*s+o.y+(slot===0?so.counterY:sr>=0?so.shelfY[sr]:0));canvasCtx.scale(s*o.scale,s*o.scale);canvasCtx.translate(-44,-32);if(slot===0&&saleActive()){drawRect('#e03c3c',22,-9,44,10);drawRect('#ffd400',22,-9,44,2);drawText('SALE',44,-1,'#fff',6,'center')}const T0=TV_TYPES[tv.t],sp=tvSprite(tv.t),LW0=tv.w||14,LH0=tv.h||8,scr=cf.screenColor||T0.scr;const col=tv.t===0?'hsl(0,0%,'+(60+30*Math.sin(tv.hue/20))+'%)':'hsl('+tv.hue+',90%,60%)';const lg=(dx,dy)=>[tv,tv.twin,...(tv.cl||[])].forEach(o=>{if(!o)return;const c=(DEBUG.logoCfg[tv.t]||{}).color||(tv.t===0?col:'hsl('+o.hue+',90%,60%)');eraMark(c,dx+o.x,dy+o.y,LW0,LH0,tv.t)});
  if(sp){
   const r=DEBUG.tvRect[tv.t]||[44,38,382,251],kx=88/480,ky=64/350;
   canvasCtx.drawImage(tvTint(tv.t,sp,cf.color),0,0,88,64);
@@ -411,16 +470,21 @@ function drawTabs(){if(shops.length<2)return;const n=shops.length,w=W/n;
   canvasCtx.fillStyle='#888';canvasCtx.beginPath();canvasCtx.moveTo(4,330);canvasCtx.lineTo(14,325);canvasCtx.lineTo(14,335);canvasCtx.closePath();canvasCtx.fill();canvasCtx.beginPath();canvasCtx.moveTo(W-4,330);canvasCtx.lineTo(W-14,325);canvasCtx.lineTo(W-14,335);canvasCtx.closePath();canvasCtx.fill();canvasCtx.globalAlpha=1;
   if(badge.some((b,i)=>b&&i!==currentShop))drawText('!',W-20,333,'#ff5a3a',8,'center');return}
  shops.forEach((sh,i)=>{drawRect(i===currentShop?'#ffd400':'#2c2c33',i*w+1,322,w-2,16);drawText(SHOPS[i].n+(SHOPS[i].k>1&&n<4?' +'+Math.round((SHOPS[i].k-1)*100)+'%':''),i*w+w/2,333,i===currentShop?'#000':'#aaa',6,'center');if(badge[i])drawText('!',i*w+w-8,333,'#ff5a3a',8,'center')})}
+/* v1.9.9.3: the TV index lists only the TVs of the released seasons (Season 1: tiers 0 to SEASON1_TOP_TIER = 9 TVs) */
+const dexN=()=>SEASON2_RELEASED?TV_TYPES.length:SEASON1_TOP_TIER+1;
 function drawDex(){
- const pages=Math.ceil(TV_TYPES.length/5);
- drawRect('rgba(0,0,0,.93)',0,0,W,H);drawText('TV INDEX',100,24,'#ffd400',9,'center');
- drawText(shopState.un.filter(Boolean).length+' / '+TV_TYPES.length+' unlocked',100,40,'#888',6,'center');
- TV_TYPES.forEach((t,i)=>{if(Math.floor(i/5)!==dexPage)return;const y=52+(i%5)*55,u=shopState.un[i];
+ const pages=Math.ceil(dexN()/5);
+ drawRect('#000',0,0,W,H);drawText('TV INDEX',100,24,'#ffd400',9,'center');
+ drawText(shopState.un.slice(0,dexN()).filter(Boolean).length+' / '+dexN()+' unlocked',100,40,'#888',6,'center');
+ TV_TYPES.forEach((t,i)=>{if(i>=dexN()||Math.floor(i/5)!==dexPage)return;const y=52+(i%5)*55,u=shopState.un[i];
   drawRect(u?'#ffd400':'#333',6,y,188,50);drawRect('#111',8,y+2,184,46);
+  /* v1.9.9.6: card text centred in the area right of the icon (x 62 to 192), rows centred vertically, bigger and brighter */
+  const cx=127,rowsOf=a=>{let span=0;a.forEach((r,k)=>{if(k<a.length-1)span+=r.a});let yy=y+28-span/2;return a.map(r=>{const o={...r,y:yy};yy+=r.a;return o})};
   if(u){drawTV({t:i,x:20,y:14,hue:i*60,flash:0},12,y+7,.5);
-   drawText(t.n+' ('+currentTVs.filter(v=>v.t===i).length+')',62,y+12,'#ffd400',7);drawText('x'+t.sp+' speed  x'+t.c+' coin',62,y+22,'#ccc',6);wrap(AB[i]||'',24).forEach((l,k)=>drawText(l,62,y+32+k*7,'#7fd',5))}
-  else{drawRect('#222',12,y+7,44,32);drawText('?',34,y+30,'#555',12,'center');drawText('???',62,y+16,'#555',7);drawText('merge 2 '+TV_TYPES[i-1].n,62,y+32,'#777',6)}});
- drawText((dexPage+1)+'/'+pages+'  tap '+(dexPage<pages-1?'for next':'to close'),100,H-8,'#888',6,'center')}
+   const nm=t.n+' ('+currentTVs.filter(v=>v.t===i).length+')';
+   rowsOf([{s:nm,c:'#ffd400',z:nm.length>17?6:7,a:9},{s:'x'+t.sp+' speed  x'+t.c+' coin',c:'#eee',z:6,a:9},...wrap(AB[i]||'',25).map(l=>({s:l,c:'#9fe',z:5,a:7}))]).forEach(r=>drawText(r.s,cx,r.y,r.c,r.z,'center'))}
+  else{drawRect('#222',12,y+7,44,32);drawText('?',34,y+30,'#777',12,'center');
+   rowsOf([{s:'???',c:'#999',z:7,a:9},{s:'merge 2',c:'#bbb',z:6,a:9},{s:TV_TYPES[i-1].n,c:'#bbb',z:6,a:9}]).forEach(r=>drawText(r.s,cx,r.y,r.c,r.z,'center'))}}); drawText((dexPage+1)+'/'+pages+'  tap '+(dexPage<pages-1?'for next':'to close'),100,H-8,'#bbb',6,'center')}
 /* ===== v1.9.9 new-tier unlock effect: the TV pops up in the middle with shine rays, spins, shrinks and flies into the TV index button. The first one (tier 1) makes the index button glow until it is tapped. fxSeen (saved as fx) keeps it to once per tier, even after a prestige. ===== */
 let fxSeen=[true],fxQ=[],fxCur=null,idxHint=0,fxCv=null,fxCx=null,fxClear=false;
 const FX_T=3.2,FX_IN=.45,FX_HOLD=1.6,FX_FLY=2.6;
@@ -483,10 +547,10 @@ function render(){
   {const k=currentTVs.indexOf(selectedTV),can=selectedTV.t<TV_TYPES.length-1&&currentTVs.some((v,i)=>i!==k&&v.t===selectedTV.t),c=mergeCostNow(selectedTV.t);drawRect(!can?'#444':coins>=c?'#2f9f4f':'#6a6a2a',14,300,172,16);drawText(!can?'NO MATCH TO MERGE':'MERGE +1 TIER  '+formatNumber(c),100,312,'#fff',6,'center')}
   drawRect('#ffd400',172,6,22,18);drawText('X',183,19,'#000',9,'center');
  }else{drawText(mergePick?'TAP THE TV TO MERGE WITH':'TAP A TV TO SELECT',100,226,'#ffd400',6,'center');if(mergePick){canvasCtx.strokeStyle=(Date.now()/250|0)%2?'#ffd400':'#fff';canvasCtx.lineWidth=2;mergePick.partners.concat([mergePick.src]).forEach(j=>{const q=tvBox(j);if(q)canvasCtx.strokeRect(q.x,q.y,q.w,q.h)})}}
- if(dex)drawDex();
- {const st2='Shop +'+Math.round((SHOPS[currentShop].k-1)*100)+'%  Showroom +'+Math.round(showB()*100)+'%  Corners: '+corners;drawText(st2,5,259,'#000',5);drawText(st2,4,258,'#fff',5)}
- {const c=shops[currentShop].combo;if(c&&c.streak>0){const f=Math.max(0,Math.min(1,(c.expire-gameT)/Math.max(.1,c.win))),lab='COMBO x'+c.streak+' (x'+Math.min(5,1+COMBO_STEP*c.streak).toFixed(2)+')';drawText(lab,6,276,'#000',5);drawText(lab,5,275,f<.25?'#ff5a3a':'#6f6',5);drawRect('#222',100,271,95,4);drawRect(f<.25?'#ff5a3a':'#6f6',100,271,95*f,4)}}
- floats.forEach(f=>{if(f.g){const a=Math.min(1,f.t);drawText(f.s,f.x+1,f.y+1,'rgba(0,0,0,'+a+')',9,'center');drawText(f.s,f.x,f.y,'rgba(80,230,110,'+a+')',9,'center')}});
+ if(dex)drawDex();try{gEl.style.visibility=dex?'hidden':'visible'}catch(e){}/* v1.9.9.3: the goal box would cover the TV INDEX title */
+ if(!dex){const st2='Shop +'+Math.round((SHOPS[currentShop].k-1)*100)+'%  Showroom +'+Math.round(showB()*100)+'%  Corners: '+corners;drawText(st2,5,259,'#000',5);drawText(st2,4,258,'#fff',5)}
+ if(!dex){const c=shops[currentShop].combo;if(c&&c.streak>0){const f=Math.max(0,Math.min(1,(c.expire-gameT)/Math.max(.1,c.win))),lab='COMBO x'+c.streak+' (x'+Math.min(5,1+COMBO_STEP*c.streak).toFixed(2)+')';drawText(lab,6,276,'#000',5);drawText(lab,5,275,f<.25?'#ff5a3a':'#6f6',5);drawRect('#222',100,271,95,4);drawRect(f<.25?'#ff5a3a':'#6f6',100,271,95*f,4)}}
+ floats.forEach(f=>{if(f.g&&!dex){const a=Math.min(1,f.t);drawText(f.s,f.x+1,f.y+1,'rgba(0,0,0,'+a+')',9,'center');drawText(f.s,f.x,f.y,'rgba(80,230,110,'+a+')',9,'center')}});
  if(toastT>0){drawRect('rgba(0,0,0,.75)',0,30,W,14);drawText(toast,100,41,'#ffd400',toast.length>28?5:7,'center')}
  try{drawUnlockFx()}catch(e){}
  if(savedT>0)drawText('SAVED',5,12,'rgba(90,230,110,'+Math.min(1,savedT*2)+')',6);
@@ -494,7 +558,7 @@ function render(){
 }
 C.addEventListener('pointerdown',e=>{
  const r=C.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
- if(dex){if(++dexPage>=Math.ceil(TV_TYPES.length/5)){dex=false;dexPage=0}return}
+ if(dex){if(++dexPage>=Math.ceil(dexN()/5)){dex=false;dexPage=0}return}
  if(mergePick){let hit=-1;for(let i=0;i<currentTVs.length;i++){const s=tvBox(i);if(s&&x>=s.x&&x<=s.x+s.w&&y>=s.y&&y<=s.y+s.h){hit=i;break}}if(hit>=0&&mergePick.partners.includes(hit))mergeTVs(mergePick.src,hit);else mergePick=null;return}
  if(selectedTV){
   if(x>168&&y<28){selectedTV=null}
@@ -527,7 +591,7 @@ const acts=[
 ['Fill all tiers',()=>{shops.forEach(s=>{s.tvs=TV_TYPES.map((_,t)=>makeTV(t))});currentTVs=shops[currentShop].tvs;selectedTV=null}],
 ['Fill current shop',()=>{shops[currentShop].tvs=TV_TYPES.map((_,t)=>makeTV(t));currentTVs=shops[currentShop].tvs;selectedTV=null}],
 ['Reset all costs',()=>DEBUG.resetAllCosts()],
-['Reset game',()=>{if(confirm('Reset all Corner Shop progress?')){resetting=true;try{localStorage.removeItem('cornerShopP2Test');localStorage.removeItem('cornerShopP2Goals');localStorage.removeItem('cornerShopP2Off')}catch(e){}location.reload()}}]
+['Reset game',()=>askConfirm('Reset all Corner Shop progress?',()=>{resetting=true;try{PS.del(KEY_SAVE);PS.del(KEY_GOALS);PS.del(KEY_OFF)}catch(e){}location.reload()})]
 ];
 acts.splice(0,acts.length,...acts.filter(([l])=>!['Prep merge test (2 B/W TVs)','Fill all tiers','Reset all costs'].includes(l)));
 const lbl=t=>{const d=document.createElement('div');d.textContent=t;d.style.cssText='font-size:6px;color:#666;margin:4px 0 2px;border-top:1px solid #333;padding-top:4px';DV.appendChild(d)};
@@ -543,7 +607,7 @@ lbl('ECONOMY TESTS');
 let lastEconomyTestCPS=null;
 const measuredCPS=()=>lastEconomyTestCPS!==null?lastEconomyTestCPS:Math.max(0,cps);
 const waitAtRate=cost=>measuredCPS()>0?(cost/measuredCPS()/60).toFixed(1)+' min':'∞ (no measured income)';
-const emitReport=(title,lines)=>{const body=['=== '+title+' v'+VERSION+' ===',...lines,'========================'];console.log('\n'+body.join('\n'));alert(body.join('\n'))};
+const emitReport=(title,lines)=>{const body=['=== '+title+' v'+VERSION+' ===',...lines,'========================'];console.log('\n'+body.join('\n'))};
 function balanceReportLines(){
   const next=SHOPS[shops.length],nextCost=next?UPGRADES[7].cost():0,vis=UPGRADES.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0,rate=measuredCPS();
   return [
@@ -681,27 +745,30 @@ const d2ta=document.createElement('textarea');d2ta.readOnly=true;d2ta.style.cssT
 const d2pr=document.createElement('button');d2pr.textContent='Extract coordinates';d2pr.onclick=()=>{const o=d2exp();d2ta.value=o;console.log('--- COPY FROM HERE ---\n'+o+'\n--- TO HERE ---');try{navigator.clipboard.writeText(o).then(()=>{d2pr.textContent='Copied!';setTimeout(()=>d2pr.textContent='Extract coordinates',1500)}).catch(()=>{d2ta.select()})}catch(e){d2ta.select()}};
 D2.appendChild(d2reset);D2.appendChild(d2pr);D2.appendChild(d2ta);document.body.appendChild(D2);d2load();
 const DB2=document.createElement('button');DB2.id='devb2';DB2.textContent='SCREEN';DB2.style.cssText='position:fixed;right:6px;bottom:64px;z-index:21';document.body.appendChild(DB2);
-const togDev2=()=>{D2.style.display=D2.style.display==='block'?'none':'block';if(D2.style.display==='block')d2load()};DB2.onclick=togDev2;addEventListener('keydown',e=>{if(e.key==='~')togDev2()});
+if(RELEASE){DB2.remove();D2.remove()}
+const togDev2=()=>{if(RELEASE)return;D2.style.display=D2.style.display==='block'?'none':'block';if(D2.style.display==='block')d2load()};DB2.onclick=togDev2;addEventListener('keydown',e=>{if(e.key==='~')togDev2()});
 const DB=document.createElement('button');DB.id='devb';DB.textContent='DEV';document.body.appendChild(DB);
-const togDev=()=>{DV.style.display=DV.style.display==='block'?'none':'block'};DB.onclick=togDev;addEventListener('keydown',e=>{if(e.key==='`')togDev()});
+const togDev=()=>{if(RELEASE)return;DV.style.display=DV.style.display==='block'?'none':'block'};DB.onclick=togDev;addEventListener('keydown',e=>{if(e.key==='`')togDev()});if(RELEASE){DB.remove();DV.remove()}
 const t00=performance.now();setInterval(()=>{if(DV.style.display!=='block')return;const el=(performance.now()-t00)/1000+simSkip;DS.textContent='v'+VERSION+' | bounces '+(window.__b||0)+' | corners '+corners+' | '+((window.__b||0)/el).toFixed(2)+' bounces/s | TVs '+currentTVs.length+' | shop '+(currentShop+1)+'/'+shops.length+' | coins '+formatNumber(coins)+' | '+formatNumber(cps)+'/s | last bounce: '+formatNumber(lastBounceVal)},300);   
 /* ================ 6. SETTINGS ================ */
 /* SETTINGS */
 const CFG={slide:!RM,nums:true,labels:false,dev:true,sound:false,flashes:true,shake:true};
 try{Object.assign(CFG,JSON.parse(localStorage.getItem('tvcfg')||'{}'))}catch(e){}
 function syncSnd(){sndEl.textContent=CFG.sound?'🔊':'🔇'}
-function applyCfg(){syncSnd();document.body.classList.toggle('lab',CFG.labels);DB.style.display=CFG.dev?'':'none';try{localStorage.setItem('tvcfg',JSON.stringify(CFG))}catch(e){}}
+function applyCfg(){syncSnd();document.body.classList.remove('lab');/* v1.9.9.9: the upgrade labels option was removed */DB.style.display=CFG.dev?'':'none';try{localStorage.setItem('tvcfg',JSON.stringify(CFG))}catch(e){}}
 const SP=document.createElement('div');SP.id='set';const box=document.createElement('div');box.id='setbox';SP.appendChild(box);
 const cfgSync={};
 
-[['slide','Shop slide effect'],['nums','Numbers'],['flashes','Flashes'],['shake','Screen shake'],['labels','Upgrade labels'],['dev','Dev button'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};cfgSync[k]=f;f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg();if(k==='sound'&&CFG.sound)audioInit()};box.appendChild(b)});
+[['slide','Shop slide effect'],['nums','Numbers'],['flashes','Flashes'],['shake','Screen shake'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};cfgSync[k]=f;f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg();if(k==='sound'&&CFG.sound)audioInit()};box.appendChild(b)});
 sndEl.onclick=e=>{e.stopPropagation();CFG.sound=!CFG.sound;cfgSync.sound();applyCfg();if(CFG.sound)audioInit()};
 const eb=document.createElement('button');eb.textContent='The end is near';eb.style.display='none';eb.onclick=()=>{SP.style.display='none';season1EndScreen(null)};box.appendChild(eb);/* shown once the end screen was seen; reopens it */
-const verEl=document.createElement('div');verEl.textContent='v'+VERSION;verEl.style.cssText='font-size:6px;color:#666;text-align:center;padding:2px';box.appendChild(verEl);   
- const rb=document.createElement('button');let ra=0;rb.textContent='Reset game';rb.onclick=()=>{if(ra){resetting=true;try{localStorage.removeItem('cornerShopP2Test');localStorage.removeItem('cornerShopP2Goals');localStorage.removeItem('cornerShopP2Off')}catch(e){}location.reload()}else{ra=1;rb.textContent='Tap again to reset';setTimeout(()=>{ra=0;rb.textContent='Reset game'},3000)}};box.appendChild(rb);
+const verEl=document.createElement('div');verEl.style.display='none';/* 1.10.3: version no longer shown; hidden anchor for the Prestige button */box.appendChild(verEl);   
+ const rb=document.createElement('button');rb.textContent='Reset game';rb.onclick=()=>askConfirm('Reset all progress? This cannot be undone.',()=>{resetting=true;try{PS.del(KEY_SAVE);PS.del(KEY_GOALS);PS.del(KEY_OFF)}catch(e){}location.reload()});box.appendChild(rb);
 const DISCORD_URL='https://discord.gg/kgCUhEgFXU';
-const dcb=document.createElement('button');dcb.textContent='🎮 Join Discord';dcb.onclick=()=>{window.open(DISCORD_URL,'_blank','noopener')};box.appendChild(dcb);
-const cb=document.createElement('button');cb.textContent='Close';cb.onclick=()=>{SP.style.display='none'};box.appendChild(cb);
+const dcb=document.createElement('button');dcb.className='disc';dcb.textContent='🎮 Join Discord';dcb.onclick=()=>{window.open(DISCORD_URL,'_blank','noopener')};box.appendChild(dcb);
+const PRIVACY_URL='https://soupenoodles.com/cornershop/privacy';
+const pvb=document.createElement('button');pvb.textContent='🔒 Privacy';pvb.onclick=()=>{window.open(PRIVACY_URL,'_blank','noopener')};box.appendChild(pvb);
+const cb=document.createElement('button');cb.className='closeb';cb.textContent='Close';cb.onclick=()=>{SP.style.display='none'};box.appendChild(cb);
 document.body.appendChild(SP);document.getElementById('setb').onclick=()=>{SP.style.display='flex'};applyCfg();
 /* ================ 7. PRESTIGE ================ */
 /* PRESTIGE: optional reset, permanent skill tree, incremental lifetime reward score. */
@@ -746,7 +813,7 @@ function renderPrestige(){
    const b=document.createElement('button');b.textContent=maxed?'MAXED':'Upgrade — '+cost+' point(s)';b.disabled=maxed||prestigeData.points<cost;b.className=b.disabled?'unavailable':'available';
    b.onclick=()=>{if(prestigeData.points<cost||skillLevel(sk.id)>=sk.max)return;prestigeData.points-=cost;prestigeData.spent=(prestigeData.spent||0)+cost;prestigeData.skills[sk.id]=skillLevel(sk.id)+1;saveGame();renderPrestige();refresh()};box.appendChild(b);PB.appendChild(box);
  });
- const prestige=document.createElement('button');prestige.id='prestige-action';prestige.textContent=gain>0?'PRESTIGE NOW — gain '+gain+' point(s)':'KEEP PLAYING — no new point yet';prestige.disabled=gain<=0;prestige.className=gain>0?'available':'unavailable';prestige.onclick=()=>{if(prestigeGain()<=0)return;if(confirm('Prestige now for '+prestigeGain()+' skill point(s)? Your current shops and run upgrades will reset. Skill-tree upgrades and lifetime earnings remain.'))prestigeReset()};PB.appendChild(prestige);
+ const prestige=document.createElement('button');prestige.id='prestige-action';prestige.textContent=gain>0?'PRESTIGE NOW — gain '+gain+' point(s)':'KEEP PLAYING — no new point yet';prestige.disabled=gain<=0;prestige.className=gain>0?'available':'unavailable';prestige.onclick=()=>{if(prestigeGain()<=0)return;askConfirm('Prestige now for '+prestigeGain()+' skill point(s)? Your current shops and run upgrades will reset. Skill-tree upgrades and lifetime earnings remain.',prestigeReset)};PB.appendChild(prestige);
  const close=document.createElement('button');close.textContent='Close';close.className='unavailable';close.onclick=()=>{PM.style.display='none'};PB.appendChild(close);
 }
 const prestigeOpen=document.createElement('button');prestigeOpen.textContent='🌟 Prestige / Skill Tree';prestigeOpen.onclick=()=>{renderPrestige();PM.style.display='flex'};box.insertBefore(prestigeOpen,verEl);
@@ -763,10 +830,10 @@ function sfx(k,rate){
  if(!CFG.sound||!AU.ctx||!AU.buf[k])return;const c=SFX[k];if(c.max&&(AU.n[k]||0)>=c.max)return;
  try{const s=AU.ctx.createBufferSource(),g=AU.ctx.createGain();s.buffer=AU.buf[k];if(rate)s.playbackRate.value=rate;g.gain.value=c.vol;s.connect(g);g.connect(AU.ctx.destination);AU.n[k]=(AU.n[k]||0)+1;s.onended=()=>{AU.n[k]=Math.max(0,(AU.n[k]||1)-1)};s.start()}catch(e){}}
 /* ================ 9. SAVE AND LOAD ================ */
-/* TEST BUILD SAVE / LOAD: isolated localStorage key "cornerShopP2Test"; production save is untouched. */
-function saveGame(){if(resetting)return;try{localStorage.setItem('cornerShopP2Test',JSON.stringify({v:VERSION,coins,corners,sc:currentShop,S:shopState,P:prestigeData,badge,seen:UPGRADES.map(u=>!!u.seen),s1end:season1End,life:LIFE,fx:fxSeen.map(Boolean),ih:idxHint,shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,merges:s.merges||0,tm:s.tierMerges||{},fit:s.fit,upgrades:s.upgrades||{}})).concat(SEASON2_RELEASED?[]:extraShops)}))}catch(e){}}
+/* SAVE / LOAD: keys cornerShopSave, cornerShopGoals, cornerShopOff (final names, with sv = SAVE_VERSION). Old P2Test keys are copied once by migrateAll(), never changed. */
+function saveGame(){if(resetting||!booted)return;try{PS.set(KEY_SAVE,JSON.stringify({sv:SAVE_VERSION,v:VERSION,coins,corners,sc:currentShop,S:shopState,P:prestigeData,badge,seen:UPGRADES.map(u=>!!u.seen),s1end:season1End,life:LIFE,fx:fxSeen.map(Boolean),ih:idxHint,shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,merges:s.merges||0,tm:s.tierMerges||{},fit:s.fit,upgrades:s.upgrades||{}})).concat(SEASON2_RELEASED?[]:extraShops)}))}catch(e){}}
 function loadGame(){
- let d=null;try{d=JSON.parse(localStorage.getItem('cornerShopP2Test')||'null')}catch(e){}
+ let d=null;try{d=upgradeSave(JSON.parse(PS.get(KEY_SAVE)||'null'))}catch(e){}
  if(!d||typeof d!=='object')return;
  try{
   const ns=Array.isArray(d.shops)?d.shops.slice(0,SHOPS.length).map((s,shopIndex)=>({people:makePeople(),tvs:(Array.isArray(s.tvs)?s.tvs:[]).slice(0,slots()).map(t=>makeTV(Math.max(0,Math.min(TV_TYPES.length-1,t|0)))),bought:+s.bought||0,merges:+s.merges||0,tierMerges:(s.tm&&typeof s.tm==='object')?s.tm:{},fit:+s.fit||0,upgrades:s.upgrades&&typeof s.upgrades==='object'?Object.fromEntries(Object.keys(UPGRADE_MAX).map(k=>[k,Math.max(0,Math.min(upgradeMax(k,shopIndex),Number(s.upgrades[k])||0))])):{}})):[];
@@ -819,26 +886,29 @@ function tryMerge(){if(!selectedTV)return;const k=currentTVs.indexOf(selectedTV)
 function mergeTVs(i,j){const a=Math.min(i,j),b=Math.max(i,j),t=currentTVs[a].t,c=mergeCostNow(t);if(coins<c)return;coins-=c;
  currentTVs=currentTVs.filter((_,x)=>x!==a&&x!==b);currentTVs.splice(a,0,makeTV(t+1));selectedTV=null;mergePick=null;shops[currentShop].tvs=currentTVs;if(t+1>LIFE.bestTier)LIFE.bestTier=t+1;LIFE.merges++;shopState.merges++;shops[currentShop].merges=(shops[currentShop].merges||0)+1;{const tm=shops[currentShop].tierMerges||(shops[currentShop].tierMerges={});tm[t]=(tm[t]||0)+1}
  if(!shopState.un[t+1]){shopState.un[t+1]=true;toast='NEW TV: '+TV_TYPES[t+1].n+'!';toastT=3}tierUnlockFx(t+1);Tracker.ev('merge',{t,c:Math.round(c),shop:currentShop})}
-let goalIdx=0;try{const d=JSON.parse(localStorage.getItem('cornerShopP2Goals')||'null');if(d)goalIdx=d.i||0}catch(e){}
+let goalIdx=0;function loadAux(){try{const d=upgradeSave(JSON.parse(PS.get(KEY_GOALS)||'null'));if(d){goalIdx=d.i||0;if(d.gs)Object.assign(GS,d.gs)}}catch(e){}try{const o=upgradeSave(JSON.parse(PS.get(KEY_OFF)||'null'));if(o){idleRate=o.rate||0;setTimeout(()=>applyOffline((Date.now()-o.t)/1000),500)}}catch(e){}}
 let idleRate=0,lastRE=0,lastIn2=Date.now(),hiddenAt=0;
 ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>{lastIn2=Date.now()},true));
-const gEl=document.createElement('div');gEl.style.cssText='position:fixed;top:6px;left:50%;transform:translateX(-50%);width:min(340px,62vw);padding:6px 8px;background:rgba(10,10,14,.92);border:2px solid #f4d35e;color:#fff;font:7px "Press Start 2P",monospace;z-index:9000;cursor:pointer;text-align:center';document.body.appendChild(gEl);
+function placeGoal(){try{const r=C.getBoundingClientRect();gEl.style.left=(r.left+r.width/2)+'px';gEl.style.top=(r.top+10)+'px';gEl.style.width=Math.min(300,r.width-30)+'px'}catch(e){}}
+addEventListener('resize',()=>placeGoal());
+const gEl=document.createElement('div');gEl.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(300px,62vw);padding:6px 8px;background:rgba(10,10,14,.92);border:2px solid #f4d35e;color:#fff;font:7px "Press Start 2P",monospace;z-index:9000;cursor:pointer;text-align:center';document.body.appendChild(gEl);
 function goalInfo(){const g=GOALS[goalIdx];if(!g)return null;let [c,m]=g.p();if(g.wall&&!(shops.length>1&&shops[1].bought>0)){m=SHOPS[1].firstTV;c=Math.min(coins,m)}return{g,c,m,done:g.wall?(shops.length>1&&shops[1].bought>0):c>=m}}
 function goalReward(){return Math.max(5,20*Math.max(idleRate,.1))}
 function claimGoal(){const i=goalInfo();if(!i||!i.done)return;let x=0;if(i.g.r){x=goalReward();gainCoins(x);lastRE+=x;toast='GOAL +'+formatNumber(x);toastT=1.5}Tracker.ev('goal',{n:goalIdx+1,name:i.g.t,reward:Math.round(x)});goalIdx++;saveGoals()}
 gEl.onclick=claimGoal;
-function saveGoals(){if(resetting)return;try{localStorage.setItem('cornerShopP2Goals',JSON.stringify({i:goalIdx,gs:GS}))}catch(e){}}
+function saveGoals(){if(resetting||!booted)return;try{PS.set(KEY_GOALS,JSON.stringify({sv:SAVE_VERSION,i:goalIdx,gs:GS}))}catch(e){}}
 function showOffline(sec,gain){let d=document.getElementById('offv');if(d)d.remove();d=document.createElement('div');d.id='offv';d.style.cssText='position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center';
  const b=document.createElement('div');b.style.cssText='background:#14141c;border:3px solid #f4d35e;padding:18px;color:#fff;font:9px "Press Start 2P",monospace;text-align:center;line-height:1.8;max-width:80vw';
  const m=Math.round(sec/60);b.innerHTML='WELCOME BACK<br>Away '+(m>=60?(m/60).toFixed(1)+' h':m+' min')+'<br>Your shops earned<br><span style="color:#f4d35e;font-size:12px">+'+formatNumber(gain)+'</span><br><span style="font-size:6px;color:#aaa">30% of idle income, up to 3 hours</span><br><br>';
  const k=document.createElement('button');k.textContent='OK';k.style.cssText='font:9px "Press Start 2P",monospace;padding:8px 18px;background:#f4d35e;border:2px solid #000;cursor:pointer';k.onclick=()=>d.remove();b.appendChild(k);d.appendChild(b);document.body.appendChild(d)}
 function applyOffline(sec){if(!(sec>=30))return;sec=Math.min(sec,10800);if(!(idleRate>0))return;const gain=.3*idleRate*sec;gainCoins(gain);lastRE+=gain;Tracker.ev('offline',{sec:Math.round(sec),gain:Math.round(gain)});showOffline(sec,gain)}
-function saveSeen(){if(resetting)return;try{localStorage.setItem('cornerShopP2Off',JSON.stringify({t:Date.now(),rate:idleRate}))}catch(e){}}
-try{const o=JSON.parse(localStorage.getItem('cornerShopP2Off')||'null');if(o){idleRate=o.rate||0;setTimeout(()=>applyOffline((Date.now()-o.t)/1000),500)}}catch(e){}
+function saveSeen(){if(resetting||!booted)return;try{PS.set(KEY_OFF,JSON.stringify({sv:SAVE_VERSION,t:Date.now(),rate:idleRate}))}catch(e){}}
+
 document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();saveSeen()}else if(hiddenAt){const s=(Date.now()-hiddenAt)/1000;hiddenAt=0;applyOffline(s);saveSeen()}});
 addEventListener('pagehide',()=>{saveSeen();saveGoals()});
 let gt=0;setInterval(()=>{gt++;try{gEl.style.display=selectedTV?'none':'';const d=prestigeData.runEarned-lastRE;lastRE=prestigeData.runEarned;if(!document.hidden&&Date.now()-lastIn2>10000&&d>=0)idleRate=idleRate?idleRate*.9+d*.1:d;
  const i=goalInfo();if(!i){gEl.innerHTML='GOALS COMPLETE<br><span style="color:#aaa">More goals soon</span>'}else{const pct=Math.min(100,100*i.c/Math.max(1e-9,i.m));gEl.innerHTML='GOAL '+(goalIdx+1)+'/'+GOALS.length+'<br>'+i.g.t+'<br><div style="height:5px;background:#333;margin:4px 0"><div style="height:5px;width:'+pct+'%;background:'+(i.done?'#6f6':'#f4d35e')+'"></div></div>'+(i.done?'<span style="color:#6f6">TAP TO CLAIM'+(i.g.r?' +'+formatNumber(goalReward()):'')+'</span>':formatNumber(i.c)+' / '+formatNumber(i.m)+(i.g.r?'<br><span style="color:#aaa;font-size:6px">REWARD +'+formatNumber(goalReward())+'</span>':''))}
+ try{gEl.classList.toggle('goalglow',!!(i&&i.done));placeGoal();prestigeOpen.className=prestigeGain()>0?'ready':''}catch(e){}
  if(gt%5===0){saveSeen();saveGoals()}}catch(e){}},1000);
 
 Tracker.install();
@@ -850,21 +920,25 @@ function trySwap(k){const n=Date.now()/1000;if(n-swapLast>300)swapN=0;if(swapFre
 let saleUntil=0,saleCD=0,saleTap=0;
 function saleActive(){return Date.now()/1000<saleUntil}
 function saleStart(){const n=Date.now()/1000;if(saleActive()||n<saleCD)return;saleUntil=n+30;saleCD=n+330;saleTap=0;Tracker.ev('sale_start',{shop:currentShop})}
-(function(){const b=document.createElement('button');b.style.cssText='position:fixed;right:8px;bottom:8px;z-index:9999;font:8px "Press Start 2P",monospace;padding:8px;background:#ffd400;border:2px solid #000;cursor:pointer';b.onclick=saleStart;document.body.appendChild(b);
- setInterval(()=>{const n=Date.now()/1000;b.textContent=saleActive()?'SALE '+Math.ceil(saleUntil-n)+'s':n<saleCD?'SALE WAIT '+Math.ceil(saleCD-n)+'s':'START SALE x2-x5';b.style.opacity=(saleActive()||n<saleCD)?.6:1},250)})();
-function eraMark(c,x,y,w,h){const k=currentShop,d='rgba(0,0,0,.55)';
- if(k===0){drawRect(c,x+w/2-3,y+h/2-3,6,6)}
- else if(k===1){drawRect(c,x,y,w,h);drawRect(d,x+2,y+2,w-4,2)}
- else if(k===2){drawRect(c,x,y,w,h);drawRect(d,x+3,y+2,2,h-4);drawRect(d,x+7,y+2,2,h-4);drawRect(d,x+11,y+2,1,h-4)}
- else if(k===3){drawRect(c,x+3,y,2,h);drawRect(c,x+5,y+1,2,h-2);drawRect(c,x+7,y+2,2,h-4);drawRect(c,x+9,y+3,2,Math.max(2,h-6))}
- else if(k===4){drawRect(c,x,y,w,h);drawRect(d,x+w-4,y+h/2-1,4,2)}
- else if(k===5){canvasCtx.fillStyle=c;canvasCtx.beginPath();canvasCtx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,7);canvasCtx.fill();drawRect(d,x+w/2-2,y+h/2-1,4,2)}
- else if(k===6){drawRect(c,x+3,y,w-6,h);drawRect(d,x+5,y+2,w-10,h-4)}
+/* v1.9.9.5: START SALE button removed. saleStart() is kept but nothing calls it. */
+/* v1.9.9.1: the bouncing mark follows the TV tier (t), not the shop. If a logo colour is set in the SCREEN panel, c is that colour. */
+function eraMark(c,x,y,w,h,t){const k=t===undefined?currentShop:t,d='rgba(0,0,0,.55)',g=canvasCtx,cx=x+w/2,cy=y+h/2,ov=!!(DEBUG.logoCfg[k]&&DEBUG.logoCfg[k].color);
+ if(k===0){/* B/W set: signal dot */g.fillStyle=c;g.beginPath();g.arc(cx,cy,Math.min(w,h)*.4,0,7);g.fill();drawRect(d,cx-.5,cy-.5,1,1)}
+ else if(k===1){/* colour set: red, green and blue dots */const r=Math.min(w,h)*.27;[[x+w*.28,y+h*.32,'#ff3b3b'],[x+w*.72,y+h*.32,'#3bff6a'],[cx,y+h*.74,'#3b7bff']].forEach(a=>{g.fillStyle=ov?c:a[2];g.beginPath();g.arc(a[0],a[1],r,0,7);g.fill()})}
+ else if(k===2){/* console TV: channel number box */drawRect(c,x,y,w,h);drawRect(d,x+w*.2,y+2,2,h-4);drawRect(d,x+w*.5,y+2,2,h-4);drawRect(d,x+w*.78,y+2,1,h-4)}
+ else if(k===3){/* portable: rabbit-ear antenna */g.strokeStyle=c;g.lineWidth=Math.max(1.4,h*.16);g.lineCap='round';g.beginPath();g.moveTo(cx,y+h);g.lineTo(x+w*.2,y+1);g.moveTo(cx,y+h);g.lineTo(x+w*.8,y+1);g.stroke();g.fillStyle=c;g.beginPath();g.arc(cx,y+h-1,Math.max(1.4,h*.15),0,7);g.fill();g.lineCap='butt'}
+ else if(k===4){/* remote CRT: power button */g.strokeStyle=c;g.lineWidth=Math.max(1.3,h*.17);g.beginPath();g.arc(cx,cy+.5,h*.38,-Math.PI/2+.65,-Math.PI/2-.65+Math.PI*2);g.stroke();g.beginPath();g.moveTo(cx,y);g.lineTo(cx,cy);g.stroke()}
+ else if(k===5){/* stereo CRT: sound bars */[.5,1,.7,.35].forEach((f,i)=>{const bh=Math.max(2,h*f);drawRect(c,x+w*.1+i*w*.22,y+h-bh,Math.max(2,w*.16),bh)})}
+ else if(k===6){/* widescreen CRT: play triangle */g.fillStyle=c;g.beginPath();g.moveTo(x+w*.25,y);g.lineTo(x+w*.25,y+h);g.lineTo(x+w*.82,cy);g.closePath();g.fill()}
+ else if(k===7){/* plasma: classic disc */g.fillStyle=c;g.beginPath();g.ellipse(cx,cy,w/2,h/2,0,0,7);g.fill();drawRect(d,cx-2,cy-1,4,2)}
+ else if(k===8){/* smart 4K: streaming tile with a play triangle */drawRect(c,x+1,y,w-2,h);drawRect(c,x,y+1,w,h-2);g.fillStyle=d;g.beginPath();g.moveTo(x+w*.4,y+h*.22);g.lineTo(x+w*.4,y+h*.78);g.lineTo(x+w*.68,cy);g.closePath();g.fill()}
  else{drawRect(c,x,y,w,h);drawRect(d,x+3,y+2,2,h>10?6:4);drawRect(d,x+8,y+2,2,h>10?6:4)}}
 
-loadGame();UPGRADES[1].seen=true;
+function boot(){migrateAll();try{localStorage.removeItem('cornerShopP1Log')}catch(e){}loadAux();loadGame();UPGRADES[1].seen=true;
 setInterval(()=>{saveGame();savedT=1},30000);addEventListener('beforeunload',saveGame);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame()});
 
 (function loop(n){const dt=Math.min(.1,(n-t0)/1000);t0=n;update(dt);render();requestAnimationFrame(loop)})(performance.now());
 refresh();
+ booted=true;placeGoal();cgDo(S=>S.game.loadingStop());setInterval(cgPlayTick,500);cgPlayTick()}
+cgInit().then(()=>{cgDo(S=>S.game.loadingStart());boot()});
 </script></body></html>
