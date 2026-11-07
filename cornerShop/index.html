@@ -53,15 +53,22 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 /* v1.9.9.7 desktop layout: wide windows (900 px or more, at least 1.3 times wider than tall) get a wider column with a full card per upgrade. Phones and narrow windows keep the compact view unchanged. */
 .u>.w{display:none}
 @media (min-width:900px) and (min-aspect-ratio:13/10){
- canvas{max-width:calc(100vw - 372px)}
- #col{width:340px}
- #coins{font-size:14px;padding:8px 6px 14px}#coins #snd{font-size:12px}#coins span:last-child{font-size:8px!important;margin-top:4px!important}
+ canvas{max-width:calc(100vw - 412px)}
+ #col{width:380px}
+ #coins{font-size:18px;padding:8px 6px 14px}#coins #snd{font-size:12px}#coins span:last-child{font-size:10px!important;margin-top:4px!important}
  #top{gap:6px}#idx,#setb{height:40px;font-size:18px}
- .u{min-height:76px;max-height:88px;padding:6px 10px;align-items:stretch;justify-content:center;text-align:left}
+ .u{flex:0 0 auto;min-height:84px;max-height:none;padding:8px 12px;align-items:stretch;justify-content:center;text-align:left}
  .u>.level,.u>.pips,.u>.cost,.u>.nm{display:none}
- .u>.w{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;width:100%}
- .wi{font-size:28px;text-align:center;line-height:1}.wn{font-size:11px;line-height:1.3}.ws{font-size:8px;opacity:.8;margin-top:3px;line-height:1.3}.wp{display:flex;align-items:center;gap:6px;font-size:8px;margin-top:5px;min-height:6px}.wc{font-size:12px;text-align:right;white-space:nowrap}
- #card{width:300px}
+ .u>.w{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;width:100%}
+ .wi{font-size:34px;text-align:center;line-height:1}.wn{font-size:13px;line-height:1.3}.ws{font-size:10px;opacity:.9;margin-top:4px;line-height:1.4}.wp{display:flex;align-items:center;gap:6px;font-size:10px;margin-top:6px;min-height:8px}.wc{font-size:14px;text-align:right;white-space:nowrap}
+ #card{width:360px}
+ /* v1.9.9.10: bigger, clearer text and a goal box that stands out (wide layout only) */
+ #goalbox{font-size:12px!important;line-height:1.6;width:min(460px,calc(100vw - 460px))!important;padding:12px 16px!important;border-width:3px!important;background:rgba(10,10,14,.97)!important;box-shadow:0 0 0 2px #000,0 0 16px 3px rgba(244,211,94,.6)}
+ #goalbox div{height:10px!important;margin:8px 0!important}#goalbox div div{margin:0!important}
+ #goalbox span[style*="font-size:6px"]{font-size:10px!important}
+ #set{z-index:9100!important}
+ #setbox{width:min(86vw,440px);padding:18px;gap:9px}
+ #setbox button{font-size:12px;padding:11px 14px;border-width:3px}
 }
 @media (prefers-reduced-motion:reduce){.u.best{animation:none}#card{transition:none}}
 #cfm{position:fixed;inset:0;z-index:100002;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}#cfm .cb{background:#111;border:3px solid var(--ye);padding:14px;width:min(86vw,300px);display:flex;flex-direction:column;gap:12px;font-size:8px;line-height:1.6;color:#fff;text-align:center}#cfm .rw{display:flex;gap:10px}#cfm button{flex:1;font:inherit;font-size:9px;padding:12px 4px;border:2px solid #000;cursor:pointer;touch-action:manipulation}#cfm .y{background:#5ac85a;color:#000}#cfm .n{background:#e03c3c;color:#fff}
@@ -71,7 +78,7 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <div id="mobileAd" aria-label="Mobile banner advertisement preview"><div class="adBox"><span class="adTag">ADVERTISEMENT</span><span>320 × 50 BANNER PLACEHOLDER</span></div></div>
 <script>
-const VERSION='1.10.4',RELEASE=true;
+const VERSION='1.10.5',RELEASE=true;
 /* ===== v1.9.9.2 platform layer: CrazyGames SDK (https://docs.crazygames.com/sdk/intro/#html5). Every call is guarded, so the game also runs where the SDK is missing or disabled (other domains, offline). CG.ready is true only on crazygames.* or local (localhost) environments. ===== */
 
 /* ===== 1.10.2: save keys, save version, migration, in-game confirm ===== */
@@ -891,7 +898,7 @@ let idleRate=0,lastRE=0,lastIn2=Date.now(),hiddenAt=0;
 ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>{lastIn2=Date.now()},true));
 function placeGoal(){try{const r=C.getBoundingClientRect();gEl.style.left=(r.left+r.width/2)+'px';gEl.style.top=(r.top+10)+'px';gEl.style.width=Math.min(300,r.width-30)+'px'}catch(e){}}
 addEventListener('resize',()=>placeGoal());
-const gEl=document.createElement('div');gEl.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(300px,62vw);padding:6px 8px;background:rgba(10,10,14,.92);border:2px solid #f4d35e;color:#fff;font:7px "Press Start 2P",monospace;z-index:9000;cursor:pointer;text-align:center';document.body.appendChild(gEl);
+const gEl=document.createElement('div');gEl.id='goalbox';gEl.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(300px,62vw);padding:6px 8px;background:rgba(10,10,14,.92);border:2px solid #f4d35e;color:#fff;font:7px "Press Start 2P",monospace;z-index:9000;cursor:pointer;text-align:center';document.body.appendChild(gEl);
 function goalInfo(){const g=GOALS[goalIdx];if(!g)return null;let [c,m]=g.p();if(g.wall&&!(shops.length>1&&shops[1].bought>0)){m=SHOPS[1].firstTV;c=Math.min(coins,m)}return{g,c,m,done:g.wall?(shops.length>1&&shops[1].bought>0):c>=m}}
 function goalReward(){return Math.max(5,20*Math.max(idleRate,.1))}
 function claimGoal(){const i=goalInfo();if(!i||!i.done)return;let x=0;if(i.g.r){x=goalReward();gainCoins(x);lastRE+=x;toast='GOAL +'+formatNumber(x);toastT=1.5}Tracker.ev('goal',{n:goalIdx+1,name:i.g.t,reward:Math.round(x)});goalIdx++;saveGoals()}
