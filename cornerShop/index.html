@@ -3,13 +3,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <title>Corner Shop: Idle TV Window</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-@font-face{font-family:"Press Start 2P";src:url(assets/fonts/PressStart2P-Regular.woff2) format("woff2"),url(assets/fonts/PressStart2P-Regular.ttf) format("truetype");font-display:swap}
 :root{color-scheme:dark;--bg:#000;--or:#ff7a1a;--ye:#ffd400;--ink:#000;--dim:#8a7a2a;--gr:#5ac85a;--pu:#8e44ad;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:"Press Start 2P",ui-monospace,monospace;overflow:hidden;touch-action:manipulation;user-select:none}
 #g{position:relative;display:flex;gap:6px;height:100%;padding:6px;justify-content:center}
-canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200/340;image-rendering:auto;border:3px solid var(--or);background:#000}
+/* v1.9.9.13: the canvas keeps its 200:340 shape (it used to stretch tall on phones). The bar under it holds Daily, Index and Settings. */
+:root{--barh:46px;--adh:0px;--cbh:0px;--resv:calc(12px + var(--barh) + 6px + var(--adh) + var(--cbh))}
+#cw{display:flex;flex-direction:column;justify-content:center;gap:6px;align-self:flex-start;height:100%;min-width:0;width:min(calc(100vw - 96px),calc((100vh - var(--resv)) * .5882));width:min(calc(100vw - 96px),calc((100dvh - var(--resv)) * .5882))}
+#bbar{display:flex;gap:6px;flex:1 1 var(--barh);min-height:var(--barh);max-height:120px}
+#bbar button{position:relative;flex:1;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:inherit;font-size:7px;color:#000;background:var(--ye);border:3px solid #000;outline:2px solid var(--ye);cursor:pointer;padding:0}
+#bbar button{overflow:hidden}#bbar button b{display:flex;align-items:center;justify-content:center;height:22px;font-size:16px;font-weight:normal;line-height:1}#bbar button span{line-height:1}
+#dly.ready::after{content:"";position:absolute;top:-6px;right:-6px;width:12px;height:12px;background:#e03c3c;border:2px solid #000;z-index:2}
+canvas{width:100%;flex:none;height:auto;aspect-ratio:200/340;image-rendering:auto;border:3px solid var(--or);background:#000}
 #col{display:flex;flex-direction:column;gap:6px;width:76px;z-index:6;position:relative;transition:transform .2s,opacity .2s}
 /* v1.9.9.8: the upgrade cards sit in #ulist. Cards never get smaller than 58 px (76 px in the wide layout); when they do not fit, the list scrolls (mouse wheel, touch swipe, thin scrollbar). The margin and padding keep the cards exactly where they were. */
 #ulist{display:flex;flex-direction:column;gap:6px;flex:1 1 0;min-height:0;margin:-3px;padding:3px;overflow-y:auto;overflow-x:hidden;position:relative;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--ye) #000}
@@ -38,73 +45,103 @@ canvas{height:auto;max-height:100%;max-width:calc(100vw - 96px);aspect-ratio:200
 @keyframes goalglow{0%,100%{box-shadow:0 0 0 0 rgba(255,212,0,.9),0 0 8px 2px #ffd400;transform:translateX(-50%) scale(1)}50%{box-shadow:0 0 0 7px rgba(255,212,0,0),0 0 20px 7px #fff;transform:translateX(-50%) scale(1.06)}}.goalglow{animation:goalglow .9s infinite;border-color:#fff!important}
 #setbox button.disc{background:#5865F2;color:#fff;border-color:#3b45b5}#setbox button.closeb{background:#e03c3c;color:#fff;border-color:#8a1c1c}#setbox button.ready{background:#35c759;color:#001800;border-color:#16752b}
 #dev{position:fixed;left:6px;bottom:34px;z-index:20;display:none;background:rgba(0,0,0,.92);border:2px solid var(--ye);padding:6px;max-width:230px;max-height:80vh;overflow-y:auto;font-size:7px;line-height:1.6}   
-#set{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}
-#prestige{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.88);padding:12px}#pbox{background:#111;border:3px solid var(--ye);padding:12px;width:min(94vw,420px);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:9px;font-size:8px;line-height:1.6}#pbox h2{font-size:10px;color:var(--ye);margin:0}#pbox p{font-size:7px;line-height:1.8;margin:0;color:#ddd}#pbox button{font:inherit;font-size:7px;padding:9px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer;text-align:left}#pbox button:disabled{background:#555;color:#aaa}#pbox .skill{border:1px solid #665a20;padding:7px;display:flex;flex-direction:column;gap:5px}#pbox .skill button{background:#080808;color:#eee;border-color:#333}#pbox button.unavailable:disabled{background:#080808;color:#777;border-color:#333;cursor:default}#pbox button.available:not(:disabled){background:#35c759;color:#001800;border-color:#16752b}#pbox button.available:not(:disabled):hover{background:#54e875}#pbox .prestige-progress{display:flex;flex-direction:column;gap:4px}#pbox .prestige-progress-label{font-size:7px;color:#ddd}#pbox .prestige-track{height:12px;background:#050505;border:1px solid #555;overflow:hidden}#pbox .prestige-fill{height:100%;background:#777;transition:width .2s}#pbox .prestige-progress-caption{font-size:6px;color:#999}#pbox .muted{color:#999;font-size:6px}#setbox{background:#111;border:3px solid var(--ye);padding:12px;display:flex;flex-direction:column;gap:8px;width:min(86vw,300px)}#setbox button{font:inherit;font-size:8px;padding:10px 8px;background:var(--ye);color:#000;border:3px solid #000;cursor:pointer;text-align:left}.u .nm{display:none!important;font-size:5px;order:1}/* v1.9.9.9: no label under the icon in any layout; the name shows inside the card */.u .ic{order:0}.u .pips{order:2}.u .cost{order:3}body.lab .u .nm{display:block}body.lab .u .ic{font-size:14px}
+#set{position:fixed;inset:0;z-index:9100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}
+#tspot{position:fixed;z-index:9050;display:none;pointer-events:none;border:3px solid #ffd400;box-shadow:0 0 0 9999px rgba(0,0,0,.78),0 0 14px 4px rgba(255,212,0,.7);animation:tpul .7s steps(2) infinite}@keyframes tpul{50%{border-color:#fff}}
+.tblk{position:fixed;z-index:9051;display:none;background:transparent}
+#tbub{position:fixed;z-index:9052;display:none;background:#000;border:3px solid #ffd400;padding:10px 10px 12px;text-align:center;color:#fff;font:7px/1.7 "Press Start 2P",monospace;box-shadow:0 0 0 2px #000}
+#tbub b{display:block;font-weight:normal;color:#ffd400;font-size:9px;margin-bottom:6px}#tbub span{display:block}
+#tbub button{margin-top:8px;font:inherit;font-size:7px;background:#333;color:#aaa;border:2px solid #555;padding:5px 10px;cursor:pointer}
+#tarr{position:absolute;color:#ffd400;font-style:normal;font-size:14px;line-height:1;animation:tbob .5s steps(2) infinite}@keyframes tbob{50%{transform:translateY(4px)}}
+/* wide layout (class set by applyLayout) */
+html.wide #tbub{font-size:10px;padding:14px 14px 16px}
+html.wide #tbub b{font-size:13px;margin-bottom:8px}
+html.wide #tbub button{font-size:10px;padding:7px 14px}
+.u.tuthl{outline:3px solid #fff!important;animation:tutp .6s steps(2) infinite}@keyframes tutp{50%{outline-color:#ff7a1a}}
+#daily{position:fixed;inset:0;z-index:9200;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.88);padding:12px}
+#dbox{background:#111;border:3px solid var(--ye);box-shadow:0 0 0 2px #000,0 0 18px 3px rgba(244,211,94,.45);padding:14px 12px;width:min(94vw,440px);max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:10px;font-size:8px;line-height:1.6;color:#fff;text-align:center}
+#dbox h2{font-size:12px;color:var(--ye);margin:0}#dbox p{margin:0;font-size:8px;line-height:1.8;color:#ddd}#dbox p b{color:var(--ye);font-weight:normal}
+#dgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.dc{background:#222;border:2px solid #444;padding:6px 1px 5px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:6px;color:#aaa;min-width:0}
+.dc i{font-style:normal;font-size:16px;line-height:1}.dc.got{background:#1d4d2a;border-color:#35c759;color:#bff5cb}.dc.got i{opacity:.5}
+.dc.now{background:var(--ye);border-color:#fff;color:#000;box-shadow:0 0 10px 2px rgba(244,211,94,.8);animation:dpulse 1s steps(2) infinite}
+.dc.big{border-color:#e0a21a}@keyframes dpulse{50%{transform:scale(1.06)}}
+#dbox button{font-family:inherit;font-size:9px;padding:11px 10px;background:var(--ye);color:#000;border:3px solid #000;box-shadow:0 0 0 2px var(--ye);cursor:pointer}
+#dbox button.ok{background:#35c759;border-color:#16752b;box-shadow:0 0 0 2px #35c759}#dbox button.ad{background:#5865F2;color:#fff;border-color:#3b45b5;box-shadow:0 0 0 2px #5865F2}#dbox button:disabled{opacity:.45;cursor:default}
+/* wide layout (class set by applyLayout) */
+html.wide #dbox{width:min(90vw,560px);font-size:11px;padding:18px 16px;gap:14px}
+html.wide #dbox h2{font-size:16px}
+html.wide #dbox p{font-size:11px}
+html.wide .dc{font-size:8px;padding:9px 2px 8px}
+html.wide .dc i{font-size:22px}
+html.wide #dbox button{font-size:12px;padding:13px 12px}
+#prestige{position:fixed;inset:0;z-index:9100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.88);padding:12px}#pbox{background:#111;border:3px solid var(--ye);padding:12px;width:min(94vw,420px);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:9px;font-size:8px;line-height:1.6}#pbox h2{font-size:10px;color:var(--ye);margin:0}#pbox p{font-size:7px;line-height:1.8;margin:0;color:#ddd}#pbox button{font:inherit;font-size:7px;padding:9px;background:var(--ye);color:#000;border:2px solid #000;cursor:pointer;text-align:left}#pbox button:disabled{background:#555;color:#aaa}#pbox .skill{border:1px solid #665a20;padding:7px;display:flex;flex-direction:column;gap:5px}#pbox .skill button{background:#080808;color:#eee;border-color:#333}#pbox button.unavailable:disabled{background:#080808;color:#777;border-color:#333;cursor:default}#pbox button.available:not(:disabled){background:#35c759;color:#001800;border-color:#16752b}#pbox button.available:not(:disabled):hover{background:#54e875}#pbox .prestige-progress{display:flex;flex-direction:column;gap:4px}#pbox .prestige-progress-label{font-size:7px;color:#ddd}#pbox .prestige-track{height:12px;background:#050505;border:1px solid #555;overflow:hidden}#pbox .prestige-fill{height:100%;background:#777;transition:width .2s}#pbox .prestige-progress-caption{font-size:6px;color:#999}#pbox .muted{color:#999;font-size:6px}#setbox{background:#111;border:3px solid var(--ye);padding:12px;display:flex;flex-direction:column;gap:8px;width:min(86vw,300px)}#setbox button{font:inherit;font-size:8px;padding:10px 8px;background:var(--ye);color:#000;border:3px solid #000;cursor:pointer;text-align:left}.u .nm{display:none!important;font-size:5px;order:1}/* v1.9.9.9: no label under the icon in any layout; the name shows inside the card */.u .ic{order:0}.u .pips{order:2}.u .cost{order:3}body.lab .u .nm{display:block}body.lab .u .ic{font-size:14px}
 .bar{display:block;width:46px;height:5px;background:rgba(0,0,0,.25)}.bar b{display:block;height:5px;background:#000}.pips.t{gap:1px}.pips.t .pip{width:4px;height:4px}
 /* Mobile ad-space preview: reserve room without changing the shop canvas or sprite layout. */
 #mobileAd{display:none}
 @media (max-width:700px){
   #g{height:calc(100% - 64px - env(safe-area-inset-bottom,0px));}
-  canvas{max-height:100%;}
+  :root{--adh:calc(64px + env(safe-area-inset-bottom,0px))}
   #mobileAd{position:fixed;display:flex;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom,0px));padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:25;align-items:center;justify-content:center;background:#151515;border-top:2px solid #ff7a1a;color:#b9b9b9;}
   #mobileAd .adBox{width:min(100%,320px);height:50px;border:1px dashed #777;background:#202020;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:1px;}
   #mobileAd .adTag{font-size:8px;color:#ff7a1a;letter-spacing:2px;}
 }
 /* v1.9.9.7 desktop layout: wide windows (900 px or more, at least 1.3 times wider than tall) get a wider column with a full card per upgrade. Phones and narrow windows keep the compact view unchanged. */
 .u>.w{display:none}
-@media (min-width:900px) and (min-aspect-ratio:13/10){
- canvas{max-width:calc(100vw - 412px)}
- #col{width:380px}
- #coins{font-size:18px;padding:8px 6px 14px}#coins #snd{font-size:12px}#coins span:last-child{font-size:10px!important;margin-top:4px!important}
- #top{gap:6px}#idx,#setb{height:40px;font-size:18px}
- .u{flex:0 0 auto;min-height:84px;max-height:none;padding:8px 12px;align-items:stretch;justify-content:center;text-align:left}
- .u>.level,.u>.pips,.u>.cost,.u>.nm{display:none}
- .u>.w{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;width:100%}
- .wi{font-size:34px;text-align:center;line-height:1}.wn{font-size:13px;line-height:1.3}.ws{font-size:10px;opacity:.9;margin-top:4px;line-height:1.4}.wp{display:flex;align-items:center;gap:6px;font-size:10px;margin-top:6px;min-height:8px}.wc{font-size:14px;text-align:right;white-space:nowrap}
- #card{width:360px}
- /* v1.9.9.10: bigger, clearer text and a goal box that stands out (wide layout only) */
- #goalbox{font-size:12px!important;line-height:1.6;width:min(460px,calc(100vw - 460px))!important;padding:12px 16px!important;border-width:3px!important;background:rgba(10,10,14,.97)!important;box-shadow:0 0 0 2px #000,0 0 16px 3px rgba(244,211,94,.6)}
- #goalbox div{height:10px!important;margin:8px 0!important}#goalbox div div{margin:0!important}
- #goalbox span[style*="font-size:6px"]{font-size:10px!important}
- #set{z-index:9100!important}
- #setbox{width:min(86vw,440px);padding:18px;gap:9px}
- #setbox button{font-size:12px;padding:11px 14px;border-width:3px}
-}
+/* wide layout (class set by applyLayout) */
+html.wide{--barh:56px}
+html.wide #cw{width:min(calc(100vw - 372px),calc((100vh - var(--resv)) * .5882));width:min(calc(100vw - 372px),calc((100dvh - var(--resv)) * .5882))}
+html.wide #bbar button{font-size:10px;gap:5px}
+html.wide #bbar button b{font-size:20px;height:26px}
+html.wide #col{width:340px}
+html.wide #coins{font-size:14px;padding:8px 6px 14px}
+html.wide #coins #snd{font-size:12px}
+html.wide #coins span:last-child{font-size:8px!important;margin-top:4px!important}
+html.wide #top{gap:6px}
+html.wide #idx,html.wide #setb{height:40px;font-size:18px}
+html.wide .u{flex:0 0 auto;min-height:76px;max-height:none;padding:6px 10px;align-items:stretch;justify-content:center;text-align:left}
+html.wide .u>.level,html.wide .u>.pips,html.wide .u>.cost,html.wide .u>.nm{display:none}
+html.wide .u>.w{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;width:100%}
+html.wide .wi{font-size:28px;text-align:center;line-height:1}
+html.wide .wn{font-size:11px;line-height:1.3}
+html.wide .ws{font-size:8px;opacity:.8;margin-top:3px;line-height:1.3}
+html.wide .wp{display:flex;align-items:center;gap:6px;font-size:8px;margin-top:5px;min-height:6px}
+html.wide .wc{font-size:12px;text-align:right;white-space:nowrap}
+html.wide #card{width:300px}
+html.wide #goalbox{font-size:12px!important;line-height:1.6;width:min(460px,var(--gw,460px))!important;padding:12px 16px!important;border-width:3px!important;background:rgba(10,10,14,.97)!important;box-shadow:0 0 0 2px #000,0 0 16px 3px rgba(244,211,94,.6)}
+html.wide #goalbox div{height:10px!important;margin:8px 0!important}
+html.wide #goalbox div div{margin:0!important}
+html.wide #goalbox span[style*="font-size:6px"]{font-size:10px!important}
+html.wide #set{z-index:9100!important}
+html.wide #setbox{width:min(86vw,440px);padding:18px;gap:9px}
+html.wide #setbox button{font-size:12px;padding:11px 14px;border-width:3px}
+/* v1.9.10.2 portrait layout: coins bar sits on top of the shop (applyLayout moves #coins), the right column only holds the upgrade cards */
+html.port{--cbh:64px}
+html.port #cw{justify-content:flex-start}
+html.port #top{display:none}
+html.port #col{margin-top:var(--cbh)}
+html.port #coins{flex:none;height:calc(var(--cbh) - 6px);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 24px;font-size:18px;line-height:1.2}
+html.port #coins #snd{position:absolute;top:4px;right:6px;padding:0;font-size:12px}
+html.port #coins span:last-child{font-size:8px!important;margin-top:5px!important}
+/* v1.9.10.2 settings: titled sections, two-column toggle grid, OFF toggles grey */
+#setbox{width:min(92vw,340px);max-height:94dvh;overflow-y:auto;gap:7px;padding:12px}
+#stitle{text-align:center;color:var(--ye);font-size:11px;padding:2px 0 4px}
+.sech{font-size:7px;color:#888;letter-spacing:1px;border-bottom:2px solid #333;padding:5px 0 3px;margin-top:3px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sgrid.one{grid-template-columns:1fr}.sgrid>button:last-child:nth-child(odd),.sgrid>.full{grid-column:1/-1}
+#setbox button.tg.off{background:#3a3a3a;color:#8a8a8a;border-color:#1c1c1c}
+#setbox button{padding:10px 6px}
+html.wide #setbox{width:min(92vw,440px)}html.wide #setbox button{padding:11px 10px}
+/* v1.9.10.3: the old #idx,#setb rule (height 26px) made Index and Settings shorter than Daily; the bar buttons all fill the bar */
+#bbar #idx,#bbar #setb{height:100%;font-size:7px;flex:1}
+html.wide #bbar #idx,html.wide #bbar #setb{height:100%;font-size:10px}
 @media (prefers-reduced-motion:reduce){.u.best{animation:none}#card{transition:none}}
-#cfm{position:fixed;inset:0;z-index:100002;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}#cfm .cb{background:#111;border:3px solid var(--ye);padding:14px;width:min(86vw,300px);display:flex;flex-direction:column;gap:12px;font-size:8px;line-height:1.6;color:#fff;text-align:center}#cfm .rw{display:flex;gap:10px}#cfm button{flex:1;font:inherit;font-size:9px;padding:12px 4px;border:2px solid #000;cursor:pointer;touch-action:manipulation}#cfm .y{background:#5ac85a;color:#000}#cfm .n{background:#e03c3c;color:#fff}
 </style></head><body>
-<div id="g"><canvas id="c" width="600" height="1020"></canvas>
-<div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div><button id="idx" title="TV index">📖</button><button id="setb" title="Settings">⚙</button></div><div id="ulist"></div></div>
+<div id="g"><div id="cw"><canvas id="c" width="600" height="1020"></canvas><div id="bbar"><button id="dly" title="Daily reward"><b>🎁</b><span>DAILY</span></button><button id="idx" title="TV index"><b>📖</b><span>INDEX</span></button><button id="setb" title="Settings"><b>⚙</b><span>SETTINGS</span></button></div></div>
+<div id="col"><div id="top"><div id="coins"><span id="snd">🔇</span><span id="coinsTxt">0</span></div></div><div id="ulist"></div></div>
 <div id="card"><h3 id="cn"></h3><div id="cd"></div><div class="eff" id="ce"></div><div id="cl"></div><button id="buy">BUY</button></div></div>
 <div id="mobileAd" aria-label="Mobile banner advertisement preview"><div class="adBox"><span class="adTag">ADVERTISEMENT</span><span>320 × 50 BANNER PLACEHOLDER</span></div></div>
 <script>
-const VERSION='1.10.5',RELEASE=true;
+const VERSION='1.9.10.3 PLAYTEST';
 /* ===== v1.9.9.2 platform layer: CrazyGames SDK (https://docs.crazygames.com/sdk/intro/#html5). Every call is guarded, so the game also runs where the SDK is missing or disabled (other domains, offline). CG.ready is true only on crazygames.* or local (localhost) environments. ===== */
-
-/* ===== 1.10.2: save keys, save version, migration, in-game confirm ===== */
-const SAVE_VERSION=1,KEY_SAVE='cornerShopSave',KEY_GOALS='cornerShopGoals',KEY_OFF='cornerShopOff',KEY_MIG='cornerShopMigrated';
-const OLD_KEYS={[KEY_SAVE]:'cornerShopP2Test',[KEY_GOALS]:'cornerShopP2Goals',[KEY_OFF]:'cornerShopP2Off'};
-/* A save with no version (sv missing) is version 0. Add one step per version here. Version 0 to 1 changes no fields. */
-function upgradeSave(d){if(!d||typeof d!=='object')return d;let v=+d.sv||0;if(v<1){v=1}d.sv=v;return d}
-function migrateStore(st){/* st = {get,set}. Copies old-key data to the final keys once. Old keys are never changed. */
- const r={copied:[],kept:[],bad:[]};
- try{if(st.get(KEY_MIG)!==null&&st.get(KEY_MIG)!==undefined)return r}catch(e){return r}
- for(const nk of Object.keys(OLD_KEYS)){let nv=null,ov=null;try{nv=st.get(nk);ov=st.get(OLD_KEYS[nk])}catch(e){}
-  if(nv!==null&&nv!==undefined){r.kept.push(nk);continue}/* a final save already exists: never overwrite */
-  if(ov===null||ov===undefined)continue;
-  let d=null;try{d=JSON.parse(ov)}catch(e){}
-  if(!d||typeof d!=='object'){r.bad.push(nk);continue}/* cannot parse: leave the old key, start fresh */
-  try{st.set(nk,JSON.stringify(upgradeSave(d)));r.copied.push(nk)}catch(e){}}
- try{st.set(KEY_MIG,JSON.stringify({sv:SAVE_VERSION,at:Date.now(),copied:r.copied,bad:r.bad}))}catch(e){}
- return r}
-function migrateAll(){const out={};try{out.local=migrateStore({get:k=>localStorage.getItem(k),set:(k,v)=>localStorage.setItem(k,v)})}catch(e){}
- try{if(CG.ready){const D=cgSDK().data;out.sdk=migrateStore({get:k=>D.getItem(k),set:(k,v)=>D.setItem(k,v)})}}catch(e){}
- window.__mig=out;return out}
-function askConfirm(msg,onYes){if(document.getElementById('cfm'))return;const o=document.createElement('div');o.id='cfm';const b=document.createElement('div');b.className='cb';const t=document.createElement('div');t.textContent=msg;const row=document.createElement('div');row.className='rw';
- const done=()=>{o.remove();removeEventListener('keydown',kd,true)};const kd=e=>{if(e.key==='Escape'){e.stopPropagation();done()}};
- const y=document.createElement('button');y.className='y';y.textContent='YES';y.onclick=()=>{done();onYes()};const n=document.createElement('button');n.className='n';n.textContent='NO';n.onclick=done;
- row.append(y,n);b.append(t,row);o.appendChild(b);o.addEventListener('pointerdown',e=>e.stopPropagation());document.body.appendChild(o);addEventListener('keydown',kd,true)}
-try{document.fonts.load('8px "Press Start 2P"').catch(()=>{})}catch(e){}
 const CG={ready:false,env:'none'};let booted=false,cgPlaying=false;
 const cgSDK=()=>{try{return window.CrazyGames&&window.CrazyGames.SDK}catch(e){return null}};
 async function cgInit(){const S=cgSDK();if(!S)return;try{await Promise.race([S.init(),new Promise((_,r)=>setTimeout(()=>r(new Error('cg init timeout')),4000))]);CG.env=S.environment;CG.ready=(CG.env==='local'||CG.env==='crazygames')}catch(e){CG.ready=false}}
@@ -131,13 +168,13 @@ const DEBUG=window.DEBUG={version:VERSION,pedNormalize:true,shopImages:Array.fro
 
 /* ================ TRACKER: playtest telemetry (defined first so every section can log) ================ */
 const Tracker=(()=>{
- const KEY='cornerShopP1Log',MAXEV=RELEASE?0:40000;let L=null,lastIn=Date.now(),statusEl=null;
- if(!RELEASE)try{L=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+ const KEY='cornerShopP1Log',MAXEV=40000;let L=null,lastIn=Date.now(),statusEl=null;
+ try{L=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
  if(!L||L.ver!==VERSION)L={ver:VERSION,start:Date.now(),ev:[],snap:[],ms:{},active:0,idle:0,cheats:0,tot:{bounces:0,corners:0,taps:0,notices:0,bouncePay:0,cornerPay:0}};
  const now=()=>Math.round((Date.now()-L.start)/100)/10,MS_EV=['corner','notice','swap','sale_start','shop_unlock','season1_end'];
  const ev=(type,data)=>{if(L.ev.length<MAXEV)L.ev.push([now(),type,data||{}]);if(MS_EV.includes(type)&&!L.ms['first_'+type])L.ms['first_'+type]=now()};
- const save=()=>{if(RELEASE)return;try{localStorage.setItem(KEY,JSON.stringify(L))}catch(e){}};
- const snapshot=()=>{if(RELEASE)return;try{const t=L.tot;L.snap.push([now(),Math.round(coins*100)/100,Math.round(cps*100)/100,Math.round(prestigeData.runEarned),currentShop,shops.length,currentTVs.map(v=>v.t).join(''),UPGRADES.map(u=>u.lv()).join(','),Math.round(L.active),Math.round(L.idle),[t.bounces,t.corners,t.taps,t.notices]]);save()}catch(e){}};
+ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(L))}catch(e){}};
+ const snapshot=()=>{try{const t=L.tot;L.snap.push([now(),Math.round(coins*100)/100,Math.round(cps*100)/100,Math.round(prestigeData.runEarned),currentShop,shops.length,currentTVs.map(v=>v.t).join(''),UPGRADES.map(u=>u.lv()).join(','),Math.round(L.active),Math.round(L.idle),[t.bounces,t.corners,t.taps,t.notices]]);save()}catch(e){}};
  ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>{lastIn=Date.now()},true));
  document.addEventListener('visibilitychange',()=>{ev(document.hidden?'hidden':'visible');save()});addEventListener('pagehide',save);
  const BANK=[250,1e3,1e4,5e4,1e5,1e6,1e7,1e8,1e9,1e10,1e12],EARN=[100,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e10,1e12,1e15];
@@ -167,8 +204,8 @@ const Tracker=(()=>{
  return{ev,report,show,download,snapshot,
   bounce(g){L.tot.bounces++;L.tot.bouncePay+=g},corner(p,tag,tier,shop){L.tot.corners++;L.tot.cornerPay+=p;ev('corner',{p:Math.round(p),tag,tier,shop})},notice(b,shop){L.tot.notices++;ev('notice',{b:Math.round(b),shop})},tap(){L.tot.taps++},
   dev(label){ev('dev',{btn:label});if(!/Report|Test|Total|Mark|Download|tracker/i.test(label))L.cheats++},
-  mark(){const note='';ev('mark',{note,coins:Math.round(coins)});save()},
-  reset(){if(!RELEASE){L.ev=[];L.snap=[];L.ms={};L.active=0;L.idle=0;L.cheats=0;L.start=Date.now();Object.keys(L.tot).forEach(k=>L.tot[k]=0);save()}},
+  mark(){const note=prompt('Note for this moment (optional):','')||'';ev('mark',{note,coins:Math.round(coins)});save()},
+  reset(){if(confirm('Clear all tracker data?')){L.ev=[];L.snap=[];L.ms={};L.active=0;L.idle=0;L.cheats=0;L.start=Date.now();Object.keys(L.tot).forEach(k=>L.tot[k]=0);save()}},
   panel(lbl,mkBtn){lbl('TRACKER');statusEl=document.createElement('div');statusEl.style.cssText='font-size:6px;color:#9f9;padding:2px 0';DV.appendChild(statusEl);
    mkBtn('Mark this moment',()=>Tracker.mark());mkBtn('Report (view + copy)',()=>show());mkBtn('Download raw log',download);mkBtn('Reset tracker',()=>Tracker.reset())},
   install(){UPGRADES.forEach(u=>{const b=u.buy;u.buy=function(){let c=0,pr=null;try{c=u.cost();if(u.n==='Merge')pr=findMergePair()}catch(e){}const r=b.apply(this,arguments);let lv=0;try{lv=u.lv()}catch(e){}ev('buy',{n:u.n,c,lv,shop:currentShop,t:pr?pr[2]:undefined});if(u.n==='Buy TV'&&currentShop>0&&shops[currentShop].bought===1){toast='SHOP BONUS: ALL INCOME +25%';toastT=4;ev('shop_bonus',{shop:currentShop})}if(!L.ms['buy_'+u.n])L.ms['buy_'+u.n]=now();if(u.n==='New shop')ev('shop_unlock',{shop:shops.length-1});return r}});
@@ -189,7 +226,7 @@ const TV_TYPES=[
 {n:'XENO',sp:32,c:150000,body:'#2a1a3a',scr:'#0a001a',bp:5},
 {n:'OMNI',sp:50,c:400000,body:'#ffffff',scr:'#000',bp:10}   
 ];
-const TVI=TV_TYPES.map((t,i)=>{const im=new Image();if(i<=SEASON1_TOP_TIER)im.src='assets/tv'+i+'.png';return im}),TVC=[];/* missing tvN.png falls back to the code-drawn TV */
+const TVI=TV_TYPES.map((t,i)=>{const im=new Image();im.src='assets/tv'+i+'.png';return im}),TVC=[];/* missing tvN.png falls back to the code-drawn TV */
 DEBUG.tvRect=[
  [82,107,246,189],/* tv0: measured from assets/tv0.png in 1.9.8.5 */
  [85,44,310,216],/* tv1: measured from assets/tv1.png in 1.9.8.5 */
@@ -221,7 +258,7 @@ DEBUG.tvConfig=[
 {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv11 */
 {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null},/* tv12 */
 {shelf:{y:-1,x:0,scale:1},counter:{y:2,x:0,scale:1},color:null,alpha:1,screenColor:null}/* tv13 */
-];console.info('Corner Shop v'+VERSION);
+];console.log('%c CORNER SHOP v'+VERSION+' ','background:#ffd400;color:#000;font:bold 14px monospace;padding:2px 6px');
 /* v1.9.8.4 per-tier logo settings (SCREEN dev panel). scale: logo size multiplier; color: null = default hue cycle; count: null = code default (v1.9.9: tiers 0-6 one logo, tier 7 two, tier 8 three). More logos = more bounces = more income. */
 DEBUG.logoCfg=TV_TYPES.map(()=>({scale:1,color:null,count:null}));DEBUG.showRect=-1;
 const logoDefN=t=>t===7?2:t===8?3:1,logoBase=t=>t===3?[21,12]:[14,8];
@@ -309,7 +346,7 @@ function luckyChance(level){return Math.min(.10,Math.max(0,level)*.01)}
 function stopChance(shopIndex=currentShop){return Math.min(.10,.04+.01*localUpgradeLevel('stopC',shopIndex))}
 function passerbyBonus(shopIndex=currentShop){return Math.max(1,SHOPS[shopIndex].tv*.02)*(1+Math.min(1.5,Math.max(0,localUpgradeLevel('magnet',shopIndex))*.1))}
 /* v1.9.7: passers-by move, notice and time out in EVERY shop (before, only the viewed shop's people moved, so a shop left with a stopped passer-by kept NOTICE x2 forever) */
-function stepPeople(dt,si){const sh=shops[si],ppl=sh.people||(sh.people=makePeople()),counterX=SHOPS[si].slots[0].x+44*.7;ppl.forEach((p,k)=>{const prevX=p.x;const wasStopped=p.stop>0;if(wasStopped)p.stop=Math.max(0,p.stop-dt);else{p.x+=p.d*p.v*DEBUG.pedSpeed*dt;p.fr=(p.fr+dt*DEBUG.pedFps)%4;}const crossed=p.d>0?(prevX<counterX&&p.x>=counterX):(prevX>counterX&&p.x<=counterX);if(p.noticed&&((p.d>0&&p.x>counterX+24)||(p.d<0&&p.x<counterX-24)))p.noticed=false;if(sh.tvs.length>0&&k<crowdN(si)&&!p.noticed&&p.stop<=0&&crossed&&Math.random()<stopChance(si)){p.stop=1.1;p.noticed=true;const bonus=passerbyBonus(si);gainCoins(bonus);Tracker.notice(bonus,si);GS.notices++;LIFE.notices++;if(si===currentShop){toast='NOTICE +'+formatNumber(bonus);toastT=1.1}}if(p.x>W+10){p.x=-10;p.c=pedRoll();p.noticed=false}if(p.x<-10){p.x=W+10;p.c=pedRoll();p.noticed=false}})}
+function stepPeople(dt,si){const sh=shops[si],ppl=sh.people||(sh.people=makePeople()),counterX=SHOPS[si].slots[0].x+44*.7;ppl.forEach((p,k)=>{const prevX=p.x;const wasStopped=p.stop>0;if(wasStopped)p.stop=Math.max(0,p.stop-dt);else{p.x+=p.d*p.v*DEBUG.pedSpeed*dt;p.fr=(p.fr+dt*DEBUG.pedFps)%4;}const crossed=p.d>0?(prevX<counterX&&p.x>=counterX):(prevX>counterX&&p.x<=counterX);if(p.noticed&&((p.d>0&&p.x>counterX+24)||(p.d<0&&p.x<counterX-24)))p.noticed=false;if(sh.tvs.length>0&&k<crowdN(si)&&!p.noticed&&p.stop<=0&&crossed&&(Math.random()<stopChance(si)||(scForce&&si===0&&k===0))){p.stop=1.1;p.noticed=true;const bonus=passerbyBonus(si);gainCoins(bonus);Tracker.notice(bonus,si);GS.notices++;LIFE.notices++;if(scForce&&si===0&&k===0){p.stop=4;scNoticed()}if(si===currentShop){toast='NOTICE +'+formatNumber(bonus);toastT=1.1}}if(p.x>W+10){p.x=-10;p.c=pedRoll();p.noticed=false}if(p.x<-10){p.x=W+10;p.c=pedRoll();p.noticed=false}})}
 /* ---- corner combo (v1.9.3): window = 1.25 x average of the last 10 gaps between corners in this shop, clamped 1.5s..20s ---- */
 const COMBO_RATIO=1.25,COMBO_MIN=1.5,COMBO_MAX=20,COMBO_STEP=.25,COMBO_CAP_STEPS=16;
 function comboWindow(c){const g=c.gaps,avg=g.length?g.reduce((a,b)=>a+b,0)/g.length:8;return 3}
@@ -386,7 +423,7 @@ function refresh(){
  let best=-1,bc=1e18;
  UPGRADES.forEach((u,i)=>{if(upgradeStatus(u)==='aff'&&u.cost()<bc){bc=u.cost();best=i}});
  UPGRADES.forEach((u,i)=>{const s=upgradeStatus(u),mx=typeof u.max==='function'?u.max():u.max;
-  u.el.className='u '+(s==='max'?'max':s==='aff'?'aff':'no')+(i===best?' best':'')+(i===cur?' sel':'');
+  u.el.className='u '+(s==='max'?'max':s==='aff'?'aff':'no')+(i===best?' best':'')+(i===cur?' sel':'')+(u.n===tutHl?' tuthl':'');
   if(s==='max')u._maxed=true
   u.el.children[0].textContent=u.lv();
   u.el.style.setProperty('--p',Math.min(100,coins/u.cost()*100)+'%');
@@ -554,6 +591,7 @@ function render(){
   {const k=currentTVs.indexOf(selectedTV),can=selectedTV.t<TV_TYPES.length-1&&currentTVs.some((v,i)=>i!==k&&v.t===selectedTV.t),c=mergeCostNow(selectedTV.t);drawRect(!can?'#444':coins>=c?'#2f9f4f':'#6a6a2a',14,300,172,16);drawText(!can?'NO MATCH TO MERGE':'MERGE +1 TIER  '+formatNumber(c),100,312,'#fff',6,'center')}
   drawRect('#ffd400',172,6,22,18);drawText('X',183,19,'#000',9,'center');
  }else{drawText(mergePick?'TAP THE TV TO MERGE WITH':'TAP A TV TO SELECT',100,226,'#ffd400',6,'center');if(mergePick){canvasCtx.strokeStyle=(Date.now()/250|0)%2?'#ffd400':'#fff';canvasCtx.lineWidth=2;mergePick.partners.concat([mergePick.src]).forEach(j=>{const q=tvBox(j);if(q)canvasCtx.strokeRect(q.x,q.y,q.w,q.h)})}}
+ tutDraw();
  if(dex)drawDex();try{gEl.style.visibility=dex?'hidden':'visible'}catch(e){}/* v1.9.9.3: the goal box would cover the TV INDEX title */
  if(!dex){const st2='Shop +'+Math.round((SHOPS[currentShop].k-1)*100)+'%  Showroom +'+Math.round(showB()*100)+'%  Corners: '+corners;drawText(st2,5,259,'#000',5);drawText(st2,4,258,'#fff',5)}
  if(!dex){const c=shops[currentShop].combo;if(c&&c.streak>0){const f=Math.max(0,Math.min(1,(c.expire-gameT)/Math.max(.1,c.win))),lab='COMBO x'+c.streak+' (x'+Math.min(5,1+COMBO_STEP*c.streak).toFixed(2)+')';drawText(lab,6,276,'#000',5);drawText(lab,5,275,f<.25?'#ff5a3a':'#6f6',5);drawRect('#222',100,271,95,4);drawRect(f<.25?'#ff5a3a':'#6f6',100,271,95*f,4)}}
@@ -598,7 +636,7 @@ const acts=[
 ['Fill all tiers',()=>{shops.forEach(s=>{s.tvs=TV_TYPES.map((_,t)=>makeTV(t))});currentTVs=shops[currentShop].tvs;selectedTV=null}],
 ['Fill current shop',()=>{shops[currentShop].tvs=TV_TYPES.map((_,t)=>makeTV(t));currentTVs=shops[currentShop].tvs;selectedTV=null}],
 ['Reset all costs',()=>DEBUG.resetAllCosts()],
-['Reset game',()=>askConfirm('Reset all Corner Shop progress?',()=>{resetting=true;try{PS.del(KEY_SAVE);PS.del(KEY_GOALS);PS.del(KEY_OFF)}catch(e){}location.reload()})]
+['Reset game',()=>{if(confirm('Reset all Corner Shop progress?')){resetting=true;try{PS.del('cornerShopP2Test');PS.del('cornerShopP2Goals');PS.del('cornerShopP2Off')}catch(e){}location.reload()}}]
 ];
 acts.splice(0,acts.length,...acts.filter(([l])=>!['Prep merge test (2 B/W TVs)','Fill all tiers','Reset all costs'].includes(l)));
 const lbl=t=>{const d=document.createElement('div');d.textContent=t;d.style.cssText='font-size:6px;color:#666;margin:4px 0 2px;border-top:1px solid #333;padding-top:4px';DV.appendChild(d)};
@@ -614,7 +652,7 @@ lbl('ECONOMY TESTS');
 let lastEconomyTestCPS=null;
 const measuredCPS=()=>lastEconomyTestCPS!==null?lastEconomyTestCPS:Math.max(0,cps);
 const waitAtRate=cost=>measuredCPS()>0?(cost/measuredCPS()/60).toFixed(1)+' min':'∞ (no measured income)';
-const emitReport=(title,lines)=>{const body=['=== '+title+' v'+VERSION+' ===',...lines,'========================'];console.log('\n'+body.join('\n'))};
+const emitReport=(title,lines)=>{const body=['=== '+title+' v'+VERSION+' ===',...lines,'========================'];console.log('\n'+body.join('\n'));alert(body.join('\n'))};
 function balanceReportLines(){
   const next=SHOPS[shops.length],nextCost=next?UPGRADES[7].cost():0,vis=UPGRADES.filter(u=>u.seen),cheapest=vis.length?Math.min(...vis.map(u=>u.cost())):0,rate=measuredCPS();
   return [
@@ -752,30 +790,148 @@ const d2ta=document.createElement('textarea');d2ta.readOnly=true;d2ta.style.cssT
 const d2pr=document.createElement('button');d2pr.textContent='Extract coordinates';d2pr.onclick=()=>{const o=d2exp();d2ta.value=o;console.log('--- COPY FROM HERE ---\n'+o+'\n--- TO HERE ---');try{navigator.clipboard.writeText(o).then(()=>{d2pr.textContent='Copied!';setTimeout(()=>d2pr.textContent='Extract coordinates',1500)}).catch(()=>{d2ta.select()})}catch(e){d2ta.select()}};
 D2.appendChild(d2reset);D2.appendChild(d2pr);D2.appendChild(d2ta);document.body.appendChild(D2);d2load();
 const DB2=document.createElement('button');DB2.id='devb2';DB2.textContent='SCREEN';DB2.style.cssText='position:fixed;right:6px;bottom:64px;z-index:21';document.body.appendChild(DB2);
-if(RELEASE){DB2.remove();D2.remove()}
-const togDev2=()=>{if(RELEASE)return;D2.style.display=D2.style.display==='block'?'none':'block';if(D2.style.display==='block')d2load()};DB2.onclick=togDev2;addEventListener('keydown',e=>{if(e.key==='~')togDev2()});
+const togDev2=()=>{D2.style.display=D2.style.display==='block'?'none':'block';if(D2.style.display==='block')d2load()};DB2.onclick=togDev2;addEventListener('keydown',e=>{if(e.key==='~')togDev2()});
 const DB=document.createElement('button');DB.id='devb';DB.textContent='DEV';document.body.appendChild(DB);
-const togDev=()=>{if(RELEASE)return;DV.style.display=DV.style.display==='block'?'none':'block'};DB.onclick=togDev;addEventListener('keydown',e=>{if(e.key==='`')togDev()});if(RELEASE){DB.remove();DV.remove()}
+const togDev=()=>{DV.style.display=DV.style.display==='block'?'none':'block'};DB.onclick=togDev;addEventListener('keydown',e=>{if(e.key==='`')togDev()});
 const t00=performance.now();setInterval(()=>{if(DV.style.display!=='block')return;const el=(performance.now()-t00)/1000+simSkip;DS.textContent='v'+VERSION+' | bounces '+(window.__b||0)+' | corners '+corners+' | '+((window.__b||0)/el).toFixed(2)+' bounces/s | TVs '+currentTVs.length+' | shop '+(currentShop+1)+'/'+shops.length+' | coins '+formatNumber(coins)+' | '+formatNumber(cps)+'/s | last bounce: '+formatNumber(lastBounceVal)},300);   
 /* ================ 6. SETTINGS ================ */
 /* SETTINGS */
-const CFG={slide:!RM,nums:true,labels:false,dev:true,sound:false,flashes:true,shake:true};
+const CFG={slide:!RM,nums:true,labels:false,dev:true,sound:false,flashes:true,shake:true,layout:'auto'};
 try{Object.assign(CFG,JSON.parse(localStorage.getItem('tvcfg')||'{}'))}catch(e){}
+/* v1.9.10.2: layout switch. auto = wide when the window is landscape and at least 700 px wide, else portrait; portrait / landscape force one. */
+function applyLayout(){const m=CFG.layout,k=m==='portrait'?'port':m==='landscape'&&innerWidth>=600?'wide':(innerWidth>=700&&innerWidth/innerHeight>=1.3?'wide':'port'),h=document.documentElement;
+ if(h.classList.contains(k))return;h.classList.remove('wide','port');h.classList.add(k);
+ const cb=document.getElementById('coins');if(k==='port')document.getElementById('cw').insertBefore(cb,document.getElementById('c'));else document.getElementById('top').appendChild(cb);
+ try{placeGoal()}catch(e){}}
+addEventListener('resize',()=>{try{applyLayout()}catch(e){}});
 function syncSnd(){sndEl.textContent=CFG.sound?'🔊':'🔇'}
-function applyCfg(){syncSnd();document.body.classList.remove('lab');/* v1.9.9.9: the upgrade labels option was removed */DB.style.display=CFG.dev?'':'none';try{localStorage.setItem('tvcfg',JSON.stringify(CFG))}catch(e){}}
+function applyCfg(){syncSnd();try{applyLayout()}catch(e){}document.body.classList.remove('lab');/* v1.9.9.9: the upgrade labels option was removed */DB.style.display=CFG.dev?'':'none';try{localStorage.setItem('tvcfg',JSON.stringify(CFG))}catch(e){}}
 const SP=document.createElement('div');SP.id='set';const box=document.createElement('div');box.id='setbox';SP.appendChild(box);
 const cfgSync={};
 
-[['slide','Shop slide effect'],['nums','Numbers'],['flashes','Flashes'],['shake','Screen shake'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF')};cfgSync[k]=f;f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg();if(k==='sound'&&CFG.sound)audioInit()};box.appendChild(b)});
+const cfgBtn={};
+[['slide','Slide'],['nums','Numbers'],['flashes','Flashes'],['shake','Shake'],['dev','Dev btn'],['sound','Sound']].forEach(([k,l])=>{const b=document.createElement('button');const f=()=>{b.textContent=l+': '+(CFG[k]?'ON':'OFF');b.classList.toggle('off',!CFG[k])};b.className='tg';cfgSync[k]=f;cfgBtn[k]=b;f();b.onclick=()=>{CFG[k]=!CFG[k];f();applyCfg();if(k==='sound'&&CFG.sound)audioInit()}});
+const lyb=document.createElement('button');lyb.className='full';const lyf=()=>{lyb.textContent='View: '+CFG.layout.toUpperCase()};lyf();lyb.onclick=()=>{CFG.layout=CFG.layout==='auto'?'portrait':CFG.layout==='portrait'?'landscape':'auto';lyf();applyCfg()};
 sndEl.onclick=e=>{e.stopPropagation();CFG.sound=!CFG.sound;cfgSync.sound();applyCfg();if(CFG.sound)audioInit()};
 const eb=document.createElement('button');eb.textContent='The end is near';eb.style.display='none';eb.onclick=()=>{SP.style.display='none';season1EndScreen(null)};box.appendChild(eb);/* shown once the end screen was seen; reopens it */
-const verEl=document.createElement('div');verEl.style.display='none';/* 1.10.3: version no longer shown; hidden anchor for the Prestige button */box.appendChild(verEl);   
- const rb=document.createElement('button');rb.textContent='Reset game';rb.onclick=()=>askConfirm('Reset all progress? This cannot be undone.',()=>{resetting=true;try{PS.del(KEY_SAVE);PS.del(KEY_GOALS);PS.del(KEY_OFF)}catch(e){}location.reload()});box.appendChild(rb);
+/* ===== v1.9.9.12 daily reward: 7-day row, one claim per local day, a missed day steps back one day, optional x2 rewarded ad (CrazyGames only). Own key cornerShopDaily (PS), not part of the game save; reset game keeps it. Tune DAILY.mins / DAILY.floor. ===== */
+const DAILY={key:'cornerShopDaily',mins:[5,8,12,15,20,30,60],floor:[50,80,120,180,260,380,600],icons:['🪙','🪙','💰','💰','💎','💎','🎁']};
+let dS={last:'',day:0},dShown=false,dBoot=0;
+const dP=n=>(n<10?'0':'')+n,dToday=()=>{const d=new Date();return d.getFullYear()+'-'+dP(d.getMonth()+1)+'-'+dP(d.getDate())},dNum=s=>{const a=String(s).split('-').map(Number);return Date.UTC(a[0]||1970,(a[1]||1)-1,a[2]||1)/864e5};
+function dLoad(){try{const d=JSON.parse(PS.get(DAILY.key)||'null');if(d&&typeof d==='object'){dS.last=/^\d{4}-\d\d-\d\d$/.test(d.last)?d.last:'';dS.day=(((+d.day||0)%7)+7)%7}}catch(e){}}
+function dSave(){PS.set(DAILY.key,JSON.stringify({sv:1,last:dS.last,day:dS.day}))}
+/* available when the last claim was on an earlier local date (a clock set back counts as claimed) */
+const dAvail=()=>dS.last===''||dNum(dToday())>dNum(dS.last);
+const dCur=()=>{if(!dAvail())return dS.day;return dS.last!==''&&dNum(dToday())-dNum(dS.last)>1?Math.max(0,dS.day-1):dS.day};
+const dAmt=i=>Math.round(Math.max(DAILY.floor[i],Math.max(0,cps)*DAILY.mins[i]*60));
+const dOverlay=()=>dex||scPhase>0||(!tutDone&&currentShop===0)||['set','prestige','offv','s1end'].some(id=>{const e=document.getElementById(id);return e&&e.style.display!=='none'&&(id==='s1end'||id==='offv'||e.style.display!=='')});
+const dEl=document.createElement('div');dEl.id='daily';const dBx=document.createElement('div');dBx.id='dbox';dEl.appendChild(dBx);document.body.appendChild(dEl);
+let dTimer=0;
+function dRender(msg){
+ const av=dAvail(),cur=dCur(),got=av?cur:(dS.day===0?7:dS.day);
+ dBx.textContent='';const h=document.createElement('h2');h.textContent='DAILY REWARD';dBx.appendChild(h);
+ const p=document.createElement('p');dBx.appendChild(p);
+ const g=document.createElement('div');g.id='dgrid';
+ for(let i=0;i<7;i++){const c=document.createElement('div');c.className='dc'+(i<got?' got':'')+(av&&i===cur?' now':'')+(i===6?' big':'');const a=document.createElement('span');a.textContent='DAY '+(i+1);const ic=document.createElement('i');ic.textContent=i<got?'✔':DAILY.icons[i];const m=document.createElement('span');m.textContent=DAILY.mins[i]+' MIN';c.append(a,ic,m);g.appendChild(c)}
+ dBx.appendChild(g);
+ const row=(t,cls,fn)=>{const b=document.createElement('button');b.textContent=t;if(cls)b.className=cls;b.onclick=fn;dBx.appendChild(b);return b};
+ if(av){
+  p.innerHTML='Day '+(cur+1)+': <b>+'+formatNumber(dAmt(cur))+'</b> coins<br>('+DAILY.mins[cur]+' minutes of income)';
+  row('CLAIM','ok',()=>dClaim(1));
+  if(typeof CG!=='undefined'&&CG.ready)row('WATCH AD: CLAIM x2','ad',function(){this.disabled=true;showRewardedAd(()=>dClaim(2),()=>{dRender('Ad not available. Try again later.')})});
+ }else{p.innerHTML=(msg||'Reward claimed.')+'<br>Next reward in <b id="dcd"></b>'}
+ if(av&&msg){const q=document.createElement('p');q.textContent=msg;dBx.insertBefore(q,g)}
+ row('CLOSE','',dClose);dTick2()}
+function dTick2(){const e=document.getElementById('dcd');if(!e)return;const n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.max(0,Math.ceil((t-n)/1000));e.textContent=dP(Math.floor(s/3600))+':'+dP(Math.floor(s%3600/60))+':'+dP(s%60)}
+function dClaim(mult){
+ if(!dAvail())return;const cur=dCur(),amt=dAmt(cur)*mult;
+ coins+=amt;lastCoins+=amt;dS.last=dToday();dS.day=(cur+1)%7;dSave();try{saveGame()}catch(e){}try{refresh()}catch(e){}try{sfx('corner')}catch(e){}
+ dRender('+'+formatNumber(amt)+' coins!')}
+function dOpen(auto){if(auto)dShown=true;dRender();dEl.style.display='flex';clearInterval(dTimer);dTimer=setInterval(dTick2,1000)}
+function dClose(){dEl.style.display='none';clearInterval(dTimer)}
+dEl.addEventListener('pointerdown',e=>{if(e.target===dEl)dClose()});
+const dBtn=document.createElement('button');dBtn.textContent='Daily reward';
+function dInit(){dLoad();dBoot=performance.now();
+ setInterval(()=>{const av=dAvail();dBtn.classList.toggle('ready',av);dly.classList.toggle('ready',av);
+  if(!dShown&&av&&performance.now()-dBoot>3000&&!document.hidden&&(corners>0||coins>=1||shops.some(s=>s.tvs&&s.tvs.length))&&!dOverlay())dOpen(true)},2000)}
+const dly=document.getElementById('dly');dly.onclick=()=>dOpen(false);
+dBtn.onclick=()=>{SP.style.display='none';dOpen(false)};
+/* ===== v1.9.9.15 merge tutorial + v1.9.9.16 notice scene; v1.9.10.1 spotlight UI: everything is dimmed except the one thing to tap (the hole lets taps through, 4 invisible blockers eat the rest), a bubble says what to do and has a SKIP button. Own key cornerShopTut ({sv,merge,notice}) via PS. Merge tutorial ends on the first merge in shop 1; players whose shop 1 already merged never see it. Notice scene: when the Attention card unlocks, Attention and Crowd get level 1 for free and a visitor is walked to the counter and notices the TV. Reset game replays both. ===== */
+var tutDone=true,tutSeen=false,tutHl='',scDone=true,scPhase=0,scForce=false,scT=0;
+function tSave(){try{PS.set('cornerShopTut',JSON.stringify({sv:1,merge:tutDone?1:0,notice:scDone?1:0}))}catch(e){}}
+function tLoad(){let d=null;try{d=JSON.parse(PS.get('cornerShopTut')||'null')}catch(e){}tutDone=!!(d&&d.merge);scDone=!!(d&&d.notice);if(!tutDone&&shops.some(s=>s.merges>0)){tutDone=true;tSave()}}
+const tutOn=()=>!tutDone&&currentShop===0&&!dex;
+function tutHL(on){const n=on===true?'Buy TV':on||'';if(tutHl===n)return;const o=tutHl;tutHl=n;try{UPGRADES.forEach(u=>{if(u.el&&(u.n===o||u.n===n))u.el.classList.toggle('tuthl',u.n===n)})}catch(e){}}
+const tU=(()=>{const mk=(id,cls)=>{const e=document.createElement('div');e.id=id;if(cls)e.className=cls;document.body.appendChild(e);return e};
+ const hole=mk('tspot'),bl=[1,2,3,4].map(i=>mk('tblk'+i,'tblk')),bub=mk('tbub');
+ bub.innerHTML='<i id="tarr"></i><b id="tt1"></b><span id="tt2"></span><button id="tskip">SKIP</button>';
+ return{hole,bl,bub,a:bub.querySelector('#tarr'),t1:bub.querySelector('#tt1'),t2:bub.querySelector('#tt2'),sk:bub.querySelector('#tskip')}})();
+let tKey='';
+function tSkip(){if(scPhase>0)scEnd();else{tutDone=true;tSave();tutHL('')}tutUI(null)}
+tU.sk.onclick=tSkip;
+function tutUI(r,a,b,block){
+ if(!r){if(tKey!==''){tKey='';tU.hole.style.display='none';tU.bl.forEach(x=>x.style.display='none');tU.bub.style.display='none'}return}
+ const vw=innerWidth,vh=innerHeight,p=4,L=Math.max(0,Math.round(r.left-p)),T=Math.max(0,Math.round(r.top-p)),R=Math.min(vw,Math.round(r.right+p)),B=Math.min(vh,Math.round(r.bottom+p));
+ const key=[L,T,R,B,a,b,block?1:0,vw,vh].join('|');if(key===tKey)return;tKey=key;
+ const h=tU.hole.style;h.display='block';h.left=L+'px';h.top=T+'px';h.width=(R-L)+'px';h.height=(B-T)+'px';
+ const bs=[[0,0,vw,T],[0,B,vw,vh-B],[0,T,L,B-T],[R,T,vw-R,B-T]];
+ tU.bl.forEach((e,i)=>{const s=e.style,q=bs[i];s.display=block?'block':'none';s.left=q[0]+'px';s.top=q[1]+'px';s.width=q[2]+'px';s.height=q[3]+'px'});
+ tU.t1.textContent=a;tU.t2.textContent=b;
+ const bu=tU.bub,s=bu.style,bw=Math.min(document.documentElement.classList.contains('wide')?380:280,vw-24);s.display='block';s.width=bw+'px';
+ let bl=Math.round((L+R)/2-bw/2);bl=Math.max(12,Math.min(vw-bw-12,bl));s.left=bl+'px';s.top='0px';
+ const bh=bu.offsetHeight,below=B+22+bh<vh-8;s.top=(below?B+22:Math.max(8,T-22-bh))+'px';
+ const ar=tU.a.style;ar.left=Math.max(8,Math.min(bw-24,(L+R)/2-bl-7))+'px';tU.a.textContent=below?'▲':'▼';ar.top=below?'-19px':'auto';ar.bottom=below?'auto':'-19px'}
+const tCan=(x,y,w,h)=>{const c=C.getBoundingClientRect(),sx=c.width/W,sy=c.height/H;return{left:c.left+x*sx,top:c.top+y*sy,right:c.left+(x+w)*sx,bottom:c.top+(y+h)*sy}};
+const tTVs=ix=>{let q=null;ix.forEach(j=>{const s=tvBox(j);if(!s)return;const r=tCan(s.x,s.y,s.w,s.h);q=q?{left:Math.min(q.left,r.left),top:Math.min(q.top,r.top),right:Math.max(q.right,r.right),bottom:Math.max(q.bottom,r.bottom)}:r});return q};
+const tCard=n=>{const u=UPGRADES.find(x=>x.n===n);if(!u||!u.el)return null;try{u.el.scrollIntoView({block:'nearest'})}catch(e){}const r=u.el.getBoundingClientRect();return r.width?r:null};
+const tOv=()=>['set','prestige','offv','s1end','daily'].some(id=>{const e=document.getElementById(id);return e&&e.style.display!=='none'&&(id==='s1end'||id==='offv'||e.style.display!=='')});
+function tutDraw2(){
+ if(tutDone||currentShop!==0||dex)return null;
+ if(shops[0].merges>0){tutDone=true;tSave();if(tutSeen){toast='MERGED! A BETTER TV EARNS MORE';toastT=4}return null}
+ tutSeen=true;const pair=findMergePair();
+ if(mergePick)return{r:tTVs(mergePick.partners),a:'PICK THE MATCH',b:'TAP THE FLASHING TV',block:1};
+ if(selectedTV){const k=currentTVs.indexOf(selectedTV),can=selectedTV.t<TV_TYPES.length-1&&currentTVs.some((v,i)=>i!==k&&v.t===selectedTV.t),c=mergeCostNow(selectedTV.t);
+  if(can)return{r:tCan(14,300,172,16),a:coins>=c?'TAP MERGE':'NEED '+formatNumber(c)+' COINS',b:coins>=c?'TWO TVS BECOME A BETTER ONE':'WAIT FOR COINS, THEN MERGE',block:coins>=c?1:0};
+  return{r:tCan(172,6,22,18),a:'NO PAIR HERE',b:'TAP X TO CLOSE',block:1}}
+ if(pair)return{r:tTVs(currentTVs.map((v,i)=>v.t===pair[2]?i:-1).filter(i=>i>=0)),a:'TWO MATCHING TVS!',b:'TAP ONE TO SELECT IT',block:1};
+ if(currentTVs.length<2){const u=UPGRADES.find(x=>x.n==='Buy TV'),c=u&&u.cost?u.cost():0,r=tCard('Buy TV');if(!r)return null;
+  return{r,a:currentTVs.length?'GET A 2ND TV':'BUY YOUR FIRST TV',b:coins>=c?'TAP THE BUY TV CARD':'WAIT FOR '+formatNumber(c)+' COINS',block:coins>=c?1:0}}
+ return null}
+function scEnd(){scPhase=0;scForce=false;scDone=true;tSave()}
+function scNoticed(){scForce=false;scPhase=2;scT=Date.now()}
+function scDraw2(){
+ if(scDone||currentShop!==0||dex)return null;
+ const now=Date.now();
+ if(scPhase===0){
+  if(!tutDone||selectedTV||mergePick||dOverlay()||document.hidden||!shops[0].tvs.length||!milestoneUnlocked(5,0))return null;
+  if(localUpgradeLevel('stopC',0)>0||localUpgradeLevel('crowd',0)>0){scEnd();return null}
+  shopState.stopC++;shopState.crowd++;try{refresh();saveGame()}catch(e){}
+  const p=shops[0].people[0];p.noticed=false;p.stop=0;p.d=1;p.x=-8;p.v=34;scForce=true;scPhase=1;scT=now;return null}
+ if(scPhase===1){if(now-scT>20000){scEnd();return null}return{r:tTVs([0]),a:'A VISITOR WALKS BY...',b:'WATCH THE COUNTER TV',block:0}}
+ if(scPhase===2){if(now-scT>4000){scPhase=3;scT=now;return null}return{r:tTVs([0]),a:'NOTICED! BONUS COINS',b:'CORNERS PAY x2 WHILE STOPPED',block:0}}
+ if(scPhase===3){if(now-scT>4500){scEnd();return null}return{r:tCard('Attention'),a:'2 FREE UPGRADES!',b:'ATTENTION + CROWD LV 1',block:0}}
+ return null}
+function tutDraw(){let s=null;try{const a=tutDraw2(),b=scDraw2();s=a||b;if(s&&(!s.r||tOv()))s=null}catch(e){}tutUI(s&&s.r,s&&s.a,s&&s.b,s&&s.block)}
+box.insertBefore(dBtn,eb);
+const verEl=document.createElement('div');verEl.textContent='v'+VERSION;verEl.style.cssText='font-size:6px;color:#666;text-align:center;padding:2px';box.appendChild(verEl);   
+ const rb=document.createElement('button');let ra=0;rb.textContent='Reset game';rb.onclick=()=>{if(ra){resetting=true;try{PS.del('cornerShopP2Test');PS.del('cornerShopP2Goals');PS.del('cornerShopP2Off')}catch(e){}location.reload()}else{ra=1;rb.textContent='Tap again to reset';setTimeout(()=>{ra=0;rb.textContent='Reset game'},3000)}};box.appendChild(rb);
 const DISCORD_URL='https://discord.gg/kgCUhEgFXU';
 const dcb=document.createElement('button');dcb.className='disc';dcb.textContent='🎮 Join Discord';dcb.onclick=()=>{window.open(DISCORD_URL,'_blank','noopener')};box.appendChild(dcb);
 const PRIVACY_URL='https://soupenoodles.com/cornershop/privacy';
 const pvb=document.createElement('button');pvb.textContent='🔒 Privacy';pvb.onclick=()=>{window.open(PRIVACY_URL,'_blank','noopener')};box.appendChild(pvb);
 const cb=document.createElement('button');cb.className='closeb';cb.textContent='Close';cb.onclick=()=>{SP.style.display='none'};box.appendChild(cb);
+/* v1.9.10.2: lay the settings out in sections (runs once in boot, when every button exists) */
+function arrangeSettings(){
+ box.textContent='';
+ const t=document.createElement('div');t.id='stitle';t.textContent='SETTINGS';box.appendChild(t);
+ const sec=n=>{const d=document.createElement('div');d.className='sech';d.textContent=n;box.appendChild(d)};
+ const grid=(one,bs)=>{const g=document.createElement('div');g.className='sgrid'+(one?' one':'');bs.forEach(b=>g.appendChild(b));box.appendChild(g)};
+ sec('GAME');grid(1,[prestigeOpen,dBtn,eb]);
+ sec('EFFECTS');grid(0,[cfgBtn.slide,cfgBtn.nums,cfgBtn.flashes,cfgBtn.shake]);
+ sec('SOUND AND VIEW');grid(0,[cfgBtn.sound,cfgBtn.dev,lyb]);
+ sec('COMMUNITY');grid(0,[dcb,pvb]);
+ sec('DATA');grid(1,[rb,cb]);
+ box.appendChild(verEl)}
 document.body.appendChild(SP);document.getElementById('setb').onclick=()=>{SP.style.display='flex'};applyCfg();
 /* ================ 7. PRESTIGE ================ */
 /* PRESTIGE: optional reset, permanent skill tree, incremental lifetime reward score. */
@@ -783,6 +939,7 @@ const PM=document.createElement('div');PM.id='prestige';const PB=document.create
 function prestigeReset(){
  const earned=prestigeGain();if(earned<=0)return;
  prestigeData.points+=earned;prestigeData.claimedScore=prestigeScore();prestigeData.prestiges++;
+ tutDone=false;tutSeen=false;scDone=false;scPhase=0;scForce=false;tutHL('');try{PS.del('cornerShopTut')}catch(e){}
  coins=0;corners=0;currentShop=0;shopI=0;badge.fill(false);shopState.speed=0;shopState.corner=0;shopState.crowd=0;shopState.floors=0;shopState.bought=0;shopState.merges=0;shopState.start=0;shopState.stopC=0;shopState.lucky=0;shopState.magnet=0;shopState.showroom=0;shopState.pricetag=0;shopState.restock=0;shopState.un=[true];
  shops.length=0;const first=[];shops.push({tvs:first,fit:0,bought:0,merges:0,upgrades:{}});currentTVs=first;selectedTV=null;displayCoins=0;cps=0;lastCoins=0;prestigeData.runEarned=0;prestigeData.lifetimeEarned=Math.max(0,prestigeData.lifetimeEarned);coins=Math.floor(skillLevel('start')*100);displayCoins=coins;toast='PRESTIGE! +'+earned+' SKILL POINTS';toastT=4;saveGame();renderPrestige();refresh();
 }
@@ -820,7 +977,7 @@ function renderPrestige(){
    const b=document.createElement('button');b.textContent=maxed?'MAXED':'Upgrade — '+cost+' point(s)';b.disabled=maxed||prestigeData.points<cost;b.className=b.disabled?'unavailable':'available';
    b.onclick=()=>{if(prestigeData.points<cost||skillLevel(sk.id)>=sk.max)return;prestigeData.points-=cost;prestigeData.spent=(prestigeData.spent||0)+cost;prestigeData.skills[sk.id]=skillLevel(sk.id)+1;saveGame();renderPrestige();refresh()};box.appendChild(b);PB.appendChild(box);
  });
- const prestige=document.createElement('button');prestige.id='prestige-action';prestige.textContent=gain>0?'PRESTIGE NOW — gain '+gain+' point(s)':'KEEP PLAYING — no new point yet';prestige.disabled=gain<=0;prestige.className=gain>0?'available':'unavailable';prestige.onclick=()=>{if(prestigeGain()<=0)return;askConfirm('Prestige now for '+prestigeGain()+' skill point(s)? Your current shops and run upgrades will reset. Skill-tree upgrades and lifetime earnings remain.',prestigeReset)};PB.appendChild(prestige);
+ const prestige=document.createElement('button');prestige.id='prestige-action';prestige.textContent=gain>0?'PRESTIGE NOW — gain '+gain+' point(s)':'KEEP PLAYING — no new point yet';prestige.disabled=gain<=0;prestige.className=gain>0?'available':'unavailable';prestige.onclick=()=>{if(prestigeGain()<=0)return;if(confirm('Prestige now for '+prestigeGain()+' skill point(s)? Your current shops and run upgrades will reset. Skill-tree upgrades and lifetime earnings remain.'))prestigeReset()};PB.appendChild(prestige);
  const close=document.createElement('button');close.textContent='Close';close.className='unavailable';close.onclick=()=>{PM.style.display='none'};PB.appendChild(close);
 }
 const prestigeOpen=document.createElement('button');prestigeOpen.textContent='🌟 Prestige / Skill Tree';prestigeOpen.onclick=()=>{renderPrestige();PM.style.display='flex'};box.insertBefore(prestigeOpen,verEl);
@@ -837,10 +994,10 @@ function sfx(k,rate){
  if(!CFG.sound||!AU.ctx||!AU.buf[k])return;const c=SFX[k];if(c.max&&(AU.n[k]||0)>=c.max)return;
  try{const s=AU.ctx.createBufferSource(),g=AU.ctx.createGain();s.buffer=AU.buf[k];if(rate)s.playbackRate.value=rate;g.gain.value=c.vol;s.connect(g);g.connect(AU.ctx.destination);AU.n[k]=(AU.n[k]||0)+1;s.onended=()=>{AU.n[k]=Math.max(0,(AU.n[k]||1)-1)};s.start()}catch(e){}}
 /* ================ 9. SAVE AND LOAD ================ */
-/* SAVE / LOAD: keys cornerShopSave, cornerShopGoals, cornerShopOff (final names, with sv = SAVE_VERSION). Old P2Test keys are copied once by migrateAll(), never changed. */
-function saveGame(){if(resetting||!booted)return;try{PS.set(KEY_SAVE,JSON.stringify({sv:SAVE_VERSION,v:VERSION,coins,corners,sc:currentShop,S:shopState,P:prestigeData,badge,seen:UPGRADES.map(u=>!!u.seen),s1end:season1End,life:LIFE,fx:fxSeen.map(Boolean),ih:idxHint,shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,merges:s.merges||0,tm:s.tierMerges||{},fit:s.fit,upgrades:s.upgrades||{}})).concat(SEASON2_RELEASED?[]:extraShops)}))}catch(e){}}
+/* TEST BUILD SAVE / LOAD: isolated localStorage key "cornerShopP2Test"; production save is untouched. */
+function saveGame(){if(resetting||!booted)return;try{PS.set('cornerShopP2Test',JSON.stringify({v:VERSION,coins,corners,sc:currentShop,S:shopState,P:prestigeData,badge,seen:UPGRADES.map(u=>!!u.seen),s1end:season1End,life:LIFE,fx:fxSeen.map(Boolean),ih:idxHint,shops:shops.map(s=>({tvs:s.tvs.map(v=>v.t),bought:s.bought,merges:s.merges||0,tm:s.tierMerges||{},fit:s.fit,upgrades:s.upgrades||{}})).concat(SEASON2_RELEASED?[]:extraShops)}))}catch(e){}}
 function loadGame(){
- let d=null;try{d=upgradeSave(JSON.parse(PS.get(KEY_SAVE)||'null'))}catch(e){}
+ let d=null;try{d=JSON.parse(PS.get('cornerShopP2Test')||'null')}catch(e){}
  if(!d||typeof d!=='object')return;
  try{
   const ns=Array.isArray(d.shops)?d.shops.slice(0,SHOPS.length).map((s,shopIndex)=>({people:makePeople(),tvs:(Array.isArray(s.tvs)?s.tvs:[]).slice(0,slots()).map(t=>makeTV(Math.max(0,Math.min(TV_TYPES.length-1,t|0)))),bought:+s.bought||0,merges:+s.merges||0,tierMerges:(s.tm&&typeof s.tm==='object')?s.tm:{},fit:+s.fit||0,upgrades:s.upgrades&&typeof s.upgrades==='object'?Object.fromEntries(Object.keys(UPGRADE_MAX).map(k=>[k,Math.max(0,Math.min(upgradeMax(k,shopIndex),Number(s.upgrades[k])||0))])):{}})):[];
@@ -893,23 +1050,23 @@ function tryMerge(){if(!selectedTV)return;const k=currentTVs.indexOf(selectedTV)
 function mergeTVs(i,j){const a=Math.min(i,j),b=Math.max(i,j),t=currentTVs[a].t,c=mergeCostNow(t);if(coins<c)return;coins-=c;
  currentTVs=currentTVs.filter((_,x)=>x!==a&&x!==b);currentTVs.splice(a,0,makeTV(t+1));selectedTV=null;mergePick=null;shops[currentShop].tvs=currentTVs;if(t+1>LIFE.bestTier)LIFE.bestTier=t+1;LIFE.merges++;shopState.merges++;shops[currentShop].merges=(shops[currentShop].merges||0)+1;{const tm=shops[currentShop].tierMerges||(shops[currentShop].tierMerges={});tm[t]=(tm[t]||0)+1}
  if(!shopState.un[t+1]){shopState.un[t+1]=true;toast='NEW TV: '+TV_TYPES[t+1].n+'!';toastT=3}tierUnlockFx(t+1);Tracker.ev('merge',{t,c:Math.round(c),shop:currentShop})}
-let goalIdx=0;function loadAux(){try{const d=upgradeSave(JSON.parse(PS.get(KEY_GOALS)||'null'));if(d){goalIdx=d.i||0;if(d.gs)Object.assign(GS,d.gs)}}catch(e){}try{const o=upgradeSave(JSON.parse(PS.get(KEY_OFF)||'null'));if(o){idleRate=o.rate||0;setTimeout(()=>applyOffline((Date.now()-o.t)/1000),500)}}catch(e){}}
+let goalIdx=0;function loadAux(){try{const d=JSON.parse(PS.get('cornerShopP2Goals')||'null');if(d){goalIdx=d.i||0;if(d.gs)Object.assign(GS,d.gs)}}catch(e){}try{const o=JSON.parse(PS.get('cornerShopP2Off')||'null');if(o){idleRate=o.rate||0;setTimeout(()=>applyOffline((Date.now()-o.t)/1000),500)}}catch(e){}}
 let idleRate=0,lastRE=0,lastIn2=Date.now(),hiddenAt=0;
 ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>{lastIn2=Date.now()},true));
-function placeGoal(){try{const r=C.getBoundingClientRect();gEl.style.left=(r.left+r.width/2)+'px';gEl.style.top=(r.top+10)+'px';gEl.style.width=Math.min(300,r.width-30)+'px'}catch(e){}}
+function placeGoal(){try{const r=C.getBoundingClientRect();gEl.style.left=(r.left+r.width/2)+'px';gEl.style.top=(r.top+10)+'px';gEl.style.width=Math.min(300,r.width-30)+'px';gEl.style.setProperty('--gw',Math.max(180,r.width-24)+'px')}catch(e){}}
 addEventListener('resize',()=>placeGoal());
 const gEl=document.createElement('div');gEl.id='goalbox';gEl.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(300px,62vw);padding:6px 8px;background:rgba(10,10,14,.92);border:2px solid #f4d35e;color:#fff;font:7px "Press Start 2P",monospace;z-index:9000;cursor:pointer;text-align:center';document.body.appendChild(gEl);
 function goalInfo(){const g=GOALS[goalIdx];if(!g)return null;let [c,m]=g.p();if(g.wall&&!(shops.length>1&&shops[1].bought>0)){m=SHOPS[1].firstTV;c=Math.min(coins,m)}return{g,c,m,done:g.wall?(shops.length>1&&shops[1].bought>0):c>=m}}
 function goalReward(){return Math.max(5,20*Math.max(idleRate,.1))}
 function claimGoal(){const i=goalInfo();if(!i||!i.done)return;let x=0;if(i.g.r){x=goalReward();gainCoins(x);lastRE+=x;toast='GOAL +'+formatNumber(x);toastT=1.5}Tracker.ev('goal',{n:goalIdx+1,name:i.g.t,reward:Math.round(x)});goalIdx++;saveGoals()}
 gEl.onclick=claimGoal;
-function saveGoals(){if(resetting||!booted)return;try{PS.set(KEY_GOALS,JSON.stringify({sv:SAVE_VERSION,i:goalIdx,gs:GS}))}catch(e){}}
+function saveGoals(){if(resetting||!booted)return;try{PS.set('cornerShopP2Goals',JSON.stringify({i:goalIdx,gs:GS}))}catch(e){}}
 function showOffline(sec,gain){let d=document.getElementById('offv');if(d)d.remove();d=document.createElement('div');d.id='offv';d.style.cssText='position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center';
  const b=document.createElement('div');b.style.cssText='background:#14141c;border:3px solid #f4d35e;padding:18px;color:#fff;font:9px "Press Start 2P",monospace;text-align:center;line-height:1.8;max-width:80vw';
  const m=Math.round(sec/60);b.innerHTML='WELCOME BACK<br>Away '+(m>=60?(m/60).toFixed(1)+' h':m+' min')+'<br>Your shops earned<br><span style="color:#f4d35e;font-size:12px">+'+formatNumber(gain)+'</span><br><span style="font-size:6px;color:#aaa">30% of idle income, up to 3 hours</span><br><br>';
  const k=document.createElement('button');k.textContent='OK';k.style.cssText='font:9px "Press Start 2P",monospace;padding:8px 18px;background:#f4d35e;border:2px solid #000;cursor:pointer';k.onclick=()=>d.remove();b.appendChild(k);d.appendChild(b);document.body.appendChild(d)}
 function applyOffline(sec){if(!(sec>=30))return;sec=Math.min(sec,10800);if(!(idleRate>0))return;const gain=.3*idleRate*sec;gainCoins(gain);lastRE+=gain;Tracker.ev('offline',{sec:Math.round(sec),gain:Math.round(gain)});showOffline(sec,gain)}
-function saveSeen(){if(resetting||!booted)return;try{PS.set(KEY_OFF,JSON.stringify({sv:SAVE_VERSION,t:Date.now(),rate:idleRate}))}catch(e){}}
+function saveSeen(){if(resetting||!booted)return;try{PS.set('cornerShopP2Off',JSON.stringify({t:Date.now(),rate:idleRate}))}catch(e){}}
 
 document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();saveSeen()}else if(hiddenAt){const s=(Date.now()-hiddenAt)/1000;hiddenAt=0;applyOffline(s);saveSeen()}});
 addEventListener('pagehide',()=>{saveSeen();saveGoals()});
@@ -941,11 +1098,12 @@ function eraMark(c,x,y,w,h,t){const k=t===undefined?currentShop:t,d='rgba(0,0,0,
  else if(k===8){/* smart 4K: streaming tile with a play triangle */drawRect(c,x+1,y,w-2,h);drawRect(c,x,y+1,w,h-2);g.fillStyle=d;g.beginPath();g.moveTo(x+w*.4,y+h*.22);g.lineTo(x+w*.4,y+h*.78);g.lineTo(x+w*.68,cy);g.closePath();g.fill()}
  else{drawRect(c,x,y,w,h);drawRect(d,x+3,y+2,2,h>10?6:4);drawRect(d,x+8,y+2,2,h>10?6:4)}}
 
-function boot(){migrateAll();try{localStorage.removeItem('cornerShopP1Log')}catch(e){}loadAux();loadGame();UPGRADES[1].seen=true;
+function boot(){loadAux();loadGame();UPGRADES[1].seen=true;
 setInterval(()=>{saveGame();savedT=1},30000);addEventListener('beforeunload',saveGame);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame()});
 
 (function loop(n){const dt=Math.min(.1,(n-t0)/1000);t0=n;update(dt);render();requestAnimationFrame(loop)})(performance.now());
 refresh();
+ arrangeSettings();dInit();tLoad();
  booted=true;placeGoal();cgDo(S=>S.game.loadingStop());setInterval(cgPlayTick,500);cgPlayTick()}
 cgInit().then(()=>{cgDo(S=>S.game.loadingStart());boot()});
 </script></body></html>
